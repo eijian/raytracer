@@ -14,7 +14,6 @@ main = do
   let v1 = initVec 2.1 4.5 8.2
   let v2 = initVec 1.1 2.5 7.2
   let s  = 4.7
-  t00 <- epochTime
   tryN "noop " (\x -> v1) ntry
   tryN "new  " (\x -> genVec x) ntry
   tryN "add  " (\x -> vadd (genVec x) v2) ntry

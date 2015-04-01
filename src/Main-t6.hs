@@ -4,7 +4,7 @@ module Main where
 import Control.Monad (forM_)
 import System.Posix.Time
 import System.IO
-import VectorTest2
+import VectorTest
 
 ntry  = 10 :: Int
 nloop = 2000000 :: Int

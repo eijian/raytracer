@@ -24,6 +24,13 @@ instance Arbitrary Vector3 where
     return $ Vector3 x y z
 
 -- |
+-- initialize Vector
+--
+
+initVec :: Double -> Double -> Double -> Vector3
+initVec x y z = Vector3 x y z
+
+-- |
 -- nearly equal Zero
 --
 
@@ -102,5 +109,7 @@ cross (Vector3 ax ay az) (Vector3 bx by bz) = Vector3 (ay * bz - by * az) (az * 
 -- prop> \a s -> elemX (vscale s a) == s * elemX a
 -- prop> dot (Vector3 ax ay az) (Vector3 bx by bz) == ax * bx + ay * by + az * bz
 -- prop> elemX (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ay * bz - az * by
+-- prop> elemY (cross (Vector3 ax ay az) (Vector3 bx by bz)) == az * bx - ax * bz
+-- prop> elemZ (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ax * by - ay * bx
 
 
