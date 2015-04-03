@@ -11,6 +11,7 @@ nloop = 2000000 :: Int
 
 main :: IO ()
 main = do
+  hPutStrLn stderr "Tuple type"
   let v1 = initVec 2.1 4.5 8.2
   let v2 = initVec 1.1 2.5 7.2
   let s  = 4.7
