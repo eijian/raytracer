@@ -4,7 +4,6 @@
 
 module Ray.Algebra where
 
-
 import Data.Maybe
 
 nearly0 = 0.00000001 :: Double
