@@ -12,14 +12,17 @@ class (Show a, Eq a) => BasicMatrix a where
   madd :: a -> a -> a
   msub :: a -> a -> a
   mscale :: Double -> a -> a
-  mdiv   :: a -> Double -> a
+  mdiv   :: a -> Double -> Maybe a
+  mdiv a s
+    | s == 0    = Nothing
+    | otherwise = Just ((1 / s) `mscale` a)
   norm :: a -> Double
   nearlyEqual :: a -> a -> Bool
 
 class (BasicMatrix a) => Vector a where
   dot :: a -> a -> Double
   normalize :: a -> Maybe a
-  normalize v = v `mdiv` (norm v)
+  normalize a = mdiv a (norm a)
   square :: a -> Double
   square v = v `dot` v
 
@@ -72,11 +75,6 @@ instance BasicMatrix Vector3 where
   -- [4.4,8.4,12.4]
   --
   mscale s (Vector3 x y z) = Vector3 (s * x) (s * y) (s * z)
-
-  -- |
-  -- vector scalar division
-  --
-  mdiv (Vector3 x y z) s = Vector3 (x / s) (y / s) (z / s)
 
   -- |
   -- norm of vector
