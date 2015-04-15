@@ -130,13 +130,12 @@ elemZ (Vector3 _ _ az) = az
 -- |
 -- QuickCheck
 --
--- prop> \a b -> vsub (vadd a b) b .=. a
--- prop> \a b -> vadd (vsub a b) b .=. a
--- prop> \a s -> elemX (vscale s a) == s * elemX a
--- prop> dot (Vector3 ax ay az) (Vector3 bx by bz) == ax * bx + ay * by + az * bz
--- prop> elemX (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ay * bz - az * by
--- prop> elemY (cross (Vector3 ax ay az) (Vector3 bx by bz)) == az * bx - ax * bz
--- prop> elemZ (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ax * by - ay * bx
-
+-- -prop> \a b -> (msub (madd a b) b) `nearlyEqual` a
+-- -prop> \a b -> (madd (msub a b) b) `nearlyEqual` a
+-- -prop> \a s -> elemX (mscale s a) == s * elemX a
+-- -prop> dot (Vector3 ax ay az) (Vector3 bx by bz) == ax * bx + ay * by + az * bz
+-- -prop> elemX (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ay * bz - az * by
+-- -prop> elemY (cross (Vector3 ax ay az) (Vector3 bx by bz)) == az * bx - ax * bz
+-- -prop> elemZ (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ax * by - ay * bx
 
 
