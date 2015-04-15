@@ -5,6 +5,7 @@
 module Ray.Algebra where
 
 import Data.Maybe
+import Test.QuickCheck
 
 nearly0 = 0.00000001 :: Double
 
@@ -38,14 +39,12 @@ instance Eq Vector3 where
                                                ay == by &&
                                                az == bz
 
-{-
 instance Arbitrary Vector3 where
   arbitrary = do
     x <- arbitrary
     y <- arbitrary
     z <- arbitrary
     return $ Vector3 x y z
--}
 
 instance BasicMatrix Vector3 where
   -- |
@@ -84,9 +83,7 @@ instance BasicMatrix Vector3 where
   -- |
   -- nearly equal Zero
   -- (.==.)
-  nearlyEqual (Vector3 ax ay az) (Vector3 bx by bz) = abs (ax - bx) < nearly0 &&
-                                                      abs (ay - by) < 0 &&
-                                                      abs (az - bz) < 0
+  nearlyEqual a b = norm (msub a b) < nearly0
 
 instance Vector Vector3 where
   -- |
@@ -130,12 +127,13 @@ elemZ (Vector3 _ _ az) = az
 -- |
 -- QuickCheck
 --
--- -prop> \a b -> (msub (madd a b) b) `nearlyEqual` a
--- -prop> \a b -> (madd (msub a b) b) `nearlyEqual` a
--- -prop> \a s -> elemX (mscale s a) == s * elemX a
--- -prop> dot (Vector3 ax ay az) (Vector3 bx by bz) == ax * bx + ay * by + az * bz
--- -prop> elemX (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ay * bz - az * by
--- -prop> elemY (cross (Vector3 ax ay az) (Vector3 bx by bz)) == az * bx - ax * bz
--- -prop> elemZ (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ax * by - ay * bx
+-- prop> \a b -> msub (madd a b) (b :: Vector3) `nearlyEqual` (a :: Vector3)
+-- prop> \a b -> madd (msub a b) (b :: Vector3) `nearlyEqual` (a :: Vector3)
+-- prop> \a s -> elemX (mscale s a) == s * elemX a
+-- prop> dot (Vector3 ax ay az) (Vector3 bx by bz) == ax * bx + ay * by + az * bz
+-- prop> dot a (a :: Vector3) == square a
+-- prop> elemX (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ay * bz - az * by
+-- prop> elemY (cross (Vector3 ax ay az) (Vector3 bx by bz)) == az * bx - ax * bz
+-- prop> elemZ (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ax * by - ay * bx
 
 
