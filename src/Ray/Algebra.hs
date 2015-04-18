@@ -127,13 +127,15 @@ elemZ (Vector3 _ _ az) = az
 -- |
 -- QuickCheck
 --
--- prop> \a b -> msub (madd a b) (b :: Vector3) `nearlyEqual` (a :: Vector3)
--- prop> \a b -> madd (msub a b) (b :: Vector3) `nearlyEqual` (a :: Vector3)
--- prop> \a s -> elemX (mscale s a) == s * elemX a
--- prop> dot (Vector3 ax ay az) (Vector3 bx by bz) == ax * bx + ay * by + az * bz
--- prop> dot a (a :: Vector3) == square a
--- prop> elemX (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ay * bz - az * by
--- prop> elemY (cross (Vector3 ax ay az) (Vector3 bx by bz)) == az * bx - ax * bz
--- prop> elemZ (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ax * by - ay * bx
+-- prop> \(a :: Vector3) (b :: Vector3) -> msub (madd a b) b `nearlyEqual` a
+-- --prop> \a b -> madd (msub a b) (b :: Vector3) `nearlyEqual` (a :: Vector3)
+-- --prop> \a s -> elemX (mscale s a) == s * elemX a
+-- --prop> dot (Vector3 ax ay az) (Vector3 bx by bz) == ax * bx + ay * by + az * bz
+-- --prop> dot a (a :: Vector3) == square a
+-- --prop> elemX (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ay * bz - az * by
+-- --prop> elemY (cross (Vector3 ax ay az) (Vector3 bx by bz)) == az * bx - ax * bz
+-- --prop> elemZ (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ax * by - ay * bx
+-- --prop> elemX (cross (Vector3 0 1 0) (Vector3 0 0 1)) == (ay :: Double)
+
 
 
