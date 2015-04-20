@@ -1,3 +1,7 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 --
 -- Ray.Algebra
 --
@@ -5,27 +9,29 @@
 module Ray.Algebra where
 
 import Data.Maybe
+
+import NumericPrelude
+import qualified Algebra.Additive as Additive
+import qualified Algebra.Module as Module
+--import qualified Algebra.NormedSpace.Euclidean as Euclidean
 import Test.QuickCheck
 
 nearly0 = 0.00000001 :: Double
 
-class (Show a, Eq a) => BasicMatrix a where
-  madd :: a -> a -> a
-  msub :: a -> a -> a
-  mscale :: Double -> a -> a
-  mdiv   :: a -> Double -> Maybe a
-  mdiv a s
+class (Show a, Eq a, Additive.C a, Module.C Double a) => BasicMatrix a where
+  (/>) :: a -> Double -> Maybe a
+  (/>) a s
     | s == 0    = Nothing
-    | otherwise = Just ((1 / s) `mscale` a)
+    | otherwise = Just ((1 / s) *> a)
   norm :: a -> Double
-  nearlyEqual :: a -> a -> Bool
+  (.=.) :: a -> a -> Bool
 
 class (BasicMatrix a) => Vector a where
-  dot :: a -> a -> Double
+  (<.>) :: a -> a -> Double
   normalize :: a -> Maybe a
-  normalize a = mdiv a (norm a)
+  normalize a = a /> (norm a)
   square :: a -> Double
-  square v = v `dot` v
+  square v = v <.> v
 
 data Vector3 = Vector3 Double Double Double
 
@@ -46,76 +52,32 @@ instance Arbitrary Vector3 where
     z <- arbitrary
     return $ Vector3 x y z
 
+instance Additive.C Vector3 where
+  zero = Vector3 0 0 0
+  (Vector3 ax ay az) + (Vector3 bx by bz) = Vector3 (ax + bx)
+                                                    (ay + by)
+                                                    (az + bz)
+  (Vector3 ax ay az) - (Vector3 bx by bz) = Vector3 (ax - bx)
+                                                    (ay - by)
+                                                    (az - bz)
+
+instance Module.C Double Vector3 where
+  s *> (Vector3 x y z) = Vector3 (s * x) (s * y) (s * z)
+
+--instance Euclidean.C Double Vector3 where
+--  norm v = sqrt $ normSqr v
+
 instance BasicMatrix Vector3 where
-  -- |
-  -- vector addition
-  --
-  -- >>> madd (Vector3 1 2 3) (Vector3 4 5 6)
-  -- [5.0,7.0,9.0]
-  --
-  madd (Vector3 ax ay az) (Vector3 bx by bz) = Vector3 (ax + bx)
-                                                       (ay + by)
-                                                       (az + bz)
-
-  -- |
-  -- vector substract
-  --
-  -- >>> msub (Vector3 1 2 3) (Vector3 4 5 6)
-  -- [-3.0,-3.0,-3.0]
-  --
-  msub (Vector3 ax ay az) (Vector3 bx by bz) = Vector3 (ax - bx)
-                                                       (ay - by)
-                                                       (az - bz)
-
-  -- |
-  -- vector scaling
-  --
-  -- >>> mscale 4.0 (Vector3 1.1 2.1 3.1)
-  -- [4.4,8.4,12.4]
-  --
-  mscale s (Vector3 x y z) = Vector3 (s * x) (s * y) (s * z)
-
-  -- |
-  -- norm of vector
-  --
-  norm a = sqrt $ square a
-
-  -- |
-  -- nearly equal Zero
-  -- (.==.)
-  nearlyEqual a b = norm (msub a b) < nearly0
+  norm v = sqrt $ square v
+  a .=. b = norm (a - b) < nearly0
 
 instance Vector Vector3 where
-  -- |
-  -- dot vector
-  --
-  dot (Vector3 ax ay az) (Vector3 bx by bz) = ax * bx + ay * by + az * bz
+  (Vector3 ax ay az) <.> (Vector3 bx by bz) = ax * bx + ay * by + az * bz
 
--- |
--- cross vector
---
-cross :: Vector3 -> Vector3 -> Vector3
-cross (Vector3 ax ay az) (Vector3 bx by bz) = Vector3 (ay * bz - by * az)
-                                                      (az * bx - bz * ax)
-                                                      (ax * by - ay * bx)
-
--- |
--- initialize Vector
---
-initVec :: Double -> Double -> Double -> Vector3
-initVec x y z = Vector3 x y z
-
-
--- |
--- element X axis of vector
---
--- >>> elemX (Vector3 1 2 3)
--- 1.0
--- >>> elemY (Vector3 1 2 3)
--- 2.0
--- >>> elemZ (Vector3 1 2 3)
--- 3.0
---
+(<*>) :: Vector3 -> Vector3 -> Vector3
+(<*>) (Vector3 ax ay az) (Vector3 bx by bz) = Vector3 (ay * bz - by * az)
+                                                    (az * bx - bz * ax)
+                                                    (ax * by - ay * bx)
 
 elemX :: Vector3 -> Double
 elemX (Vector3 ax _ _) = ax
@@ -124,18 +86,21 @@ elemY (Vector3 _ ay _) = ay
 elemZ :: Vector3 -> Double
 elemZ (Vector3 _ _ az) = az
 
--- |
--- QuickCheck
 --
--- prop> \(a :: Vector3) (b :: Vector3) -> msub (madd a b) b `nearlyEqual` a
--- --prop> \a b -> madd (msub a b) (b :: Vector3) `nearlyEqual` (a :: Vector3)
--- --prop> \a s -> elemX (mscale s a) == s * elemX a
--- --prop> dot (Vector3 ax ay az) (Vector3 bx by bz) == ax * bx + ay * by + az * bz
--- --prop> dot a (a :: Vector3) == square a
--- --prop> elemX (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ay * bz - az * by
--- --prop> elemY (cross (Vector3 ax ay az) (Vector3 bx by bz)) == az * bx - ax * bz
--- --prop> elemZ (cross (Vector3 ax ay az) (Vector3 bx by bz)) == ax * by - ay * bx
--- --prop> elemX (cross (Vector3 0 1 0) (Vector3 0 0 1)) == (ay :: Double)
+-- Position and Direction
+--
 
+type Position3  = Vector3
+type Direction3 = Vector3
 
+initPos :: Double -> Double -> Double -> Vector3
+initPos = Vector3
+
+initDir :: Double -> Double -> Double -> Maybe Direction3
+initDir x y z = normalize $ Vector3 x y z
+
+o3  = initPos 0 0 0               -- zero vector
+ex3 = fromJust $ initDir 1 0 0    -- unit vector (x axis)
+ey3 = fromJust $ initDir 0 1 0    -- unit vector (y axis)
+ez3 = fromJust $ initDir 0 0 1    -- unit vector (z axis)
 
