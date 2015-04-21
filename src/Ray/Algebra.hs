@@ -6,7 +6,27 @@
 -- Ray.Algebra
 --
 
-module Ray.Algebra where
+module Ray.Algebra
+  ( nearly0
+  , o3
+  , ex3
+  , ey3
+  , ez3
+  , (+)
+  , (-)
+  , (*>)
+  , (/>)
+  , norm
+  , (.=.)
+  , normalize
+  , square
+  , (<.>)
+  , (<*>)
+  , Position3
+  , Direction3
+  , initPos
+  , initDir
+  ) where
 
 import Data.Maybe
 
