@@ -56,14 +56,12 @@ class (BasicMatrix a) => Vector a where
 data Vector3 = Vector3 Double Double Double
 
 instance Show Vector3 where
-  show (Vector3 ax ay az) = "[" ++ (show ax) ++
-                            "," ++ (show ay) ++
-                            "," ++ (show az) ++ "]"
+  show (Vector3 ax ay az)
+    = "[" ++ (show ax) ++ "," ++ (show ay) ++ "," ++ (show az) ++ "]"
 
 instance Eq Vector3 where
-  (==) (Vector3 ax ay az) (Vector3 bx by bz) = ax == bx &&
-                                               ay == by &&
-                                               az == bz
+  (==) (Vector3 ax ay az) (Vector3 bx by bz)
+    = ax == bx && ay == by && az == bz
 
 instance Arbitrary Vector3 where
   arbitrary = do
@@ -74,12 +72,10 @@ instance Arbitrary Vector3 where
 
 instance Additive.C Vector3 where
   zero = Vector3 0 0 0
-  (Vector3 ax ay az) + (Vector3 bx by bz) = Vector3 (ax + bx)
-                                                    (ay + by)
-                                                    (az + bz)
-  (Vector3 ax ay az) - (Vector3 bx by bz) = Vector3 (ax - bx)
-                                                    (ay - by)
-                                                    (az - bz)
+  (Vector3 ax ay az) + (Vector3 bx by bz)
+    = Vector3 (ax + bx) (ay + by) (az + bz)
+  (Vector3 ax ay az) - (Vector3 bx by bz)
+    = Vector3 (ax - bx) (ay - by) (az - bz)
 
 instance Module.C Double Vector3 where
   s *> (Vector3 x y z) = Vector3 (s * x) (s * y) (s * z)
@@ -95,9 +91,8 @@ instance Vector Vector3 where
   (Vector3 ax ay az) <.> (Vector3 bx by bz) = ax * bx + ay * by + az * bz
 
 (<*>) :: Vector3 -> Vector3 -> Vector3
-(<*>) (Vector3 ax ay az) (Vector3 bx by bz) = Vector3 (ay * bz - by * az)
-                                                    (az * bx - bz * ax)
-                                                    (ax * by - ay * bx)
+(<*>) (Vector3 ax ay az) (Vector3 bx by bz)
+   = Vector3 (ay * bz - by * az) (az * bx - bz * ax) (ax * by - ay * bx)
 
 elemX :: Vector3 -> Double
 elemX (Vector3 ax _ _) = ax
