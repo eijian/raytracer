@@ -1,0 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+--
+-- Light
+--

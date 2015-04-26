@@ -6,7 +6,6 @@
 
 module Main where
 
-import NumericPrelude
 import Data.Maybe
 import Ray.Algebra
 
