@@ -23,10 +23,15 @@ module Ray.Algebra
   , square
   , (<.>)
   , (<*>)
+  , Vector3(..)
   , Position3
   , Direction3
   , initPos
   , initDir
+  , initDirFromAngle
+  , elemX
+  , elemY
+  , elemZ
   ) where
 
 import Data.Maybe
@@ -57,11 +62,13 @@ class (BasicMatrix a) => Vector a where
   square :: a -> Double
   square v = v <.> v
 
-data Vector3 = Vector3 Double Double Double
+data Vector3 = Vector3 Double Double Double deriving (Read, Show)
 
+{-
 instance Show Vector3 where
   show (Vector3 ax ay az)
     = "[" ++ (show ax) ++ "," ++ (show ay) ++ "," ++ (show az) ++ "]"
+-}
 
 instance Eq Vector3 where
   (==) (Vector3 ax ay az) (Vector3 bx by bz)
@@ -178,6 +185,10 @@ ez3 = fromJust $ initDir 0 0 1    -- unit vector (z axis)
 -- >>> let rt3 = 1.0 / sqrt 3.0
 -- >>> fromJust (initDir 1 1 1) == Vector3 rt3 rt3 rt3
 -- True
--- 
+-- >>> initDirFromAngle 0 0
+-- Just [0.0,1.0,0.0]
+-- >>> fromJust $ initDirFromAngle 3.14159263 0 .=. [0.0,-1.0,0.0]
+-- True
+--
 -- prop> \a b -> norm (fromJust $ initDirFromAngle a b) - 1.0 < nearly0
 

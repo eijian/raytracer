@@ -1,24 +1,33 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 --
 -- Physics
 --
 
-module Physics
-where
+module Ray.Physics where
+
+import System.Random
+import Data.Maybe
 
 import Ray.Algebra
 import Ray.Geometry
 
-data Wavelength = Red | Green | Blue deriving (Show, Enum)
+--
+-- Wavelength & Photon
 
-data Photon = (Wavelength, Ray)
+data Wavelength = Red | Green | Blue deriving (Show, Read, Enum)
+
+type Photon = (Wavelength, Ray)
 
 initPhoton :: Wavelength -> Ray -> Photon
 initPhoton l r = (l, r)
 
---
--- light
+type PhotonCache = Photon
 
-data Color = Color Double Double Double deiving (Show, Eq)
+--
+-- Color
+
+data Color = Color Double Double Double
 
 instance Show Color where
   show (Color r g b) = "[" ++ show r ++ "," ++ show g ++ "," ++ show b ++ "]"
@@ -27,30 +36,49 @@ instance Eq Color where
   (Color ar ag ab) == (Color br bg bb) = (ar == br) && (ag == bg) && (ab == bb)
 
 initColor :: Double -> Double -> Double -> Color
-initColor r g b = Color (r / mag) (g / mag) (b / mag)
+initColor r g b
+  | mag == 0  = Color (1/3) (1/3) (1/3)
+  | otherwise = Color (r'/mag) (g'/mag) (b'/mag)
   where
-    mag = r + g + b
+    r' = clipColor r
+    g' = clipColor g
+    b' = clipColor b
+    mag = r' + g' + b'
 
-decideWavelength :: Color -> Double -> Maybe Wavelength
+clipColor :: Double -> Double
+clipColor a
+  | a < 0     = 0
+  | otherwise = a
+
+decideWavelength :: Color -> Double -> Wavelength
 decideWavelength (Color r g b) p
-  | p < 0.0 || p > 1.0 = Nothing
-  | p < r              = Just Red
-  | p < r + g          = Just Green
-  | otherwise          = Just Blue
+  | p < r     = Red
+  | p < r + g = Green
+  | otherwise = Blue
 
 --
+-- Light
+
+pi2 = 2 * pi
 
 type Flux = Double
 
-class Light a where
-  flux :: a -> Flux
-  generatePhoton :: a -> IO Photon
-  
+data Light = PointLight Color Flux Position3
 
-data PointLight = PointLight Color Flux Position3 deriving Show
-
-instance Show PointLight where
+instance Show Light where
   show (PointLight c f p) = "[" ++ show c ++ "," ++ show f ++ "," ++ show p ++ "]"
 
+flux :: Light -> Flux
+flux (PointLight _ f _) = f
+
+generatePhoton :: Light -> IO Photon
+generatePhoton (PointLight c _ p) = do
+  theta <- randomRIO (0, pi)
+  phi   <- randomRIO (0, pi2)
+  wl    <- randomRIO (0, 1.0)
+  let d = initDirFromAngle theta phi
+      r = initRay p (fromJust d)
+      w = decideWavelength c wl
+  return (w, r)
 
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+
 --
 -- Geometry
 --
@@ -35,40 +36,36 @@ getDir = snd
 -- Shape
 -----------------------
 
-class Shape a where
-  getNormal :: Position3 -> a -> Maybe Direction3
-  distance :: Ray -> a -> [(Double, a)]
+data Shape = Point Position3
+           | Plain Direction3 Double
+           | Sphere Position3 Double
 
+getNormal :: Position3 -> Shape -> Maybe Direction3
 -- Point
-data Point = Point Position3
-
-instance Shape Point where
-  getNormal p s = Nothing
-  distance r s = []
-
+getNormal p (Point p') = Nothing
 -- Plain
-data Plain = Plain Direction3 Double
-
-instance Shape Plain where
-  getNormal p (Plain n d) = Just n
-  distance (pos, dir) s@(Plain n d)
-    | cos == 0  = []
-    | otherwise = [((d + n <.> pos) / (-cos), s)]
-    where
-      cos = n <.> dir
-
+getNormal p (Plain n d) = Just n
 -- Sphere
-data Sphere = Sphere Position3 Double
+getNormal p (Sphere c r) = normalize (p - c)
 
-instance Shape Sphere where
-  getNormal p (Sphere c r) = normalize (p - c)
-  distance (pos, dir) s@(Sphere c r)
-    | t1 <= 0.0 = []
-    | t2 == 0.0 = [(t0, s)]
-    | t1 >  0.0 = [(t0 - t2, s), (t0 + t2, s)]
-    where
-      o  = c - pos
-      t0 = o <.> dir
-      t1 = r * r - (square o - (t0 * t0))
-      t2 = sqrt t1
+
+distance :: Ray -> Shape -> [(Double, Shape)]
+-- Point
+distance r (Point p)  = []
+-- Plain
+distance (pos, dir) s@(Plain n d)
+  | cos == 0  = []
+  | otherwise = [((d + n <.> pos) / (-cos), s)]
+  where
+    cos = n <.> dir
+-- Sphere
+distance (pos, dir) s@(Sphere c r)
+  | t1 <= 0.0 = []
+  | t2 == 0.0 = [(t0, s)]
+  | t1 >  0.0 = [(t0 - t2, s), (t0 + t2, s)]
+  where
+    o  = c - pos
+    t0 = o <.> dir
+    t1 = r * r - (square o - (t0 * t0))
+    t2 = sqrt t1
 
