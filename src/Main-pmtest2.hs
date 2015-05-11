@@ -49,7 +49,7 @@ getMap (pc:pcs)
     --t = focus / cos
     --p = eye + t *> d'
     px = round ((elemX p + 1.0) * 128)
-    py = round ((elemY p - 1.0) * 128)
+    py = round ((3.0 - elemY p) * 128)
 
 getPt :: PhotonCache -> Position3
 getPt (_, (p, _)) = p

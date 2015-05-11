@@ -59,7 +59,7 @@ decideWavelength (Color r g b) p
 --
 -- Light
 
-pi2 = 2 * pi
+--pi2 = 2 * pi
 
 type Flux = Double
 
@@ -73,11 +73,9 @@ flux (PointLight _ f _) = f
 
 generatePhoton :: Light -> IO Photon
 generatePhoton (PointLight c _ p) = do
-  theta <- randomRIO (0, pi)
-  phi   <- randomRIO (0, pi2)
-  wl    <- randomRIO (0, 1.0)
-  let d = initDirFromAngle theta phi
-      r = initRay p (fromJust d)
+  wl <- randomRIO (0, 1.0)
+  d  <- generateRandomDir2
+  let r = initRay p d
       w = decideWavelength c wl
   return (w, r)
 

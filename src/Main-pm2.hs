@@ -18,11 +18,11 @@ nphoton = 1000000 :: Int
 main :: IO ()
 main = do
   (power, photons) <- generatePhotons nphoton lgts
-  photoncaches <- tracePhotons objs photons
+  --photoncaches <- tracePhotons objs photons
   putStrLn $ show nphoton
   putStrLn $ show power
-  a <- forM (photoncaches) $ \i -> do
-  --a <- forM (photons) $ \i -> do
+  --a <- forM (photoncaches) $ \i -> do
+  a <- forM (photons) $ \i -> do
     putStrLn $ show i
   return ()
 

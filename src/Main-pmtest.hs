@@ -17,7 +17,6 @@ main = do
   let nphoton = read np :: Int
       power = read pw :: Double
   putStrLn $ show nphoton
-  putStrLn $ show power
   dat <- getContents
   pcs <- forM (lines dat) $ \i -> do
     return $ (read i :: PhotonCache)

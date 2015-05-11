@@ -29,12 +29,15 @@ module Ray.Algebra
   , initPos
   , initDir
   , initDirFromAngle
+  , generateRandomDir1
+  , generateRandomDir2
   , elemX
   , elemY
   , elemZ
   ) where
 
 import Data.Maybe
+import System.Random
 
 import NumericPrelude
 import qualified Algebra.Additive as Additive
@@ -170,6 +173,25 @@ initDirFromAngle a b = normalize $ Vector3 x y z
     x = sina * cos b
     y = cos a
     z = sina * sin b
+
+pi2 = 2 * pi :: Double
+
+generateRandomDir1 :: IO Direction3
+generateRandomDir1 = do
+  theta <- randomRIO (0, pi)
+  phi   <- randomRIO (0, pi2)
+  return $ fromJust $ initDirFromAngle theta phi
+
+generateRandomDir2 :: IO Direction3
+generateRandomDir2 = do
+  x <- randomRIO (-1.0, 1.0)
+  y <- randomRIO (-1.0, 1.0)
+  z <- randomRIO (-1.0, 1.0)
+  let v = initPos x y z
+      len = norm v
+  if len > 1.0 || len == 0.0
+    then generateRandomDir2
+    else return $ fromJust $ normalize v
 
 o3  = initPos 0 0 0               -- zero vector
 ex3 = fromJust $ initDir 1 0 0    -- unit vector (x axis)
