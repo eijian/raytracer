@@ -49,20 +49,20 @@ getNormal p (Plain n d) = Just n
 getNormal p (Sphere c r) = normalize (p - c)
 
 
-distance :: Ray -> Shape -> [(Double, Shape)]
+distance :: Ray -> Shape -> [Double]
 -- Point
 distance r (Point p)  = []
 -- Plain
-distance (pos, dir) s@(Plain n d)
+distance (pos, dir) (Plain n d)
   | cos == 0  = []
-  | otherwise = [((d + n <.> pos) / (-cos), s)]
+  | otherwise = [(d + n <.> pos) / (-cos)]
   where
     cos = n <.> dir
 -- Sphere
-distance (pos, dir) s@(Sphere c r)
+distance (pos, dir) (Sphere c r)
   | t1 <= 0.0 = []
-  | t2 == 0.0 = [(t0, s)]
-  | t1 >  0.0 = [(t0 - t2, s), (t0 + t2, s)]
+  | t2 == 0.0 = [t0]
+  | t1 >  0.0 = [t0 - t2, t0 + t2]
   where
     o  = c - pos
     t0 = o <.> dir

@@ -17,6 +17,8 @@ tracePhoton os (wl, r) = do
       (t, s) = head $ sortBy (comparing fst) iss
   return [(wl, initRay (target t r) (getDir r))]
 
-calcDistance :: Ray -> Object -> [(Double, Shape)]
-calcDistance r o@(Object s m) = distance r s
- 
+calcDistance :: Ray -> Object -> [(Double, Object)]
+calcDistance r o@(Object s m) = zip ts (replicate (length ts) o)
+  where
+    ts = distance r s
+

@@ -21,11 +21,8 @@ main = do
   photoncaches <- tracePhotons objs photons
   putStrLn $ show nphoton
   putStrLn $ show power
-  a <- forM (photoncaches) $ \i -> do
-  --a <- forM (photons) $ \i -> do
+  forM_ (photoncaches) $ \i -> do
     putStrLn $ show i
-  return ()
-
 
 generatePhotons :: Int -> [Light] -> IO (Double, [Photon])
 generatePhotons nphoton lights = do
