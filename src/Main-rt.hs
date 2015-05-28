@@ -6,54 +6,79 @@
 
 module Main where
 
-import qualified Data.Trees.KdTree
+import System.IO
+import Control.Monad
+import Data.Trees.KdTree
+import NumericPrelude
 
-eyepos = initPos 0 2 0)
+import Ray.Algebra
+import Ray.Geometry
+import Ray.Object
+import Ray.Optics
+import Tracer
+import Scene
+
+eyepos = initPos 0 2 0
 eyedir = ez3
 upper = ey3
-focus = 1.0
+focus = 1.0 :: Double
+xres = 16 :: Double
+yres = 16 :: Double
 
 eex = ex3
 eey = negate ey3
-stepx = 2.0 / 256
-stepy = 2.0 / 256
+stepx = 2.0 / 256 :: Double
+stepy = 2.0 / 256 :: Double
 origin = focus *> eyedir
-  + ((-1.0) *> eex + 0.5 * stepx)
-  - (1.0    *> eey + 0.5 * stepy)
-scrmap = [(y, x) | y <- [0..255], x <- [0..255]]  
-
-data PhotonInfo = PhotonInfo Wavelength Position3 Direction3
-
-instance Point PhotonInfo where
-  dimension _ = 3
-  coord 0 (PhotonInfo _ p _) = elemX p
-  coord 1 (PhotonInfo _ p _) = elemY p
-  coord 2 (PhotonInfo _ p _) = elemZ p
-  dist2 (PhotonInfo _ p1 _) (PhotonInfo _ p2 _) = square (p1 - p2)
+  + ((-1.0 + 0.5 * stepx) *> eex)
+  - (( 1.0 - 0.5 * stepy) *> eey)
+scrmap = [(y, x) | y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
 
 main :: IO ()
 main = do
   (power, photonmap) <- readMap
-  let image = map traceCell scrmap
+  let image = map (traceCell power photonmap objs) scrmap
   outputImage image
 
 readMap :: IO (Double, KdTree PhotonInfo)
 readMap = do
-  np <- getLine
-  pw <- getLine
-  pis <- forM ([1..np]) $ \i -> do
-    pc <- (getLine >>= (read :: PhotonCache))
-    return $ convertToInfo pc
+  np' <- getLine
+  pw' <- getLine
+  let np = read np' :: Int
+  let pw = read pw' :: Double
+  pcs <- forM ([1..np]) $ \i -> do
+    l <- getLine
+    return $ (read l :: PhotonCache)
+  let pmap = fromList $ map convertToInfo pcs
+  return (pw, pmap)
 
-convertToInfo :: PhotonCache -> PhotonInfo
-convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
+traceCell :: Double -> KdTree PhotonInfo -> [Object] -> (Double, Double)
+          -> Radiance
+traceCell pw pm objs pos = traceRay 0 pw pm objs (generateRay pos)
 
-traceCell :: (Int, Int) -> Radiance
-traceCell (y, x) = 
-
-generateRay :: (Double, Double) -> Maybe Ray
+generateRay :: (Double, Double) -> Ray
 generateRay (y, x) =
   initRay eyepos (origin + ((stepx * x) *> eex) + ((stepy * y) *> eey))
 
+outputImage :: [Radiance] -> IO ()
+outputImage rs = do
+  putStrLn "P3"
+  putStrLn "## test"
+  putStrLn ((show (ceiling xres :: Int)) ++ " " ++ (show (ceiling yres :: Int)))
+  putStrLn "255"
+  forM_ rs $ \i -> do
+    putOneCell i
+    hPutStrLn stderr "done."
 
+putOneCell :: Radiance -> IO ()
+putOneCell (Radiance r g b) = do
+  putStr $ show $ radianceToRgb r
+  putStr " "
+  putStr $ show $ radianceToRgb g
+  putStr " "
+  putStrLn $ show $ radianceToRgb b
 
+clip = 1.0 :: Double
+
+radianceToRgb :: Double -> Int
+radianceToRgb d = floor ((if d > clip then clip else d) * 255.0)

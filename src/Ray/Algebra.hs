@@ -7,7 +7,8 @@
 --
 
 module Ray.Algebra
-  (module NumericPrelude
+  ( BasicMatrix
+--  , module NumericPrelude
   , nearly0
   , o3
   , ex3

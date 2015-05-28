@@ -6,8 +6,9 @@
 
 module Ray.Geometry where
 
-
 import Data.Maybe
+import NumericPrelude
+
 import Ray.Algebra
 
 type Ray = (Position3, Direction3)

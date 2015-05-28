@@ -8,21 +8,15 @@ module Ray.Physics where
 
 import System.Random
 import Data.Maybe
+import NumericPrelude
 
 import Ray.Algebra
 import Ray.Geometry
 
 --
--- Wavelength & Photon
+-- Wavelength
 
-data Wavelength = Red | Green | Blue deriving (Show, Read, Enum)
-
-type Photon = (Wavelength, Ray)
-
-initPhoton :: Wavelength -> Ray -> Photon
-initPhoton l r = (l, r)
-
-type PhotonCache = Photon
+data Wavelength = Red | Green | Blue deriving (Show, Read, Enum, Eq)
 
 --
 -- Color
@@ -55,28 +49,5 @@ decideWavelength (Color r g b) p
   | p < r     = Red
   | p < r + g = Green
   | otherwise = Blue
-
---
--- Light
-
---pi2 = 2 * pi
-
-type Flux = Double
-
-data Light = PointLight Color Flux Position3
-
-instance Show Light where
-  show (PointLight c f p) = "[" ++ show c ++ "," ++ show f ++ "," ++ show p ++ "]"
-
-flux :: Light -> Flux
-flux (PointLight _ f _) = f
-
-generatePhoton :: Light -> IO Photon
-generatePhoton (PointLight c _ p) = do
-  wl <- randomRIO (0, 1.0)
-  d  <- generateRandomDir2
-  let r = initRay p d
-      w = decideWavelength c wl
-  return (w, r)
 
 

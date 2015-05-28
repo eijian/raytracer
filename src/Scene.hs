@@ -6,8 +6,11 @@
 
 module Scene where
 
+import NumericPrelude
+
 import Ray.Algebra
 import Ray.Geometry
+import Ray.Light
 import Ray.Physics
 import Ray.Object
 import Ray.Material
