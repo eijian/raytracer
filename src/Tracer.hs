@@ -44,3 +44,8 @@ calcIntersection r os = (p, fromJust (getNormal p s), m)
     iss = filter (\x -> fst x > nearly0) (concat $ map (calcDistance r) os)
     (t, (Object s m)) = head $ sortBy (comparing fst) iss
     
+generateRay :: (Int, Int) -> Ray
+generateRay (y, x) =
+  initRay eyepos (origin + ((stepx * fromIntegral x) *> eex) +
+                           ((stepy * fromIntegral y) *> eey))
+

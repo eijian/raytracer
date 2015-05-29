@@ -22,8 +22,8 @@ eyepos = initPos 0 2 0
 eyedir = ez3
 upper = ey3
 focus = 1.0 :: Double
-xres = 16 :: Double
-yres = 16 :: Double
+xres = 16 :: Int
+yres = 16 :: Int
 
 eex = ex3
 eey = negate ey3
@@ -37,7 +37,7 @@ scrmap = [(y, x) | y <- [0..(yres - 1)], x <- [0..(xres - 1)]]
 main :: IO ()
 main = do
   (power, photonmap) <- readMap
-  let image = map (traceCell power photonmap objs) scrmap
+  let image = map (traceRay 0 power photonmap objs) $ map generateRay scrmap
   outputImage image
 
 readMap :: IO (Double, KdTree PhotonInfo)
@@ -52,19 +52,11 @@ readMap = do
   let pmap = fromList $ map convertToInfo pcs
   return (pw, pmap)
 
-traceCell :: Double -> KdTree PhotonInfo -> [Object] -> (Double, Double)
-          -> Radiance
-traceCell pw pm objs pos = traceRay 0 pw pm objs (generateRay pos)
-
-generateRay :: (Double, Double) -> Ray
-generateRay (y, x) =
-  initRay eyepos (origin + ((stepx * x) *> eex) + ((stepy * y) *> eey))
-
 outputImage :: [Radiance] -> IO ()
 outputImage rs = do
   putStrLn "P3"
   putStrLn "## test"
-  putStrLn ((show (ceiling xres :: Int)) ++ " " ++ (show (ceiling yres :: Int)))
+  putStrLn (show xres ++ " " ++ show yres)
   putStrLn "255"
   forM_ rs $ \i -> do
     putOneCell i
@@ -78,7 +70,3 @@ putOneCell (Radiance r g b) = do
   putStr " "
   putStrLn $ show $ radianceToRgb b
 
-clip = 1.0 :: Double
-
-radianceToRgb :: Double -> Int
-radianceToRgb d = floor ((if d > clip then clip else d) * 255.0)

@@ -64,6 +64,11 @@ elemG (Radiance _ g _) = g
 elemB :: Radiance -> Double
 elemB (Radiance _ _ g) = g
 
+clip = 1.0 :: Double
+
+radianceToRgb :: Double -> Int
+radianceToRgb d = floor ((if d > clip then clip else d) * 255.0)
+
 --
 -- Photon 
 
