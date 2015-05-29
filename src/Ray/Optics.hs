@@ -11,10 +11,12 @@ module Ray.Optics where
 --import Data.Ord
 import Data.Maybe
 import NumericPrelude
+import Debug.Trace
 
 import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
-import Data.Trees.KdTree
+--import Data.Trees.KdTree
+import Data.KdTree.Static
 import Test.QuickCheck
 
 import Ray.Algebra
@@ -67,7 +69,15 @@ elemB (Radiance _ _ g) = g
 clip = 1.0 :: Double
 
 radianceToRgb :: Double -> Int
-radianceToRgb d = floor ((if d > clip then clip else d) * 255.0)
+radianceToRgb d = floor ((if d' > clip then 1.0 else d') * 255.0)
+  where
+    d' = d * 100
+
+-- | Radiance
+-- >>> let a = Radiance 0.1 0.8 0.3
+-- >>> let b = Radiance 1.1 0.2 2.5
+-- >>> a + b
+-- Radiance 1 1 1
 
 --
 -- Photon 
@@ -82,15 +92,20 @@ type PhotonCache = Photon
 data PhotonInfo = PhotonInfo Wavelength Position3 Direction3
   deriving (Show, Eq)
 
+{-
 instance Point PhotonInfo where
   dimension _ = 3
   coord 0 (PhotonInfo _ p _) = elemX p
   coord 1 (PhotonInfo _ p _) = elemY p
   coord 2 (PhotonInfo _ p _) = elemZ p
   dist2 (PhotonInfo _ p1 _) (PhotonInfo _ p2 _) = square (p1 - p2)
+-}
 
 convertToInfo :: PhotonCache -> PhotonInfo
 convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
+
+infoToPointList :: PhotonInfo -> [Double]
+infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
 
 --
 --
@@ -107,8 +122,7 @@ estimateRadiance pw n p m pis
 sumRadiance :: Double -> Direction3 -> Position3 -> Material
             -> [PhotonInfo] -> (Double, Radiance)
 sumRadiance _ _ _ _ [] = (0, Radiance 0 0 0)
-sumRadiance pw n p m ((PhotonInfo wl pos dir):pis) =
-  (r2, rad) `addRadiance` (sumRadiance pw n p m pis)
+sumRadiance pw n p m ((PhotonInfo wl pos dir):pis) = (r2, rad) `addRadiance` (sumRadiance pw n p m pis)
   where
     cos = n <.> dir
     r2  = square (p - pos)

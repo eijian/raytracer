@@ -124,11 +124,11 @@ elemZ (Vector3 _ _ az) = az
 -- >>> let a = Vector3 1 2 3
 -- >>> let b = Vector3 3 4 5
 -- >>> a + b
--- [4.0,6.0,8.0]
+-- Vector3 4.0 6.0 8.0
 -- >>> a - b
--- [-2.0,-2.0,-2.0]
+-- Vector3 (-2.0) (-2.0) (-2.0)
 -- >>> a + b - b
--- [1.0,2.0,3.0]
+-- Vector3 1.0 2.0 3.0
 -- >>> ex3 <*> ey3 == ez3
 -- True
 -- >>> ey3 <*> ez3 == ex3
@@ -209,8 +209,8 @@ ez3 = fromJust $ initDir 0 0 1    -- unit vector (z axis)
 -- >>> fromJust (initDir 1 1 1) == Vector3 rt3 rt3 rt3
 -- True
 -- >>> initDirFromAngle 0 0
--- Just [0.0,1.0,0.0]
--- >>> fromJust $ initDirFromAngle 3.14159263 0 .=. [0.0,-1.0,0.0]
+-- Just (Vector3 0.0 1.0 0.0)
+-- >>> (fromJust $ initDirFromAngle 3.14159263 0) .=. Vector3 0.0 (-1.0) 0.0
 -- True
 --
 -- prop> \a b -> norm (fromJust $ initDirFromAngle a b) - 1.0 < nearly0

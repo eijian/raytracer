@@ -8,9 +8,12 @@ module Main where
 
 import Control.Monad
 import Data.Maybe
+import NumericPrelude
+
 import Ray.Algebra
 import Ray.Geometry
 import Ray.Physics
+import Ray.Optics
 
 main :: IO ()
 main = do
@@ -43,7 +46,7 @@ getMap (pc:pcs)
     d = (getPt pc) - eye
     d' = fromJust $ normalize d
     r = initRay eye d'
-    (t, s)  = head $ distance r sc
+    t = head $ distance r sc
     p = target t r
     --cos = ez3 <.> d'
     --t = focus / cos

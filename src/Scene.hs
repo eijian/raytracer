@@ -15,11 +15,11 @@ import Ray.Physics
 import Ray.Object
 import Ray.Material
 
-pl1 = PointLight (initColor 1 1 1) 1.0 (initPos (-1.5) 3.5 4.5) -- 2W
-pl2 = PointLight (initColor 2 1 0) 1.0 (initPos 1.5 3.5 4.5) -- 1W
-lgts = [pl1, pl2]
---pl1 = PointLight (initColor 1 1 1) 2.0 (initPos 0 3.99 2.5) -- 2W
---lgts = [pl1]
+--pl1 = PointLight (initColor 1 1 1) 1.0 (initPos (-1.5) 3.5 4.5) -- 2W
+--pl2 = PointLight (initColor 2 1 0) 1.0 (initPos 1.5 3.5 4.5) -- 1W
+--lgts = [pl1, pl2]
+pl1 = PointLight (initColor 1 1 1) 2.0 (initPos 0 3.99 2.5) -- 2W
+lgts = [pl1]
 
 m_ball = Material 0.8 0.3 0.3
 m_wall = Material 0.8 0.8 0.8
