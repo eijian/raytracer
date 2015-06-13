@@ -9,14 +9,15 @@ module Main where
 import Control.Monad
 import NumericPrelude
 
-import Ray.Algebra
-import Ray.Physics
-import Ray.Object
+--import Ray.Algebra
+--import Ray.Physics
+--import Ray.Object
 import Ray.Light
 import Tracer
 import Scene
 
-nphoton = 100000 :: Int
+nphoton :: Int
+nphoton = 100000
 
 main :: IO ()
 main = do

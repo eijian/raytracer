@@ -24,8 +24,8 @@ eyepos = initPos 0 2 0
 eyedir = ez3
 upper = ey3
 focus = 1.0 :: Double
-xres = 256 :: Int
-yres = 256 :: Int
+xres = 128 :: Int
+yres = 128 :: Int
 
 stepx = 2.0 / fromIntegral xres :: Double
 stepy = 2.0 / fromIntegral yres :: Double

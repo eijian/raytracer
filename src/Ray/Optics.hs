@@ -16,13 +16,21 @@ import Debug.Trace
 import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
 --import Data.Trees.KdTree
-import Data.KdTree.Static
+--import Data.KdTree.Static
 import Test.QuickCheck
 
 import Ray.Algebra
 import Ray.Geometry
 import Ray.Physics
 import Ray.Material
+
+
+--
+-- PARAMETERS
+
+clip = 0.1 :: Double
+gamma = 1.0 / 2.2
+rgbmax = 255.0
 
 --
 -- Radiance
@@ -66,12 +74,11 @@ elemG (Radiance _ g _) = g
 elemB :: Radiance -> Double
 elemB (Radiance _ _ g) = g
 
-clip = 1.0 :: Double
-
 radianceToRgb :: Double -> Int
-radianceToRgb d = floor ((if d' > clip then 1.0 else d') * 255.0)
+radianceToRgb d = floor (r * rgbmax)
   where
-    d' = d * 100
+    d' = d / clip
+    r  = (if d' > 1.0 then 1.0 else d') ** gamma
 
 -- | Radiance
 -- >>> let a = Radiance 0.1 0.8 0.3
@@ -126,7 +133,8 @@ sumRadiance pw n p m ((PhotonInfo wl pos dir):pis) = (r2, rad) `addRadiance` (su
   where
     cos = n <.> dir
     r2  = square (p - pos)
-    rad = if cos > 0 then calcRadiance wl pw n m else Radiance 0 0 0
+    rad = if cos > 0 then calcRadiance wl pw n m
+                     else Radiance 0 0 0
 
 addRadiance :: (Double, Radiance) -> (Double, Radiance) -> (Double, Radiance)
 addRadiance (ar2, arad) (br2, brad) = (max_r2, arad + brad)
@@ -137,6 +145,4 @@ calcRadiance :: Wavelength -> Double -> Direction3 -> Material -> Radiance
 calcRadiance Red   pw n (Material r _ _) = Radiance (pw * r) 0 0
 calcRadiance Green pw n (Material _ g _) = Radiance 0 (pw * g) 0
 calcRadiance Blue  pw n (Material _ _ b) = Radiance 0 0 (pw * b)
-
-
 
