@@ -7,6 +7,7 @@
 module Ray.Light where
 
 import System.Random
+import Data.Maybe
 import NumericPrelude
 
 import Ray.Algebra
@@ -31,3 +32,18 @@ generatePhoton (PointLight c _ p) = do
   let r = initRay p d
       w = decideWavelength c wl
   return (w, r)
+
+sqrpi16 :: Double
+sqrpi16 = 16 * pi * pi
+
+getDirection :: Light -> Position3 -> Direction3
+getDirection (PointLight _ _ lp) p = lp - p
+
+getRadiance :: Light -> Position3 -> Radiance
+getRadiance l@(PointLight (Color r g b) f lp) p
+  | r2 == 0 = Radiance 0 0 0
+  | otherwise = Radiance (r * l0) (g * l0) (b * l0)
+  where
+    r2 = square $ getDirection l p
+    l0 = f / sqrpi16 / r2
+

@@ -40,6 +40,7 @@ getDir = snd
 data Shape = Point Position3
            | Plain Direction3 Double
            | Sphere Position3 Double
+           deriving Eq
 
 getNormal :: Position3 -> Shape -> Maybe Direction3
 -- Point

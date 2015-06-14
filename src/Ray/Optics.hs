@@ -129,7 +129,8 @@ estimateRadiance pw n p m pis
 sumRadiance :: Double -> Direction3 -> Position3 -> Material
             -> [PhotonInfo] -> (Double, Radiance)
 sumRadiance _ _ _ _ [] = (0, Radiance 0 0 0)
-sumRadiance pw n p m ((PhotonInfo wl pos dir):pis) = (r2, rad) `addRadiance` (sumRadiance pw n p m pis)
+sumRadiance pw n p m ((PhotonInfo wl pos dir):pis) =
+  (r2, rad) `addRadiance` (sumRadiance pw n p m pis)
   where
     cos = n <.> dir
     r2  = square (p - pos)
@@ -145,4 +146,3 @@ calcRadiance :: Wavelength -> Double -> Direction3 -> Material -> Radiance
 calcRadiance Red   pw n (Material r _ _) = Radiance (pw * r) 0 0
 calcRadiance Green pw n (Material _ g _) = Radiance 0 (pw * g) 0
 calcRadiance Blue  pw n (Material _ _ b) = Radiance 0 0 (pw * b)
-
