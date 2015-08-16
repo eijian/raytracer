@@ -25,8 +25,10 @@ yres = 256 :: Int
 
 stepx = 2.0 / fromIntegral xres :: Double
 stepy = 2.0 / fromIntegral yres :: Double
+step = (stepx, stepy)
 eex = ex3
 eey = negate ey3
+evec = (eex, eey)
 origin = focus *> eyedir
   + ((-1.0 + 0.5 * stepx) *> eex)
   - (( 1.0 - 0.5 * stepy) *> eey)
@@ -47,7 +49,7 @@ data PhotonInfo = PhotonInfo Wavelength Position3 Direction3
 main :: IO ()
 main = do
   (power, photonmap) <- readMap
-  let image = traceScreen scrmap
+  let image = map (traceScreen power photonmap) scrmap
   outputImage image
 
 readMap :: IO (Double, KdTree Double PhotonInfo)
@@ -70,9 +72,11 @@ convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
 
 --
 
-traceScreen :: [(Int, Int)] -> [Radiance]
-traceScreen [] = []
-traceScreen (p:ps) = (Radiance 0.05 0.05 0.05):(traceScreen ps)
+generateRay' = generateRay eyepos origin step evec
+traceScreen :: Double -> KdTree Double PhotonInfo -> (Int, Int) -> Radiance
+traceScreen pw pmap cell = traceRay 0 pw pmap objs (generateRay' cell)
+--traceScreen (y, x) = Radiance 0.05 0.05 0.05
+
 --
 outputImage :: [Radiance] -> IO ()
 outputImage rs = do
@@ -85,11 +89,10 @@ outputImage rs = do
 
 convertOneCell :: Radiance -> [Char]
 convertOneCell (Radiance r g b) =
-  (show $ radianceToRgb r) ++ " " ++
-  (show $ radianceToRgb g) ++ " " ++
-  (show $ radianceToRgb b)
+  (show $ radianceToRgb clip r) ++ " " ++
+  (show $ radianceToRgb clip g) ++ " " ++
+  (show $ radianceToRgb clip b)
 
-clip = 0.1 :: Double
 gamma = 1.0 / 2.2
 rgbmax = 255.0
 

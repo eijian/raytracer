@@ -33,8 +33,12 @@ generatePhoton (PointLight c _ p) = do
       w = decideWavelength c wl
   return (w, r)
 
+{-
 sqrpi16 :: Double
 sqrpi16 = 16 * pi * pi
+-}
+sqpi8 :: Double
+sqpi8 = 4 * pi * 2 * pi  -- decay by distance (1/4pi) and steradian 2pi)
 
 getDirection :: Light -> Position3 -> Direction3
 getDirection (PointLight _ _ lp) p = lp - p
@@ -45,5 +49,5 @@ getRadiance l@(PointLight (Color r g b) f lp) p
   | otherwise = Radiance (r * l0) (g * l0) (b * l0)
   where
     r2 = square $ getDirection l p
-    l0 = f / sqrpi16 / r2
+    l0 = f / sqpi8 / r2
 

@@ -28,7 +28,6 @@ import Ray.Material
 --
 -- PARAMETERS
 
-clip = 0.1 :: Double
 gamma = 1.0 / 2.2
 rgbmax = 255.0
 
@@ -62,10 +61,10 @@ instance BasicMatrix Radiance where
   norm (Radiance r g b) = r + g + b
   a .=. b = norm (a - b) < nearly0
 
-(<*>) :: Radiance -> Radiance -> Radiance
-(Radiance ar ag ab) <*> (Radiance br bg bb)
+(<**>) :: Color -> Radiance -> Radiance
+(Color ar ag ab) <**> (Radiance br bg bb)
   = Radiance (ar * br) (ag * bg) (ab * bb)
-infix 7 <*>
+infix 7 <**>
 
 elemR :: Radiance -> Double
 elemR (Radiance r _ _) = r
@@ -74,10 +73,10 @@ elemG (Radiance _ g _) = g
 elemB :: Radiance -> Double
 elemB (Radiance _ _ g) = g
 
-radianceToRgb :: Double -> Int
-radianceToRgb d = floor (r * rgbmax)
+radianceToRgb :: Double -> Double -> Int
+radianceToRgb c d = floor (r * rgbmax)
   where
-    d' = d / clip
+    d' = d / c
     r  = (if d' > 1.0 then 1.0 else d') ** gamma
 
 -- | Radiance
@@ -117,32 +116,7 @@ infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
 --
 --
 
-estimateRadiance :: Double -> Direction3 -> Position3 -> Material
-                 -> [PhotonInfo] -> Radiance
-estimateRadiance _ _ _ _ [] = Radiance 0 0 0
-estimateRadiance pw n p m pis
-  | r2 == 0   = Radiance 0 0 0
-  | otherwise = fromJust (rad /> (pi * r2))
-  where
-    (r2, rad) = sumRadiance pw n p m pis
-
-sumRadiance :: Double -> Direction3 -> Position3 -> Material
-            -> [PhotonInfo] -> (Double, Radiance)
-sumRadiance _ _ _ _ [] = (0, Radiance 0 0 0)
-sumRadiance pw n p m ((PhotonInfo wl pos dir):pis) =
-  (r2, rad) `addRadiance` (sumRadiance pw n p m pis)
-  where
-    cos = n <.> dir
-    r2  = square (p - pos)
-    rad = if cos > 0 then calcRadiance wl pw n m
-                     else Radiance 0 0 0
-
-addRadiance :: (Double, Radiance) -> (Double, Radiance) -> (Double, Radiance)
-addRadiance (ar2, arad) (br2, brad) = (max_r2, arad + brad)
-  where
-    max_r2 = if ar2 > br2 then ar2 else br2
-
 calcRadiance :: Wavelength -> Double -> Direction3 -> Material -> Radiance
-calcRadiance Red   pw n (Material r _ _) = Radiance (pw * r) 0 0
-calcRadiance Green pw n (Material _ g _) = Radiance 0 (pw * g) 0
-calcRadiance Blue  pw n (Material _ _ b) = Radiance 0 0 (pw * b)
+calcRadiance Red   pw n (Material (Color r _ _)) = Radiance (pw * r) 0 0
+calcRadiance Green pw n (Material (Color _ g _)) = Radiance 0 (pw * g) 0
+calcRadiance Blue  pw n (Material (Color _ _ b)) = Radiance 0 0 (pw * b)

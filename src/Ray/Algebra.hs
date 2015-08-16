@@ -47,6 +47,7 @@ import qualified Algebra.Module as Module
 import Test.QuickCheck
 
 nearly0 = 0.00001 :: Double  -- 10 micro meter
+--nearly0 = 0.0001 :: Double  -- 100 micro meter
 
 class (Show a, Eq a, Additive.C a, Module.C Double a) => BasicMatrix a where
   (/>) :: a -> Double -> Maybe a

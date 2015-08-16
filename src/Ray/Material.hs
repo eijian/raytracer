@@ -6,5 +6,9 @@ module Ray.Material where
 
 import Ray.Physics
 
-data Material = Material Double Double Double deriving Eq -- diffuse specular ratio
+data Material = Material Color  -- diffuse specular ratio
+                deriving Eq
 
+
+diffSpec :: Material -> Color
+diffSpec (Material d) = d

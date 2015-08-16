@@ -45,10 +45,10 @@ scrmap = [(y, x) | y <- [0..(yres - 1)], x <- [0..(xres - 1)]]
 
 main :: IO ()
 main = do
-  (power, photonmap) <- readMap
-  let image = map (traceRay 0 power photonmap objs) $ map generateRay' scrmap
+  let image = map (traceRay' 0 lgts objs) $ map generateRay' scrmap
   outputImage image
 
+{-
 readMap :: IO (Double, KdTree Double PhotonInfo)
 readMap = do
   np' <- getLine
@@ -61,6 +61,7 @@ readMap = do
   --let pmap = fromList $ map convertToInfo pcs
   let pmap = build infoToPointList (map convertToInfo pcs)
   return (pw, pmap)
+-}
 
 outputImage :: [Radiance] -> IO ()
 outputImage rs = do
@@ -69,7 +70,7 @@ outputImage rs = do
   putStrLn (show xres ++ " " ++ show yres)
   putStrLn "255"
   forM_ rs $ \i -> do
-    putStrLn $ showOneCell i
+    putStrLn (showOneCell i)
     hPutStrLn stderr "done."
 
 showOneCell :: Radiance -> String
@@ -77,4 +78,5 @@ showOneCell (Radiance r g b) =
   (show $ radianceToRgb clip r) ++ " " ++
   (show $ radianceToRgb clip g) ++ " " ++
   (show $ radianceToRgb clip b)
+
 
