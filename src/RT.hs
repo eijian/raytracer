@@ -13,6 +13,9 @@ import NumericPrelude
 
 import Ray.Algebra
 import Ray.Geometry
+import Ray.Optics
+import Scene
+import Tracer
 
 -- PARAMETERS --
 -- for camera
@@ -29,20 +32,10 @@ step = (stepx, stepy)
 eex = ex3
 eey = negate ey3
 evec = (eex, eey)
-origin = focus *> eyedir
+origin = eyepos + focus *> eyedir
   + ((-1.0 + 0.5 * stepx) *> eex)
   - (( 1.0 - 0.5 * stepy) *> eey)
-
 scrmap = [(y, x) | y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
-
--- TYPES --
-
-data Radiance = Radiance Double Double Double deriving (Read, Show)
-
-data Wavelength = Rad | Green | Blue deriving (Show, Read, Enum, Eq)
-type PhotonCache = (Wavelength, Ray)
-data PhotonInfo = PhotonInfo Wavelength Position3 Direction3
-  deriving (Show, Eq)
 
 -- FUNCTIONS --
 
@@ -63,12 +56,6 @@ readMap = do
     return $ (read l :: PhotonCache)
   let pmap = build infoToPointList (map convertToInfo pcs)
   return (pw, pmap)
-
-infoToPointList :: PhotonInfo -> [Double]
-infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
-
-convertToInfo :: PhotonCache -> PhotonInfo
-convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
 
 --
 
@@ -93,11 +80,3 @@ convertOneCell (Radiance r g b) =
   (show $ radianceToRgb clip g) ++ " " ++
   (show $ radianceToRgb clip b)
 
-gamma = 1.0 / 2.2
-rgbmax = 255.0
-
-radianceToRgb :: Double -> Int
-radianceToRgb d = floor (r * rgbmax)
-  where
-    d' = d / clip
-    r  = (if d' > 1.0 then 1.0 else d') ** gamma

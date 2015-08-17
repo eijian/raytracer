@@ -24,6 +24,12 @@ import Ray.Optics
 --
 -- PARAMETERS
 
+nPhoton :: Int
+nPhoton = 200
+
+sqpi2 :: Double
+sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
+
 --
 --
 
@@ -36,9 +42,6 @@ tracePhoton os (wl, r) = do
 -----
 -- RAY TRACING WITH PHOTON MAP
 -----
-
-nPhoton :: Int
-nPhoton = 200
 
 traceRay :: Int -> Double -> KdTree Double PhotonInfo -> [Object] -> Ray
          -> Radiance
@@ -53,8 +56,6 @@ traceRay l pw pm os r
     pis = kNearest pm nPhoton pin
     --pis = inRadius pm 0.2 pin
 
-sqpi2 :: Double
-sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
 
 estimateRadiance :: Double -> Direction3 -> Position3 -> Material
                  -> [PhotonInfo] -> Radiance
@@ -80,6 +81,35 @@ addRadiance :: (Double, Radiance) -> (Double, Radiance) -> (Double, Radiance)
 addRadiance (ar2, arad) (br2, brad) = (max_r2, arad + brad)
   where
     max_r2 = if ar2 > br2 then ar2 else br2
+
+--
+-- updated version of Photon mapping
+--
+
+traceRay'' :: Int -> Double -> KdTree Double PhotonInfo -> [Object] -> Ray
+           -> Radiance
+traceRay'' 10 _ _ _ _ = Radiance 0 0 0
+traceRay'' l pw pmap objs r
+  | is == Nothing = Radiance 0 0 0
+  | otherwise     = estimateRadiance' pw pmap (fromJust is)
+  where
+    is = calcIntersection r objs
+
+estimateRadiance' :: Double -> KdTree Double PhotonInfo -> (Position3, Direction3, Material) -> Radiance
+estimateRadiance' pw pmap (p, n, m) = a
+  where
+    is = PhotonInfo Red p ex3
+    ps = filter (isValidPhoton n) $ kNearest pmap nPhoton is
+    rs = map (\x -> norm (x - p)) ps
+    rmax = maximum rs
+    wls = map (\(PhotonInfo wl _ _) -> wl) ps
+    (pr, pg, pb) = (countWL wls Red, countWL wls Green, countWL wls Blue)
+
+isValidPhoton :: Direction3 -> PhotonInfo -> Bool
+isValidPhoton n (PhotonInfo _ _ d) = n <.> d > 0
+
+countWL :: [Wavelength] -> Wavelength -> Int
+countWL wls wl = length . filter (== wl) wls
 
 ------
 -- CLASICAL RAY TRACING
