@@ -54,12 +54,10 @@ traceRay l pw pm os r
     (p, n, m) = fromJust is
     pin = PhotonInfo Red p ex3
     pis = kNearest pm nPhoton pin
-    --pis = inRadius pm 0.2 pin
 
 
 estimateRadiance :: Double -> Direction3 -> Position3 -> Material
                  -> [PhotonInfo] -> Radiance
---estimateRadiance _ _ _ _ [] = Radiance 0 0 0
 estimateRadiance pw n p m pis
   | r2 == 0   = Radiance 0 0 0
   | otherwise = fromJust (rad /> (sqpi2 * r2))
@@ -82,28 +80,34 @@ addRadiance (ar2, arad) (br2, brad) = (max_r2, arad + brad)
   where
     max_r2 = if ar2 > br2 then ar2 else br2
 
+calcRadiance :: Wavelength -> Double -> Direction3 -> Material -> Radiance
+calcRadiance Red   pw n (Material (Color r _ _)) = Radiance (pw * r) 0 0
+calcRadiance Green pw n (Material (Color _ g _)) = Radiance 0 (pw * g) 0
+calcRadiance Blue  pw n (Material (Color _ _ b)) = Radiance 0 0 (pw * b)
+
 --
 -- updated version of Photon mapping
 --
 
 traceRay'' :: Int -> Double -> KdTree Double PhotonInfo -> [Object] -> Ray
            -> Radiance
-traceRay'' 10 _ _ _ _ = Radiance 0 0 0
+traceRay'' 10 _ _ _ _ = radiance0
 traceRay'' l pw pmap objs r
-  | is == Nothing = Radiance 0 0 0
+  | is == Nothing = radiance0
   | otherwise     = estimateRadiance' pw pmap (fromJust is)
   where
     is = calcIntersection r objs
 
-estimateRadiance' :: Double -> KdTree Double PhotonInfo -> (Position3, Direction3, Material) -> Radiance
-estimateRadiance' pw pmap (p, n, (Material c)) = c <**> (mag *> rad)
+estimateRadiance' :: Double -> KdTree Double PhotonInfo -> Intersection
+                  -> Radiance
+estimateRadiance' pw pmap (p, n, m)
+  | ps == []  = radiance0
+  | otherwise = (1.0 / (pi * rmax * rmax)) *> (brdf m rad)
   where
-    center = PhotonInfo Red p ex3
-    ps = filter (isValidPhoton n) $ kNearest pmap nPhoton center
-    rs = map (\x -> norm (x - p)) ps
+    ps = filter (isValidPhoton n) $ kNearest pmap nPhoton $ PhotonInfo Red p ex3
+    rs = map (\(PhotonInfo _ x _) -> norm (x - p)) ps
     rmax = maximum rs
-    rad = foldl (+) (Radiance 0 0 0) $ map (photonInfoToRadiance pw) ps
-    mag = 1.0 / (rmax * rmax * sqpi2)
+    rad = foldl (+) radiance0 $ map (photonInfoToRadiance pw) ps
 
 isValidPhoton :: Direction3 -> PhotonInfo -> Bool
 isValidPhoton n (PhotonInfo _ _ d) = n <.> d > 0
@@ -114,19 +118,19 @@ isValidPhoton n (PhotonInfo _ _ d) = n <.> d > 0
 
 traceRay' :: Int -> [Light] -> [Object] -> Ray -> Radiance
 traceRay' l lgts objs r
-  | is == Nothing = Radiance 0 0 0
-  | otherwise     = (diffSpec m) <**> radDiff
+  | is == Nothing = radiance0
+  | otherwise     = brdf m radDiff
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
-    radDiff = foldl (+) (Radiance 0 0 0) $ map (getRadianceFromLight objs p n) lgts
+    radDiff = foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
 
 getRadianceFromLight :: [Object] -> Position3 -> Direction3 -> Light
                      -> Radiance
 getRadianceFromLight objs p n l
-  | cos < 0       = Radiance 0 0 0
-  | ld == Nothing = Radiance 0 0 0
-  | longer > 0    = Radiance 0 0 0
+  | cos < 0       = radiance0
+  | ld == Nothing = radiance0
+  | longer > 0    = radiance0
   | otherwise  = (cos / sqrt sqDistLgt)  *> (getRadiance l p)
   where
     ldir = getDirection l p
@@ -139,7 +143,13 @@ getRadianceFromLight objs p n l
     sqDistObj = square (p' - p)
     longer = sqDistLgt - sqDistObj -- compare distances of light and obj
 
-calcIntersection :: Ray -> [Object] -> Maybe (Position3, Direction3, Material)
+---------------------------------
+-- COMMON FUNCTIONS
+---------------------------------
+
+type Intersection = (Position3, Direction3, Material)
+
+calcIntersection :: Ray -> [Object] -> Maybe Intersection
 calcIntersection r os
   | iss == [] = Nothing
   | otherwise = Just (p, fromJust (getNormal p s), m)
@@ -160,3 +170,9 @@ generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
     tgt   = o + ((sx * fromIntegral x) *> ex) + ((sy * fromIntegral y) *> ey)
     edir  = tgt - e 
     edir' = fromJust $ normalize edir
+
+pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
+
+brdf :: Material -> Radiance -> Radiance
+brdf m rad = (1.0 / pi2) *> ((diffSpec m) <**> rad)
+

@@ -60,9 +60,9 @@ readMap = do
 --
 
 generateRay' = generateRay eyepos origin step evec
+
 traceScreen :: Double -> KdTree Double PhotonInfo -> (Int, Int) -> Radiance
-traceScreen pw pmap cell = traceRay 0 pw pmap objs (generateRay' cell)
---traceScreen (y, x) = Radiance 0.05 0.05 0.05
+traceScreen pw pmap cell = traceRay'' 0 pw pmap objs (generateRay' cell)
 
 --
 outputImage :: [Radiance] -> IO ()
