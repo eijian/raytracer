@@ -96,20 +96,17 @@ traceRay'' l pw pmap objs r
     is = calcIntersection r objs
 
 estimateRadiance' :: Double -> KdTree Double PhotonInfo -> (Position3, Direction3, Material) -> Radiance
-estimateRadiance' pw pmap (p, n, m) = a
+estimateRadiance' pw pmap (p, n, (Material c)) = c <**> (mag *> rad)
   where
-    is = PhotonInfo Red p ex3
-    ps = filter (isValidPhoton n) $ kNearest pmap nPhoton is
+    center = PhotonInfo Red p ex3
+    ps = filter (isValidPhoton n) $ kNearest pmap nPhoton center
     rs = map (\x -> norm (x - p)) ps
     rmax = maximum rs
-    wls = map (\(PhotonInfo wl _ _) -> wl) ps
-    (pr, pg, pb) = (countWL wls Red, countWL wls Green, countWL wls Blue)
+    rad = foldl (+) (Radiance 0 0 0) $ map (photonInfoToRadiance pw) ps
+    mag = 1.0 / (rmax * rmax * sqpi2)
 
 isValidPhoton :: Direction3 -> PhotonInfo -> Bool
 isValidPhoton n (PhotonInfo _ _ d) = n <.> d > 0
-
-countWL :: [Wavelength] -> Wavelength -> Int
-countWL wls wl = length . filter (== wl) wls
 
 ------
 -- CLASICAL RAY TRACING

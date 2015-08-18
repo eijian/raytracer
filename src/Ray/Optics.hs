@@ -116,7 +116,13 @@ infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
 --
 --
 
-calcRadiance :: Wavelength -> Double -> Direction3 -> Material -> Radiance
+calcRadiance :: PhotonInfo -> Double -> Direction3 -> Material -> Radiance
 calcRadiance Red   pw n (Material (Color r _ _)) = Radiance (pw * r) 0 0
 calcRadiance Green pw n (Material (Color _ g _)) = Radiance 0 (pw * g) 0
 calcRadiance Blue  pw n (Material (Color _ _ b)) = Radiance 0 0 (pw * b)
+
+photonInfoToRadiance :: Double -> PhotonInfo -> Radiance
+photonInfoToRadiance pw (PhotonInfo Red   _ _) = Radiance pw 0 0
+photonInfoToRadiance pw (PhotonInfo Green _ _) = Radiance 0 pw 0
+photonInfoToRadiance pw (PhotonInfo Blu   _ _) = Radiance 0 0 pw
+
