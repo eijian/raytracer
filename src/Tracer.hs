@@ -45,62 +45,16 @@ tracePhoton os (wl, r) = do
 
 traceRay :: Int -> Double -> KdTree Double PhotonInfo -> [Object] -> Ray
          -> Radiance
-traceRay 10 _ _ _ _ = Radiance 0 0 0
-traceRay l pw pm os r
-  | is == Nothing = Radiance 0 0 0
-  | otherwise     = estimateRadiance pw n p m pis
-  where
-    is = calcIntersection r os
-    (p, n, m) = fromJust is
-    pin = PhotonInfo Red p ex3
-    pis = kNearest pm nPhoton pin
-
-
-estimateRadiance :: Double -> Direction3 -> Position3 -> Material
-                 -> [PhotonInfo] -> Radiance
-estimateRadiance pw n p m pis
-  | r2 == 0   = Radiance 0 0 0
-  | otherwise = fromJust (rad /> (sqpi2 * r2))
-  where
-    (r2, rad) = sumRadiance pw n p m pis
-
-sumRadiance :: Double -> Direction3 -> Position3 -> Material -> [PhotonInfo]
-            -> (Double, Radiance)
-sumRadiance _ _ _ _ [] = (0, Radiance 0 0 0)
-sumRadiance pw n p m ((PhotonInfo wl pos dir):pis) =
-  (r2, rad) `addRadiance` (sumRadiance pw n p m pis)
-  where
-    cos = n <.> dir
-    r2  = square (p - pos)
-    rad = if cos > 0 then calcRadiance wl pw n m
-                     else Radiance 0 0 0
-
-addRadiance :: (Double, Radiance) -> (Double, Radiance) -> (Double, Radiance)
-addRadiance (ar2, arad) (br2, brad) = (max_r2, arad + brad)
-  where
-    max_r2 = if ar2 > br2 then ar2 else br2
-
-calcRadiance :: Wavelength -> Double -> Direction3 -> Material -> Radiance
-calcRadiance Red   pw n (Material (Color r _ _)) = Radiance (pw * r) 0 0
-calcRadiance Green pw n (Material (Color _ g _)) = Radiance 0 (pw * g) 0
-calcRadiance Blue  pw n (Material (Color _ _ b)) = Radiance 0 0 (pw * b)
-
---
--- updated version of Photon mapping
---
-
-traceRay'' :: Int -> Double -> KdTree Double PhotonInfo -> [Object] -> Ray
-           -> Radiance
-traceRay'' 10 _ _ _ _ = radiance0
-traceRay'' l pw pmap objs r
+traceRay 10 _ _ _ _ = radiance0
+traceRay l pw pmap objs r
   | is == Nothing = radiance0
-  | otherwise     = estimateRadiance' pw pmap (fromJust is)
+  | otherwise     = estimateRadiance pw pmap (fromJust is)
   where
     is = calcIntersection r objs
 
-estimateRadiance' :: Double -> KdTree Double PhotonInfo -> Intersection
-                  -> Radiance
-estimateRadiance' pw pmap (p, n, m)
+estimateRadiance :: Double -> KdTree Double PhotonInfo -> Intersection
+                 -> Radiance
+estimateRadiance pw pmap (p, n, m)
   | ps == []  = radiance0
   | otherwise = (1.0 / (pi * rmax * rmax)) *> (brdf m rad)
   where
@@ -163,18 +117,7 @@ calcDistance r o@(Object s m) = zip ts (replicate (length ts) o)
   where
     ts = distance r s
 
-{-
-generateRay :: Position3 -> Position3 -> (Double, Double)
-            -> (Direction3, Direction3) -> (Int, Int) -> Ray
-generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
-  where
-    tgt   = o + ((sx * fromIntegral x) *> ex) + ((sy * fromIntegral y) *> ey)
-    edir  = tgt - e 
-    edir' = fromJust $ normalize edir
--}
-
 pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
 
 brdf :: Material -> Radiance -> Radiance
 brdf m rad = (1.0 / pi2) *> ((diffSpec m) <**> rad)
-

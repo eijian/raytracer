@@ -39,4 +39,4 @@ readMap = do
   return (pw, pmap)
 
 traceScreen :: Double -> KdTree Double PhotonInfo -> (Int, Int) -> Radiance
-traceScreen pw pmap cell = traceRay'' 0 pw pmap objs (generateRay' cell)
+traceScreen pw pmap cell = traceRay 0 pw pmap objs (generateRay' cell)
