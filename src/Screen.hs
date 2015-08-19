@@ -14,7 +14,6 @@ import NumericPrelude
 import Ray.Algebra
 import Ray.Geometry
 import Ray.Optics
-import Scene
 
 -- PARAMETERS --
 
@@ -26,6 +25,12 @@ upper = ey3
 focus = 1.0 :: Double
 xres = 256 :: Int
 yres = 256 :: Int
+
+-- for image output
+
+clip = 0.005 :: Double
+
+-- CONSTANTS --
 
 stepx = 2.0 / fromIntegral xres :: Double
 stepy = 2.0 / fromIntegral yres :: Double
@@ -50,21 +55,28 @@ generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
 
 generateRay' = generateRay eyepos origin step evec
 
-
 outputImage :: [Radiance] -> IO ()
 outputImage rs = do
+{-
   putStrLn "P3"
   putStrLn "## test"
   putStrLn (show xres ++ " " ++ show yres)
   putStrLn "255"
+-}
+  mapM putStrLn $ createHeader xres yres
   forM_ rs $ \i -> do
     putStrLn $ convertOneCell i
 
-convertOneCell :: Radiance -> [Char]
+createHeader :: Int -> Int -> [String]
+createHeader xres yres =
+  ["P3"
+  ,"## test"
+  ,show xres ++ " " ++ show yres
+  ,"255"
+  ]
+
+convertOneCell :: Radiance -> String
 convertOneCell (Radiance r g b) =
   (show $ radianceToRgb clip r) ++ " " ++
   (show $ radianceToRgb clip g) ++ " " ++
   (show $ radianceToRgb clip b)
-
-
-

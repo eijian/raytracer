@@ -42,5 +42,3 @@ ball1   = initObject (Sphere (initPos 1 0.8 3) 0.8) m_ball
 objs :: [Object]
 objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1]
 
-clip = 0.005 :: Double
-
