@@ -1,26 +1,25 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 --
--- Ray tracer w/Photon map
+-- Screen module
 --
 
-module Main where
+module Screen where
 
 import System.IO
 import Control.Monad
-import Data.KdTree.Static
+import Data.Maybe
 import NumericPrelude
 
 import Ray.Algebra
 import Ray.Geometry
 import Ray.Optics
 import Scene
-import Screen
-import Tracer
 
 -- PARAMETERS --
-{-
+
 -- for camera
+
 eyepos = initPos 0 2 0
 eyedir = ez3
 upper = ey3
@@ -38,38 +37,20 @@ origin = eyepos + focus *> eyedir
   + ((-1.0 + 0.5 * stepx) *> eex)
   - (( 1.0 - 0.5 * stepy) *> eey)
 scrmap = [(y, x) | y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
--}
 
 -- FUNCTIONS --
 
-main :: IO ()
-main = do
-  (power, photonmap) <- readMap
-  let image = map (traceScreen power photonmap) scrmap
-  outputImage image
+generateRay :: Position3 -> Position3 -> (Double, Double)
+            -> (Direction3, Direction3) -> (Int, Int) -> Ray
+generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
+  where
+    tgt   = o + ((sx * fromIntegral x) *> ex) + ((sy * fromIntegral y) *> ey)
+    edir  = tgt - e 
+    edir' = fromJust $ normalize edir
 
-readMap :: IO (Double, KdTree Double PhotonInfo)
-readMap = do
-  np' <- getLine
-  pw' <- getLine
-  let np = read np' :: Int
-  let pw = read pw' :: Double
-  pcs <- forM ([1..np]) $ \i -> do
-    l <- getLine
-    return $ (read l :: PhotonCache)
-  let pmap = build infoToPointList (map convertToInfo pcs)
-  return (pw, pmap)
-
---
-{-
 generateRay' = generateRay eyepos origin step evec
--}
 
-traceScreen :: Double -> KdTree Double PhotonInfo -> (Int, Int) -> Radiance
-traceScreen pw pmap cell = traceRay'' 0 pw pmap objs (generateRay' cell)
 
---
-{-
 outputImage :: [Radiance] -> IO ()
 outputImage rs = do
   putStrLn "P3"
@@ -84,4 +65,6 @@ convertOneCell (Radiance r g b) =
   (show $ radianceToRgb clip r) ++ " " ++
   (show $ radianceToRgb clip g) ++ " " ++
   (show $ radianceToRgb clip b)
--}
+
+
+

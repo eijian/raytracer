@@ -163,6 +163,7 @@ calcDistance r o@(Object s m) = zip ts (replicate (length ts) o)
   where
     ts = distance r s
 
+{-
 generateRay :: Position3 -> Position3 -> (Double, Double)
             -> (Direction3, Direction3) -> (Int, Int) -> Ray
 generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
@@ -170,6 +171,7 @@ generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
     tgt   = o + ((sx * fromIntegral x) *> ex) + ((sy * fromIntegral y) *> ey)
     edir  = tgt - e 
     edir' = fromJust $ normalize edir
+-}
 
 pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
 
