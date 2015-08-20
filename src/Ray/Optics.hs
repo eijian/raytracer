@@ -6,28 +6,29 @@
 -- Optics
 --
 
-module Ray.Optics where
+module Ray.Optics (
+  Photon
+, PhotonCache
+, PhotonInfo (PhotonInfo)
+, Radiance (Radiance)
+, (<**>)
+, convertToInfo
+, infoToPointList
+, photonInfoToRadiance
+, radiance0
+) where
 
---import Data.Ord
 import Data.Maybe
 import NumericPrelude
 import Debug.Trace
 
 import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
---import Data.Trees.KdTree
---import Data.KdTree.Static
 import Test.QuickCheck
 
 import Ray.Algebra
 import Ray.Geometry
 import Ray.Physics
-
---
--- PARAMETERS
-
-gamma = 1.0 / 2.2
-rgbmax = 255.0
 
 --
 -- Radiance
@@ -71,12 +72,6 @@ elemG (Radiance _ g _) = g
 elemB :: Radiance -> Double
 elemB (Radiance _ _ g) = g
 
-radianceToRgb :: Double -> Double -> Int
-radianceToRgb c d = floor (r * rgbmax)
-  where
-    d' = d / c
-    r  = (if d' > 1.0 then 1.0 else d') ** gamma
-
 radiance0 = Radiance 0 0 0
 
 -- | Radiance
@@ -113,12 +108,8 @@ convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
 infoToPointList :: PhotonInfo -> [Double]
 infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
 
---
---
-
 photonInfoToRadiance :: Double -> PhotonInfo -> Radiance
 photonInfoToRadiance pw (PhotonInfo Red   _ _) = Radiance pw 0 0
 photonInfoToRadiance pw (PhotonInfo Green _ _) = Radiance 0 pw 0
 photonInfoToRadiance pw (PhotonInfo Blue  _ _) = Radiance 0 0 pw
-
 

@@ -4,7 +4,15 @@
 -- Geometry
 --
 
-module Ray.Geometry where
+module Ray.Geometry (
+  distance
+, getDir
+, getNormal
+, initRay
+, target
+, Ray
+, Shape (Point, Plain, Sphere)
+) where
 
 import Data.Maybe
 import NumericPrelude

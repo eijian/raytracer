@@ -4,7 +4,11 @@
 -- Screen module
 --
 
-module Screen where
+module Screen (
+  generateRay'
+, outputImage
+, scrmap
+) where
 
 import System.IO
 import Control.Monad
@@ -29,6 +33,8 @@ yres = 256 :: Int
 -- for image output
 
 clip = 0.005 :: Double
+gamma = 1.0 / 2.2
+rgbmax = 255.0
 
 -- CONSTANTS --
 
@@ -80,3 +86,9 @@ convertOneCell (Radiance r g b) =
   (show $ radianceToRgb clip r) ++ " " ++
   (show $ radianceToRgb clip g) ++ " " ++
   (show $ radianceToRgb clip b)
+
+radianceToRgb :: Double -> Double -> Int
+radianceToRgb c d = floor (r * rgbmax)
+  where
+    d' = d / c
+    r  = (if d' > 1.0 then 1.0 else d') ** gamma

@@ -2,7 +2,10 @@
 -- Object
 --
 
-module Ray.Object where
+module Ray.Object (
+  Object (Object)
+, initObject
+) where
 
 import Ray.Geometry
 import Ray.Material

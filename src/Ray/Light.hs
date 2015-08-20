@@ -4,7 +4,11 @@
 -- Light
 --
 
-module Ray.Light where
+module Ray.Light (
+  Light (PointLight)
+, getDirection
+, getRadiance
+) where
 
 import System.Random
 import Data.Maybe

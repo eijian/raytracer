@@ -4,7 +4,10 @@
 -- Scene
 --
 
-module Scene where
+module Scene (
+  lgts
+, objs
+) where
 
 import NumericPrelude
 

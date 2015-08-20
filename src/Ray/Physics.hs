@@ -1,17 +1,13 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 --
 -- Physics
 --
 
-module Ray.Physics where
-
-import System.Random
-import Data.Maybe
-import NumericPrelude
-
-import Ray.Algebra
-import Ray.Geometry
+module Ray.Physics (
+  decideWavelength
+, initColor
+, Color (Color)
+, Wavelength (Red, Green, Blue)
+) where
 
 --
 -- Wavelength

@@ -4,8 +4,14 @@
 -- Tracer
 --
 
-module Tracer where
+module Tracer (
+  readMap
+, tracePhoton
+, traceRay
+, traceRay'
+) where
 
+import Control.Monad
 import Data.Maybe
 import Data.List
 import Data.Ord
@@ -121,3 +127,15 @@ pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
 
 brdf :: Material -> Radiance -> Radiance
 brdf m rad = (1.0 / pi2) *> ((diffSpec m) <**> rad)
+
+readMap :: IO (Double, KdTree Double PhotonInfo)
+readMap = do
+  np' <- getLine
+  pw' <- getLine
+  let np = read np' :: Int
+  let pw = read pw' :: Double
+  pcs <- forM ([1..np]) $ \i -> do
+    l <- getLine
+    return $ (read l :: PhotonCache)
+  let pmap = build infoToPointList (map convertToInfo pcs)
+  return (pw, pmap)
