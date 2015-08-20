@@ -6,6 +6,8 @@
 
 module Ray.Light (
   Light (PointLight)
+, flux
+, generatePhoton
 , getDirection
 , getRadiance
 ) where

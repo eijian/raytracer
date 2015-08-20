@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 --
 -- Photon map generator (revision 2)
 --
@@ -7,11 +5,7 @@
 module Main where
 
 import Control.Monad
-import NumericPrelude
 
---import Ray.Algebra
---import Ray.Physics
---import Ray.Object
 import Ray.Light
 import Tracer
 import Scene

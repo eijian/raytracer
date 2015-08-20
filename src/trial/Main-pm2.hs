@@ -7,13 +7,17 @@
 module Main where
 
 import Control.Monad
-import Ray.Algebra
-import Ray.Physics
+import NumericPrelude
+
+--import Ray.Algebra
+--import Ray.Physics
 import Ray.Object
+import Ray.Optics
+import Ray.Light
 import Tracer
 import Scene
 
-nphoton = 1000000 :: Int
+nphoton = 100000 :: Int
 
 main :: IO ()
 main = do
