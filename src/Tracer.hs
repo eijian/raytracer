@@ -64,13 +64,13 @@ estimateRadiance pw pmap (p, n, m)
   | ps == []  = radiance0
   | otherwise = (1.0 / (pi * rmax * rmax)) *> (brdf m rad)
   where
-    ps = filter (isValidPhoton n) $ kNearest pmap nPhoton $ PhotonInfo Red p ex3
-    rs = map (\(PhotonInfo _ x _) -> norm (x - p)) ps
+    ps = filter (isValidPhoton n) $ kNearest pmap nPhoton $ photonDummy p
+    rs = map (\x -> norm ((photonPos x) - p)) ps
     rmax = maximum rs
     rad = foldl (+) radiance0 $ map (photonInfoToRadiance pw) ps
 
 isValidPhoton :: Direction3 -> PhotonInfo -> Bool
-isValidPhoton n (PhotonInfo _ _ d) = n <.> d > 0
+isValidPhoton n pi = n <.> (photonDir pi) > 0
 
 ------
 -- CLASICAL RAY TRACING

@@ -47,7 +47,7 @@ getDirection (PointLight _ _ lp) p = lp - p
 
 getRadiance :: Light -> Position3 -> Radiance
 getRadiance l@(PointLight (Color r g b) f lp) p
-  | r2 == 0 = Radiance 0 0 0
+  | r2 == 0 = radiance0
   | otherwise = Radiance (r * l0) (g * l0) (b * l0)
   where
     r2 = square $ getDirection l p

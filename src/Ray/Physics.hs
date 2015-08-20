@@ -3,10 +3,10 @@
 --
 
 module Ray.Physics (
-  decideWavelength
-, initColor
-, Color (Color)
+  Color (Color)
 , Wavelength (Red, Green, Blue)
+, decideWavelength
+, initColor
 ) where
 
 --

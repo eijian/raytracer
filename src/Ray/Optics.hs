@@ -9,12 +9,15 @@
 module Ray.Optics (
   Photon
 , PhotonCache
-, PhotonInfo (PhotonInfo)
+, PhotonInfo
 , Radiance (Radiance)
 , (<**>)
 , convertToInfo
 , infoToPointList
+, photonDir
+, photonDummy
 , photonInfoToRadiance
+, photonPos
 , radiance0
 ) where
 
@@ -101,6 +104,15 @@ instance Point PhotonInfo where
   coord 2 (PhotonInfo _ p _) = elemZ p
   dist2 (PhotonInfo _ p1 _) (PhotonInfo _ p2 _) = square (p1 - p2)
 -}
+
+photonDummy :: Position3 -> PhotonInfo
+photonDummy p = PhotonInfo Red p ex3
+
+photonDir :: PhotonInfo -> Direction3
+photonDir (PhotonInfo _ _ d) = d
+
+photonPos :: PhotonInfo -> Position3
+photonPos (PhotonInfo _ p _) = p
 
 convertToInfo :: PhotonCache -> PhotonInfo
 convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)

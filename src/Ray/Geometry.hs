@@ -5,13 +5,13 @@
 --
 
 module Ray.Geometry (
-  distance
+  Ray
+, Shape (Point, Plain, Sphere)
+, distance
 , getDir
 , getNormal
 , initRay
 , target
-, Ray
-, Shape (Point, Plain, Sphere)
 ) where
 
 import Data.Maybe

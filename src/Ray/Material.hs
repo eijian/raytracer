@@ -2,7 +2,10 @@
 -- Material
 --
 
-module Ray.Material where
+module Ray.Material (
+  Material (Material)
+, diffSpec
+) where
 
 import Ray.Physics
 
