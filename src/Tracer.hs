@@ -31,7 +31,7 @@ import Ray.Optics
 -- PARAMETERS
 
 nPhoton :: Int
-nPhoton = 200
+nPhoton = 300
 
 sqpi2 :: Double
 sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere

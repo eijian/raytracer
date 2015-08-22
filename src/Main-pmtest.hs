@@ -7,8 +7,11 @@
 module Main where
 
 import Control.Monad
+import NumericPrelude
+
 import Ray.Algebra
 import Ray.Physics
+import Ray.Optics
 
 main :: IO ()
 main = do

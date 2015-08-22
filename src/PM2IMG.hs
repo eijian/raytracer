@@ -15,6 +15,13 @@ import Ray.Geometry
 import Ray.Physics
 import Ray.Optics
 
+-- PARAMETERS --
+
+xres = 1024 :: Int
+yres = 1024 :: Int
+
+----
+
 main :: IO ()
 main = do
   np <- getLine
@@ -39,8 +46,8 @@ getMap :: [PhotonCache] -> [(Wavelength, Int, Int)]
 getMap [] = []
 getMap (pc:pcs)
   | t < focus = getMap pcs
-  | px < 0 || px > 255 = getMap pcs
-  | py < 0 || py > 255 = getMap pcs
+  | px < 0 || px > (xres - 1) = getMap pcs
+  | py < 0 || py > (yres - 1) = getMap pcs
   | otherwise = (getWl pc, px, py) : getMap pcs
   where
     d = (getPt pc) - eye
@@ -51,8 +58,8 @@ getMap (pc:pcs)
     --cos = ez3 <.> d'
     --t = focus / cos
     --p = eye + t *> d'
-    px = round ((elemX p + 1.0) * 128)
-    py = round ((3.0 - elemY p) * 128)
+    px = round ((elemX p + 1.0) * (fromIntegral xres / 2))
+    py = round ((3.0 - elemY p) * (fromIntegral yres / 2))
 
 getPt :: PhotonCache -> Position3
 getPt (_, (p, _)) = p

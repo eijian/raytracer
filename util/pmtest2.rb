@@ -2,6 +2,8 @@
 #
 
 @map = Array.new
+XRES = 1024
+YRES = 1024
 
 def color(c, oldc)
   oc = if oldc != nil then oldc else 0 end
@@ -16,9 +18,9 @@ end
 def putImg
   puts "P3"
   puts "## test"
-  puts "256 256"
+  puts "#{XRES} #{YRES}"
   puts "255"
-  0.upto(65535) do |i|
+  0.upto(XRES * YRES) do |i|
     c = if @map[i] != nil then @map[i] else 0 end
     cc = case c
       when 0 then "0 0 0"
@@ -38,7 +40,7 @@ def main
   STDIN.each do |l|
     /\((.+),(\d+),(\d+)\)/ =~ l
     c = $1
-    p = $3.to_i * 256 + $2.to_i
+    p = $3.to_i * YRES + $2.to_i
     cc = color(c, @map[p])
     @map[p] = cc
     #puts "C=#{c},CC=#{cc},P=#{p}"

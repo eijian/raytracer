@@ -6,8 +6,12 @@
 
 module Main where
 
+import Control.Monad
+import NumericPrelude
+
 import Ray.Algebra
 import Ray.Physics
+import Ray.Light
 import Tracer
 import Scene
 
