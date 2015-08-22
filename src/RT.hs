@@ -1,6 +1,8 @@
 --
 -- Ray tracer w/Photon map
 --
+-- compile: ghc -o rt RT.hs
+-- usage  : ./rt < photonmapfile > imagefile.ppm
 
 module Main where
 

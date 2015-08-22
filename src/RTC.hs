@@ -1,6 +1,8 @@
 --
 -- Ray tracer classical
 --
+-- compile: ghc -o rtc RTC.hs
+-- usage  : ./rtc > imagefile.ppm
 
 module Main where
 

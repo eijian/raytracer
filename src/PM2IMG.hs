@@ -3,6 +3,8 @@
 --
 -- Photon map test 2
 --
+-- compile: ghc -o pm2img PM2IMG.hs
+-- usage  : ./pm2img < photonmapfile > imagesrcfile
 
 module Main where
 

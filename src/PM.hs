@@ -1,6 +1,8 @@
 --
 -- Photon map generator (revision 2)
 --
+-- compile: ghc -o pm PM.hs
+-- usage  : ./pm > photonmapfile
 
 module Main where
 
