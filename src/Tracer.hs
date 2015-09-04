@@ -31,7 +31,7 @@ import Ray.Optics
 -- PARAMETERS
 
 nPhoton :: Int
-nPhoton = 300
+nPhoton = 200
 
 sqpi2 :: Double
 sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
@@ -67,10 +67,48 @@ estimateRadiance pw pmap (p, n, m)
     ps = filter (isValidPhoton n) $ kNearest pmap nPhoton $ photonDummy p
     rs = map (\x -> norm ((photonPos x) - p)) ps
     rmax = maximum rs
-    rad = foldl (+) radiance0 $ map (photonInfoToRadiance pw) ps
+    rad = sumRadiance1 pw rmax rs ps
 
 isValidPhoton :: Direction3 -> PhotonInfo -> Bool
 isValidPhoton n pi = n <.> (photonDir pi) > 0
+
+-- Normal (non filter)
+sumRadiance1 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
+sumRadiance1 pw rmax rs ps = foldl (+) radiance0 rads
+  where
+    rads = map (photonInfoToRadiance pw) ps
+
+-- Cone filter
+k_cone :: Double
+k_cone = 1.1
+fac_k :: Double
+fac_k = 1.0 - 2.0 / (3.0 * k_cone)
+
+sumRadiance2 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
+sumRadiance2 pw rmax rs ps = foldl (+) radiance0 rads
+  where
+    wt = map (waitCone (pw / fac_k) rmax) rs
+    rads = zipWith (photonInfoToRadiance) wt ps
+
+waitCone :: Double -> Double -> Double -> Double
+waitCone pw rmax dp = pw * (1.0 - dp / (k_cone * rmax))
+
+-- Gauss filter
+
+alpha = 0.918
+beta  = 1.953
+e_beta = 1.0 - exp (-beta)
+
+sumRadiance3 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
+sumRadiance3 pw rmax rs ps = foldl (+) radiance0 rads
+  where
+    wt = map (waitGauss pw rmax) rs
+    rads = zipWith (photonInfoToRadiance) wt ps
+
+waitGauss :: Double -> Double -> Double -> Double
+waitGauss pw rmax dp = pw * alpha * (1.0 - e_r / e_beta)
+  where
+    e_r = 1.0 - exp (-beta * dp * dp / (2.0 * rmax * rmax))
 
 ------
 -- CLASICAL RAY TRACING
