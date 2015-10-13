@@ -13,6 +13,7 @@ module Ray.Light (
 ) where
 
 import System.Random
+import System.Random.Mersenne as MT
 import Data.Maybe
 import NumericPrelude
 
@@ -33,8 +34,9 @@ flux (PointLight _ f _) = f
 
 generatePhoton :: Light -> IO Photon
 generatePhoton (PointLight c _ p) = do
-  wl <- randomRIO (0, 1.0)
-  d  <- generateRandomDir2
+  --wl <- randomRIO (0, 1.0)
+  wl <- MT.randomIO :: IO Double
+  d  <- generateRandomDir3
   let r = initRay p d
       w = decideWavelength c wl
   return (w, r)

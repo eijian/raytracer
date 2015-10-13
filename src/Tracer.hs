@@ -64,13 +64,15 @@ estimateRadiance pw pmap (p, n, m)
   | ps == []  = radiance0
   | otherwise = (1.0 / (pi * rmax * rmax)) *> (brdf m rad)
   where
-    ps = filter (isValidPhoton n) $ kNearest pmap nPhoton $ photonDummy p
+    ps = filter (isValidPhoton p n) $ kNearest pmap nPhoton $ photonDummy p
     rs = map (\x -> norm ((photonPos x) - p)) ps
     rmax = maximum rs
     rad = sumRadiance1 pw rmax rs ps
 
-isValidPhoton :: Direction3 -> PhotonInfo -> Bool
-isValidPhoton n pi = n <.> (photonDir pi) > 0
+isValidPhoton :: Position3 -> Direction3 -> PhotonInfo -> Bool
+--isValidPhoton n pi = n <.> (photonDir pi) > 0
+isValidPhoton p n pi = n <.> (photonDir pi) > 0 &&
+                       square (p - photonPos pi) < 0.04
 
 -- Normal (non filter)
 sumRadiance1 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
@@ -95,8 +97,8 @@ waitCone pw rmax dp = pw * (1.0 - dp / (k_cone * rmax))
 
 -- Gauss filter
 
-alpha = 0.918
-beta  = 1.953
+alpha = 1.953
+beta  = 0.918
 e_beta = 1.0 - exp (-beta)
 
 sumRadiance3 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance

@@ -32,6 +32,7 @@ module Ray.Algebra
   , initDirFromAngle
   , generateRandomDir1
   , generateRandomDir2
+  , generateRandomDir3
   , elemX
   , elemY
   , elemZ
@@ -39,6 +40,7 @@ module Ray.Algebra
 
 import Data.Maybe
 import System.Random
+import System.Random.Mersenne as MT
 
 import NumericPrelude
 import qualified Algebra.Additive as Additive
@@ -193,6 +195,20 @@ generateRandomDir2 = do
       len = norm v
   if len > 1.0 || len == 0.0
     then generateRandomDir2
+    else return $ fromJust $ normalize v
+
+generateRandomDir3 :: IO Direction3
+generateRandomDir3 = do
+  x' <- MT.randomIO :: IO Double
+  y' <- MT.randomIO :: IO Double
+  z' <- MT.randomIO :: IO Double
+  let x = x' * 2.0 - 1.0
+      y = y' * 2.0 - 1.0
+      z = z' * 2.0 - 1.0
+      v = initPos x y z
+      len = norm v
+  if len > 1.0 || len == 0.0
+    then generateRandomDir3
     else return $ fromJust $ normalize v
 
 o3  = initPos 0 0 0               -- zero vector
