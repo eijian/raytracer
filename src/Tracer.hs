@@ -69,10 +69,16 @@ estimateRadiance pw pmap (p, n, m)
     rmax = maximum rs
     rad = sumRadiance1 pw rmax rs ps
 
+radius2 = 0.1 * 0.1 :: Double
 isValidPhoton :: Position3 -> Direction3 -> PhotonInfo -> Bool
---isValidPhoton n pi = n <.> (photonDir pi) > 0
+--isValidPhoton p n pi = n <.> (photonDir pi) > 0
 isValidPhoton p n pi = n <.> (photonDir pi) > 0 &&
-                       square (p - photonPos pi) < 0.04
+                       square (p - photonPos pi) < radius2
+
+-- filtering:
+--   sumRadiance1  non filter
+--   sumRadiance2  cone filter
+--   sumRadiance3  gauss filter
 
 -- Normal (non filter)
 sumRadiance1 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
@@ -97,8 +103,8 @@ waitCone pw rmax dp = pw * (1.0 - dp / (k_cone * rmax))
 
 -- Gauss filter
 
-alpha = 1.953
-beta  = 0.918
+alpha = 0.918
+beta  = 1.953
 e_beta = 1.0 - exp (-beta)
 
 sumRadiance3 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
