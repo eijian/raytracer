@@ -33,16 +33,21 @@ main = do
   --putStrLn $ show nphoton
   --putStrLn $ show power
   dat <- getContents
+  --putStrLn "after getContents"
   pcs <- forM (lines dat) $ \i -> do
     return $ (read i :: PhotonCache)
+  --putStrLn ("after read " ++ (show $ length pcs))
   let map = getMap pcs
+  --putStrLn $ show map
   a <- forM (map) $ \i -> do
+    --putStrLn "before show i"
     putStrLn $ show i
   return ()
 
-eye = initPos 0 2 0
+eye = initPos 0 0 (-10)
+--eye = initPos 0 2 0
 focus = 0.5
-sc = Plain ez3 (-1.0)
+sc = Plain ez3 (1.0)
 
 getMap :: [PhotonCache] -> [(Wavelength, Int, Int)]
 getMap [] = []
@@ -61,7 +66,7 @@ getMap (pc:pcs)
     --t = focus / cos
     --p = eye + t *> d'
     px = round ((elemX p + 1.0) * (fromIntegral xres / 2))
-    py = round ((3.0 - elemY p) * (fromIntegral yres / 2))
+    py = round ((1.0 - elemY p) * (fromIntegral yres / 2))
 
 getPt :: PhotonCache -> Position3
 getPt (_, (p, _)) = p
