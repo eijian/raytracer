@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 --
--- Photon map test 2
+-- convert from photon map to image
 --
 -- compile: ghc -o pm2img PM2IMG.hs
 -- usage  : ./pm2img < photonmapfile > imagesrcfile
@@ -19,8 +19,11 @@ import Ray.Optics
 
 -- PARAMETERS --
 
-xres = 1024 :: Int
-yres = 1024 :: Int
+xres :: Int
+xres = 1024
+
+yres :: Int
+yres = 1024
 
 ----
 
@@ -44,9 +47,14 @@ main = do
     putStrLn $ show i
   return ()
 
+eye :: Position3
 eye = initPos 0 0 (-10)
 --eye = initPos 0 2 0
+
+focus :: Double
 focus = 0.5
+
+sc :: Shape
 sc = Plain ez3 (1.0)
 
 getMap :: [PhotonCache] -> [(Wavelength, Int, Int)]

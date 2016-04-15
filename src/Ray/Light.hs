@@ -14,7 +14,7 @@ module Ray.Light (
 
 import System.Random
 import System.Random.Mersenne as MT
-import Data.Maybe
+--import Data.Maybe
 import NumericPrelude
 
 import Ray.Algebra

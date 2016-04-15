@@ -24,7 +24,7 @@ import Ray.Geometry
 import Ray.Object
 import Ray.Light
 import Ray.Material
-import Ray.Physics
+--import Ray.Physics
 import Ray.Optics
 
 --
@@ -69,11 +69,13 @@ estimateRadiance pw pmap (p, n, m)
     rmax = maximum rs
     rad = sumRadiance1 pw rmax rs ps
 
-radius2 = 0.1 * 0.1 :: Double
+radius2 :: Double
+radius2 = 0.1 * 0.1
+
 isValidPhoton :: Position3 -> Direction3 -> PhotonInfo -> Bool
---isValidPhoton p n pi = n <.> (photonDir pi) > 0
-isValidPhoton p n pi = n <.> (photonDir pi) > 0 &&
-                       square (p - photonPos pi) < radius2
+--isValidPhoton p n ph = n <.> (photonDir ph) > 0
+isValidPhoton p n ph = n <.> (photonDir ph) > 0 &&
+                       square (p - photonPos ph) < radius2
 
 -- filtering:
 --   sumRadiance1  non filter
@@ -89,6 +91,7 @@ sumRadiance1 pw rmax rs ps = foldl (+) radiance0 rads
 -- Cone filter
 k_cone :: Double
 k_cone = 1.1
+
 fac_k :: Double
 fac_k = 1.0 - 2.0 / (3.0 * k_cone)
 
@@ -103,8 +106,13 @@ waitCone pw rmax dp = pw * (1.0 - dp / (k_cone * rmax))
 
 -- Gauss filter
 
+alpha :: Double
 alpha = 0.918
+
+beta :: Double
 beta  = 1.953
+
+e_beta :: Double
 e_beta = 1.0 - exp (-beta)
 
 sumRadiance3 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
@@ -134,17 +142,17 @@ traceRay' l lgts objs r
 getRadianceFromLight :: [Object] -> Position3 -> Direction3 -> Light
                      -> Radiance
 getRadianceFromLight objs p n l
-  | cos < 0       = radiance0
+  | cos0 < 0      = radiance0
   | ld == Nothing = radiance0
   | longer > 0    = radiance0
-  | otherwise  = (cos / sqrt sqDistLgt)  *> (getRadiance l p)
+  | otherwise  = (cos0 / sqrt sqDistLgt)  *> (getRadiance l p)
   where
     ldir = getDirection l p
-    cos  = n <.> ldir
+    cos0 = n <.> ldir
     ld = normalize ldir
     lray = initRay p $ fromJust ld
     is = calcIntersection lray objs
-    (p', n', m') = fromJust is
+    (p', _, _) = fromJust is
     sqDistLgt = square ldir
     sqDistObj = square (p' - p)
     longer = sqDistLgt - sqDistObj -- compare distances of light and obj

@@ -14,6 +14,7 @@ module Ray.Optics (
 , (<**>)
 , convertToInfo
 , infoToPointList
+, initPhoton
 , photonDir
 , photonDummy
 , photonInfoToRadiance
@@ -21,9 +22,8 @@ module Ray.Optics (
 , radiance0
 ) where
 
-import Data.Maybe
 import NumericPrelude
-import Debug.Trace
+--import Debug.Trace
 
 import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
@@ -75,6 +75,7 @@ elemG (Radiance _ g _) = g
 elemB :: Radiance -> Double
 elemB (Radiance _ _ g) = g
 
+radiance0 :: Radiance
 radiance0 = Radiance 0 0 0
 
 -- | Radiance

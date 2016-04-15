@@ -23,27 +23,56 @@ import Ray.Optics
 
 -- for camera
 
+eyepos :: Position3
 eyepos = initPos 0 2 0
+
+eyedir :: Direction3
 eyedir = ez3
+
+upper :: Vector3
 upper = ey3
-focus = 1.0 :: Double
-xres = 256 :: Int
-yres = 256 :: Int
+
+focus :: Double
+focus = 1.0
+
+xres :: Int
+xres = 256
+
+yres :: Int
+yres = 256
 
 -- for image output
 
-clip = 0.005 :: Double
+clip :: Double
+clip = 0.005
+
+gamma :: Double
 gamma = 1.0 / 2.2
+
+rgbmax :: Double
 rgbmax = 255.0
 
 -- CONSTANTS --
 
-stepx = 2.0 / fromIntegral xres :: Double
-stepy = 2.0 / fromIntegral yres :: Double
+stepx :: Double
+stepx = 2.0 / fromIntegral xres
+
+stepy :: Double
+stepy = 2.0 / fromIntegral yres
+
+step :: (Double, Double)
 step = (stepx, stepy)
+
+eex :: Vector3
 eex = ex3
+
+eey :: Vector3
 eey = negate ey3
+
+evec :: (Vector3, Vector3)
 evec = (eex, eey)
+
+origin :: Position3
 origin = eyepos + focus *> eyedir
   + ((-1.0 + 0.5 * stepx) *> eex)
   - (( 1.0 - 0.5 * stepy) *> eey)

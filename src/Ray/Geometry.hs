@@ -9,8 +9,10 @@ module Ray.Geometry (
 , Shape (Point, Plain, Sphere)
 , distance
 , getDir
+, getPos
 , getNormal
 , initRay
+, initRayFromElem
 , target
 ) where
 
@@ -52,22 +54,22 @@ data Shape = Point Position3
 
 getNormal :: Position3 -> Shape -> Maybe Direction3
 -- Point
-getNormal p (Point p') = Nothing
+getNormal _ _ = Nothing
 -- Plain
-getNormal p (Plain n d) = Just n
+getNormal _ (Plain n _) = Just n
 -- Sphere
-getNormal p (Sphere c r) = normalize (p - c)
+getNormal p (Sphere c _) = normalize (p - c)
 
 
 distance :: Ray -> Shape -> [Double]
 -- Point
-distance r (Point p)  = []
+distance _ _ = []
 -- Plain
 distance (pos, dir) (Plain n d)
-  | cos == 0  = []
-  | otherwise = [(d + n <.> pos) / (-cos)]
+  | cos0 == 0  = []
+  | otherwise = [(d + n <.> pos) / (-cos0)]
   where
-    cos = n <.> dir
+    cos0 = n <.> dir
 -- Sphere
 distance (pos, dir) (Sphere c r)
   | t1 <= 0.0 = []

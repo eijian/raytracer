@@ -48,8 +48,9 @@ import qualified Algebra.Module as Module
 --import qualified Algebra.NormedSpace.Euclidean as Euclidean
 import Test.QuickCheck
 
-nearly0 = 0.00001 :: Double  -- 10 micro meter
---nearly0 = 0.0001 :: Double  -- 100 micro meter
+nearly0 :: Double
+nearly0 = 0.00001  -- 10 micro meter
+--nearly0 = 0.0001  -- 100 micro meter
 
 class (Show a, Eq a, Additive.C a, Module.C Double a) => BasicMatrix a where
   (/>) :: a -> Double -> Maybe a
@@ -178,7 +179,8 @@ initDirFromAngle a b = normalize $ Vector3 x y z
     y = cos a
     z = sina * sin b
 
-pi2 = 2 * pi :: Double
+pi2 :: Double
+pi2 = 2 * pi
 
 generateRandomDir1 :: IO Direction3
 generateRandomDir1 = do
@@ -211,9 +213,13 @@ generateRandomDir3 = do
     then generateRandomDir3
     else return $ fromJust $ normalize v
 
+o3 :: Vector3
 o3  = initPos 0 0 0               -- zero vector
+ex3 :: Vector3
 ex3 = fromJust $ initDir 1 0 0    -- unit vector (x axis)
+ey3 :: Vector3
 ey3 = fromJust $ initDir 0 1 0    -- unit vector (y axis)
+ez3 :: Vector3
 ez3 = fromJust $ initDir 0 0 1    -- unit vector (z axis)
 
 
