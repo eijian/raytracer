@@ -15,10 +15,17 @@ import Ray.Physics
 -- Material
 ----
 
-data Material = Material Color  -- diffuse specular ratio
-                deriving Eq
+data Material = Material
+  { reflectance   :: Color
+  , transmittance :: Color
+  , specularRefl  :: Color      -- specular reflectance
+  , emittance     :: Radiance
+  , ior           :: Color      -- index of refraction
+  , smoothness    :: Double
+  } deriving Eq
 
 diffSpec :: Material -> Color
-diffSpec (Material d) = d
+diffSpec (Material r _ _ _ _ _ _) = r
+
 
 
