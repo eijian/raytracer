@@ -53,17 +53,14 @@ data Shape = Point Position3
            deriving Eq
 
 getNormal :: Position3 -> Shape -> Maybe Direction3
--- Point
-getNormal _ _ = Nothing
 -- Plain
 getNormal _ (Plain n _) = Just n
 -- Sphere
 getNormal p (Sphere c _) = normalize (p - c)
-
+-- Point
+getNormal _ _ = Nothing
 
 distance :: Ray -> Shape -> [Double]
--- Point
-distance _ _ = []
 -- Plain
 distance (pos, dir) (Plain n d)
   | cos0 == 0  = []
@@ -80,4 +77,6 @@ distance (pos, dir) (Sphere c r)
     t0 = o <.> dir
     t1 = r * r - (square o - (t0 * t0))
     t2 = sqrt t1
+-- Point
+distance _ _ = []
 

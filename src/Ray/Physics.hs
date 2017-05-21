@@ -41,7 +41,7 @@ clipColor a
   | otherwise = a
 
 decideWavelength :: Color -> Double -> Wavelength
-decideWavelength (Color r g b) p
+decideWavelength (Color r g _) p
   | p < r     = Red
   | p < r + g = Green
   | otherwise = Blue
