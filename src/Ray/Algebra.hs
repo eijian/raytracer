@@ -33,6 +33,7 @@ module Ray.Algebra
   , generateRandomDir1
   , generateRandomDir2
   , generateRandomDir3
+  , generateRandomDir4
   , elemX
   , elemY
   , elemZ
@@ -212,6 +213,19 @@ generateRandomDir3 = do
   if len > 1.0 || len == 0.0
     then generateRandomDir3
     else return $ fromJust $ normalize v
+
+generateRandomDir4 :: IO Direction3
+generateRandomDir4 = do
+  y' <- MT.randomIO :: IO Double
+  p' <- MT.randomIO :: IO Double
+  let y = y' * 2.0 - 1.0
+      p = p' * 2.0 * pi
+      r = sqrt (1 - y * y)
+      x = r * (cos p)
+      z = r * (sin p)
+      v = initPos x y z
+      len = norm v
+  return $ fromJust $ normalize v
 
 o3 :: Vector3
 o3  = initPos 0 0 0               -- zero vector

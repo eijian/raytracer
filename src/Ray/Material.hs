@@ -4,10 +4,17 @@
 
 module Ray.Material (
   Material (Material)
+, reflectance
+, transmittance
+, specularRefl
+, emittance
+, ior
+, smoothness
 , diffSpec
 ) where
 
 import Ray.Physics
+import Ray.Optics
 
 -- CONSTANTS
 
@@ -25,7 +32,5 @@ data Material = Material
   } deriving Eq
 
 diffSpec :: Material -> Color
-diffSpec (Material r _ _ _ _ _ _) = r
-
-
+diffSpec (Material r _ _ _ _ _) = r
 

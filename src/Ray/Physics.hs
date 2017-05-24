@@ -4,6 +4,7 @@
 
 module Ray.Physics (
   Color (Color)
+, black
 , Wavelength (Red, Green, Blue)
 , decideWavelength
 , initColor
@@ -18,6 +19,9 @@ data Wavelength = Red | Green | Blue deriving (Show, Read, Enum, Eq)
 -- Color
 
 data Color = Color Double Double Double
+
+black :: Color
+black = Color 0.0 0.0 0.0
 
 instance Show Color where
   show (Color r g b) = "[" ++ show r ++ "," ++ show g ++ "," ++ show b ++ "]"

@@ -36,7 +36,7 @@ generatePhoton :: Light -> IO Photon
 generatePhoton (PointLight c _ p) = do
   --wl <- randomRIO (0, 1.0)
   wl <- MT.randomIO :: IO Double
-  d  <- generateRandomDir2
+  d  <- generateRandomDir4
   let r = initRay p d
       w = decideWavelength c wl
   return (w, r)

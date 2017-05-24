@@ -15,6 +15,7 @@ import Ray.Algebra
 import Ray.Geometry
 import Ray.Light
 import Ray.Physics
+import Ray.Optics
 import Ray.Object
 import Ray.Material
 
@@ -28,10 +29,10 @@ lgts :: [Light]
 lgts = [pl1, pl2]
 
 m_ball, m_wall, m_ceil, m_flor :: Material
-m_ball = Material (Color 0.8 0.3 0.3)
-m_wall = Material (Color 0.8 0.8 0.8)
-m_ceil = Material (Color 0.4 0.2 0.02)
-m_flor = Material (Color 0.8 0.6 0.4)
+m_ball = Material (Color 0.8 0.3 0.3)  black black radiance0 black 0.0
+m_wall = Material (Color 0.8 0.8 0.8)  black black radiance0 black 0.0
+m_ceil = Material (Color 0.4 0.2 0.02) black black radiance0 black 0.0
+m_flor = Material (Color 0.8 0.6 0.4)  black black radiance0 black 0.0
 
 wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1 :: Object
 wall_bt = initObject (Plain ey3 0) m_flor -- bottom

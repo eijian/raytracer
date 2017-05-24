@@ -70,12 +70,12 @@ estimateRadiance pw pmap (p, n, m)
     rad = sumRadiance1 pw rmax rs ps
 
 radius2 :: Double
-radius2 = 0.1 * 0.1
+radius2 = 0.2 * 0.2
 
 isValidPhoton :: Position3 -> Direction3 -> PhotonInfo -> Bool
---isValidPhoton p n ph = n <.> (photonDir ph) > 0
-isValidPhoton p n ph = n <.> (photonDir ph) > 0 &&
-                       square (p - photonPos ph) < radius2
+isValidPhoton p n ph = n <.> (photonDir ph) > 0
+--isValidPhoton p n ph = n <.> (photonDir ph) > 0 &&
+--                       square (p - photonPos ph) < radius2
 
 -- filtering:
 --   sumRadiance1  non filter
@@ -180,7 +180,7 @@ calcDistance r o@(Object s m) = zip ts (replicate (length ts) o)
 pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
 
 brdf :: Material -> Radiance -> Radiance
-brdf m rad = (1.0 / pi2) *> ((diffSpec m) <**> rad)
+brdf m rad = (1.0 / pi2) *> ((reflectance m) <**> rad)
 
 readMap :: IO (Double, KdTree Double PhotonInfo)
 readMap = do
