@@ -18,13 +18,14 @@ import Data.Ord
 import Data.KdTree.Static
 import NumericPrelude
 --import Debug.Trace
+import System.IO
 
 import Ray.Algebra
 import Ray.Geometry
 import Ray.Object
 import Ray.Light
 import Ray.Material
---import Ray.Physics
+import Ray.Physics
 import Ray.Optics
 
 --
@@ -41,9 +42,27 @@ sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
 
 tracePhoton :: [Object] -> Photon -> IO [PhotonCache]
 tracePhoton os (wl, r) = do
-  let iss = filter (\x -> fst x > nearly0) (concat $ map (calcDistance r) os)
-      (t, s) = head $ sortBy (comparing fst) iss
-  return [(wl, initRay (target t r) (getDir r))]
+  let is = calcIntersection r os
+  if is == Nothing
+    then return []
+    else do
+      let (p, n, m) = fromJust is
+      i <- russianRoulette wl [reflectance m]
+      pcs <- if i > 0
+        then reflect p n os wl
+        else return []
+      if diffuseness m > 0.0
+        then return $ ((wl, initRay p (getDir r)) : pcs)
+        else return []
+  -- return $ if n == 1 then [(wl, initRay (target t r) (getDir r))] else []
+
+reflect :: Position3 -> Direction3 -> [Object] -> Wavelength
+        -> IO [PhotonCache]
+reflect p n os wl = do
+  dr <- diffuseReflection n
+  let r' = initRay p dr
+  pcs <- tracePhoton os (wl, r')
+  return pcs
 
 -----
 -- RAY TRACING WITH PHOTON MAP
@@ -73,7 +92,10 @@ radius2 :: Double
 radius2 = 0.2 * 0.2
 
 isValidPhoton :: Position3 -> Direction3 -> PhotonInfo -> Bool
-isValidPhoton p n ph = n <.> (photonDir ph) > 0
+isValidPhoton p n ph = True
+--isValidPhoton p n ph = square (p - photonPos ph) < radius2
+--isValidPhoton p n ph = n <.> (photonDir ph) > 0  -- photonの入射が正
+--isValidPhoton p n ph = n <.> (photonPos ph - p) > 0  -- photonの位置が上
 --isValidPhoton p n ph = n <.> (photonDir ph) > 0 &&
 --                       square (p - photonPos ph) < radius2
 
@@ -130,10 +152,13 @@ waitGauss pw rmax dp = pw * alpha * (1.0 - e_r / e_beta)
 -- CLASICAL RAY TRACING
 ------
 
+amb :: Radiance
+amb = Radiance 0.002 0.002 0.002
+
 traceRay' :: Int -> [Light] -> [Object] -> Ray -> Radiance
 traceRay' l lgts objs r
   | is == Nothing = radiance0
-  | otherwise     = brdf m radDiff
+  | otherwise     = brdf m (radDiff + amb)
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
@@ -180,16 +205,17 @@ calcDistance r o@(Object s m) = zip ts (replicate (length ts) o)
 pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
 
 brdf :: Material -> Radiance -> Radiance
-brdf m rad = (1.0 / pi2) *> ((reflectance m) <**> rad)
+brdf m rad = (diffuseness m / pi2) *> ((reflectance m) <**> rad)
+--brdf m rad = (1.0 / pi2) *> ((reflectance m) <**> rad)
+--brdf m rad = (1.0 / pi2) *> rad -- フォトンの合計だけで拡散面の色を再現
 
 readMap :: IO (Double, KdTree Double PhotonInfo)
 readMap = do
   np' <- getLine
   pw' <- getLine
+  ps <- getContents
   let np = read np' :: Int
-  let pw = read pw' :: Double
-  pcs <- forM ([1..np]) $ \i -> do
-    l <- getLine
-    return $ (read l :: PhotonCache)
-  let pmap = build infoToPointList (map convertToInfo pcs)
+      pw = read pw' :: Double
+      pcs = map (\x -> read x :: PhotonCache) (lines ps)
+      pmap = build infoToPointList (map convertToInfo pcs)
   return (pw, pmap)

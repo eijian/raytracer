@@ -9,6 +9,7 @@ module Ray.Material (
 , specularRefl
 , emittance
 , ior
+, diffuseness
 , smoothness
 , diffSpec
 ) where
@@ -28,9 +29,10 @@ data Material = Material
   , specularRefl  :: Color      -- specular reflectance
   , emittance     :: Radiance
   , ior           :: Color      -- index of refraction
+  , diffuseness   :: Double     -- 拡散性
   , smoothness    :: Double
   } deriving Eq
 
 diffSpec :: Material -> Color
-diffSpec (Material r _ _ _ _ _) = r
+diffSpec (Material r _ _ _ _ _ _) = r
 

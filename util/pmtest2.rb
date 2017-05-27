@@ -1,9 +1,10 @@
 #!/usr/bin/ruby
 #
 
+
 @map = Array.new
-XRES = 1024
-YRES = 1024
+XRES = 2048
+YRES = 2048
 
 def color(c, oldc)
   oc = if oldc != nil then oldc else 0 end

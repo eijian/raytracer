@@ -17,13 +17,13 @@ import Ray.Geometry
 import Ray.Physics
 import Ray.Optics
 
+import Screen
+
 -- PARAMETERS --
 
-xres :: Int
-xres = 1024
-
-yres :: Int
-yres = 1024
+xres, yres :: Int
+xres = 2048
+yres = 2048
 
 ----
 
@@ -33,46 +33,32 @@ main = do
   pw <- getLine
   let nphoton = read np :: Int
       power = read pw :: Double
-  --putStrLn $ show nphoton
-  --putStrLn $ show power
   dat <- getContents
-  --putStrLn "after getContents"
   pcs <- forM (lines dat) $ \i -> do
     return $ (read i :: PhotonCache)
-  --putStrLn ("after read " ++ (show $ length pcs))
-  let map = getMap pcs
-  --putStrLn $ show map
+  let cp  = target focus (initRay eyepos eyedir)
+      sc  = Plain eyedir (negate eyedir <.> cp)
+      map = getMap cp sc pcs
   a <- forM (map) $ \i -> do
-    --putStrLn "before show i"
     putStrLn $ show i
   return ()
 
-eye :: Position3
-eye = initPos 0 0 (-10)
---eye = initPos 0 2 0
-
-focus :: Double
-focus = 0.5
-
-sc :: Shape
-sc = Plain ez3 (1.0)
-
-getMap :: [PhotonCache] -> [(Wavelength, Int, Int)]
-getMap [] = []
-getMap (pc:pcs)
-  | t < focus = getMap pcs
-  | px < 0 || px > (xres - 1) = getMap pcs
-  | py < 0 || py > (yres - 1) = getMap pcs
-  | otherwise = (getWl pc, px, py) : getMap pcs
+getMap :: Position3 -> Shape -> [PhotonCache] -> [(Wavelength, Int, Int)]
+getMap _ _ [] = []
+getMap cp sc (pc:pcs)
+  | t < focus = getMap cp sc pcs
+  | px < 0 || px > (xres - 1) = getMap cp sc pcs
+  | py < 0 || py > (yres - 1) = getMap cp sc pcs
+  | otherwise = (getWl pc, px, py) : getMap cp sc pcs
   where
-    d = (getPt pc) - eye
+    d = (getPt pc) - eyepos
     d' = fromJust $ normalize d
-    r = initRay eye d'
+    r = initRay eyepos d'
     t = head $ distance r sc
-    p = target t r
+    p = (target t r) - cp
     --cos = ez3 <.> d'
     --t = focus / cos
-    --p = eye + t *> d'
+    --p = eyepos + t *> d'
     px = round ((elemX p + 1.0) * (fromIntegral xres / 2))
     py = round ((1.0 - elemY p) * (fromIntegral yres / 2))
 

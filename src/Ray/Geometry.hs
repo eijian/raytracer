@@ -14,6 +14,7 @@ module Ray.Geometry (
 , initRay
 , initRayFromElem
 , target
+, diffuseReflection
 ) where
 
 import Data.Maybe
@@ -80,3 +81,12 @@ distance (pos, dir) (Sphere c r)
 -- Point
 distance _ _ = []
 
+--
+-- REFLECTION AND REFRACTION
+--
+
+diffuseReflection :: Direction3 -> IO Direction3
+diffuseReflection n = do
+  d <- generateRandomDir4
+  let cos = n <.> d
+  return $ if cos > 0.0 then d else negate d

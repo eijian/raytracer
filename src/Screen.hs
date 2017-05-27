@@ -8,6 +8,9 @@ module Screen (
   generateRay'
 , outputImage
 , scrmap
+, eyepos
+, eyedir
+, focus
 ) where
 
 import System.IO
@@ -24,7 +27,7 @@ import Ray.Optics
 -- for camera
 
 eyepos :: Position3
-eyepos = initPos 0 2 0
+eyepos = initPos 0 2 (-4.5)
 
 eyedir :: Direction3
 eyedir = ez3
@@ -33,7 +36,7 @@ upper :: Vector3
 upper = ey3
 
 focus :: Double
-focus = 1.0
+focus = 2.7
 
 xres :: Int
 xres = 256
