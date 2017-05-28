@@ -34,14 +34,17 @@ import Ray.Optics
 nPhoton :: Int
 nPhoton = 200
 
+radius2 :: Double
+radius2 = 0.2 * 0.2
+
 sqpi2 :: Double
 sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
 
 --
 --
 
-tracePhoton :: [Object] -> Photon -> IO [PhotonCache]
-tracePhoton os (wl, r) = do
+tracePhoton :: [Object] -> Int -> Photon -> IO [PhotonCache]
+tracePhoton os l (wl, r) = do
   let is = calcIntersection r os
   if is == Nothing
     then return []
@@ -49,19 +52,20 @@ tracePhoton os (wl, r) = do
       let (p, n, m) = fromJust is
       i <- russianRoulette wl [reflectance m]
       pcs <- if i > 0
-        then reflect p n os wl
+        then reflect p n os l wl
+        --then return []
         else return []
+      -- if l > 1 && diffuseness m > 0.0
       if diffuseness m > 0.0
         then return $ ((wl, initRay p (getDir r)) : pcs)
-        else return []
-  -- return $ if n == 1 then [(wl, initRay (target t r) (getDir r))] else []
+        else return pcs
 
-reflect :: Position3 -> Direction3 -> [Object] -> Wavelength
+reflect :: Position3 -> Direction3 -> [Object] -> Int -> Wavelength
         -> IO [PhotonCache]
-reflect p n os wl = do
+reflect p n os l wl = do
   dr <- diffuseReflection n
   let r' = initRay p dr
-  pcs <- tracePhoton os (wl, r')
+  pcs <- tracePhoton os (l+1) (wl, r')
   return pcs
 
 -----
@@ -86,18 +90,11 @@ estimateRadiance pw pmap (p, n, m)
     ps = filter (isValidPhoton p n) $ kNearest pmap nPhoton $ photonDummy p
     rs = map (\x -> norm ((photonPos x) - p)) ps
     rmax = maximum rs
-    rad = sumRadiance1 pw rmax rs ps
-
-radius2 :: Double
-radius2 = 0.2 * 0.2
+    rad = sumRadiance1 n pw rmax rs ps
 
 isValidPhoton :: Position3 -> Direction3 -> PhotonInfo -> Bool
-isValidPhoton p n ph = True
---isValidPhoton p n ph = square (p - photonPos ph) < radius2
---isValidPhoton p n ph = n <.> (photonDir ph) > 0  -- photonの入射が正
---isValidPhoton p n ph = n <.> (photonPos ph - p) > 0  -- photonの位置が上
---isValidPhoton p n ph = n <.> (photonDir ph) > 0 &&
---                       square (p - photonPos ph) < radius2
+--isValidPhoton p n ph = True
+isValidPhoton p n ph = square (p - photonPos ph) < radius2
 
 -- filtering:
 --   sumRadiance1  non filter
@@ -105,10 +102,11 @@ isValidPhoton p n ph = True
 --   sumRadiance3  gauss filter
 
 -- Normal (non filter)
-sumRadiance1 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
-sumRadiance1 pw rmax rs ps = foldl (+) radiance0 rads
+sumRadiance1 :: Direction3 -> Double -> Double -> [Double] -> [PhotonInfo]
+             -> Radiance
+sumRadiance1 n pw rmax rs ps = foldl (+) radiance0 rads
   where
-    rads = map (photonInfoToRadiance pw) ps
+    rads = map (photonInfoToRadiance n pw) ps
 
 -- Cone filter
 k_cone :: Double
@@ -117,11 +115,12 @@ k_cone = 1.1
 fac_k :: Double
 fac_k = 1.0 - 2.0 / (3.0 * k_cone)
 
-sumRadiance2 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
-sumRadiance2 pw rmax rs ps = foldl (+) radiance0 rads
+sumRadiance2 :: Direction3 -> Double -> Double -> [Double] -> [PhotonInfo]
+             -> Radiance
+sumRadiance2 n pw rmax rs ps = foldl (+) radiance0 rads
   where
     wt = map (waitCone (pw / fac_k) rmax) rs
-    rads = zipWith (photonInfoToRadiance) wt ps
+    rads = zipWith (photonInfoToRadiance n) wt ps
 
 waitCone :: Double -> Double -> Double -> Double
 waitCone pw rmax dp = pw * (1.0 - dp / (k_cone * rmax))
@@ -137,11 +136,12 @@ beta  = 1.953
 e_beta :: Double
 e_beta = 1.0 - exp (-beta)
 
-sumRadiance3 :: Double -> Double -> [Double] -> [PhotonInfo] -> Radiance
-sumRadiance3 pw rmax rs ps = foldl (+) radiance0 rads
+sumRadiance3 :: Direction3 -> Double -> Double -> [Double] -> [PhotonInfo]
+             -> Radiance
+sumRadiance3 n pw rmax rs ps = foldl (+) radiance0 rads
   where
     wt = map (waitGauss pw rmax) rs
-    rads = zipWith (photonInfoToRadiance) wt ps
+    rads = zipWith (photonInfoToRadiance n) wt ps
 
 waitGauss :: Double -> Double -> Double -> Double
 waitGauss pw rmax dp = pw * alpha * (1.0 - e_r / e_beta)
@@ -153,7 +153,8 @@ waitGauss pw rmax dp = pw * alpha * (1.0 - e_r / e_beta)
 ------
 
 amb :: Radiance
-amb = Radiance 0.002 0.002 0.002
+amb = Radiance 0.001 0.001 0.001
+--amb = Radiance 0.00 0.00 0.00
 
 traceRay' :: Int -> [Light] -> [Object] -> Ray -> Radiance
 traceRay' l lgts objs r
@@ -170,12 +171,13 @@ getRadianceFromLight objs p n l
   | cos0 < 0      = radiance0
   | ld == Nothing = radiance0
   | longer > 0    = radiance0
-  | otherwise  = (cos0 / sqrt sqDistLgt)  *> (getRadiance l p)
+  | otherwise  = (cos0 * cos0) *> (getRadiance l p)
   where
     ldir = getDirection l p
-    cos0 = n <.> ldir
-    ld = normalize ldir
-    lray = initRay p $ fromJust ld
+    ld   = normalize ldir
+    ld'  = fromJust ld
+    cos0 = n <.> ld'
+    lray = initRay p ld'
     is = calcIntersection lray objs
     (p', _, _) = fromJust is
     sqDistLgt = square ldir
@@ -207,7 +209,6 @@ pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
 brdf :: Material -> Radiance -> Radiance
 brdf m rad = (diffuseness m / pi2) *> ((reflectance m) <**> rad)
 --brdf m rad = (1.0 / pi2) *> ((reflectance m) <**> rad)
---brdf m rad = (1.0 / pi2) *> rad -- フォトンの合計だけで拡散面の色を再現
 
 readMap :: IO (Double, KdTree Double PhotonInfo)
 readMap = do

@@ -30,7 +30,7 @@ lgts = [pl1]
 
 m_ball, m_wall, m_ceil, m_flor :: Material
 m_ball = Material (Color 0.5 0.5 0.5)  black black radiance0 black 1.0 0.0
-m_wall = Material (Color 0.7 0.7 0.7)  black black radiance0 black 1.0 0.0
+m_wall = Material (Color 0.5 0.5 0.5)  black black radiance0 black 1.0 0.0
 m_ceil = Material (Color 0.4 0.2 0.02) black black radiance0 black 1.0 0.0
 m_flor = Material (Color 0.5 0.3 0.1)  black black radiance0 black 1.0 0.0
 m_wallr = Material (Color 0.4 0.0 0.0)  black black radiance0 black 1.0 0.0

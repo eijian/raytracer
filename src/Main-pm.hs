@@ -13,7 +13,7 @@ import Tracer
 import Scene
 
 nphoton :: Int
-nphoton = 100000
+nphoton = 200000
 
 main :: IO ()
 main = do
@@ -31,5 +31,5 @@ outputPhotonCaches n lgt = mapM_ (outputPhotonCache lgt) [1..n]
 
 outputPhotonCache :: Light -> Int -> IO ()
 outputPhotonCache lgt _ =
-  generatePhoton lgt >>= tracePhoton objs >>= mapM_ (putStrLn.show)
+  generatePhoton lgt >>= tracePhoton objs 1 >>= mapM_ (putStrLn.show)
 

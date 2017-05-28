@@ -121,8 +121,12 @@ convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
 infoToPointList :: PhotonInfo -> [Double]
 infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
 
-photonInfoToRadiance :: Double -> PhotonInfo -> Radiance
-photonInfoToRadiance pw (PhotonInfo Red   _ _) = Radiance pw 0 0
-photonInfoToRadiance pw (PhotonInfo Green _ _) = Radiance 0 pw 0
-photonInfoToRadiance pw (PhotonInfo Blue  _ _) = Radiance 0 0 pw
+photonInfoToRadiance :: Direction3 -> Double -> PhotonInfo -> Radiance
+photonInfoToRadiance n pw (PhotonInfo wl p d)
+  | wl == Red   = Radiance (pw * cos) 0 0
+  | wl == Green = Radiance 0 (pw * cos) 0
+  | wl == Blue  = Radiance 0 0 (pw * cos)
+  where
+    c = n <.> d
+    cos = if c > 0.0 then c else 0.0
 
