@@ -6,7 +6,7 @@
 
 module Ray.Geometry (
   Ray
-, Shape (Point, Plain, Sphere)
+, Shape (Point, Plain, Sphere, Parallelogram)
 , distance
 , getDir
 , getPos
@@ -51,6 +51,7 @@ getDir = snd
 data Shape = Point Position3
            | Plain Direction3 Double
            | Sphere Position3 Double
+           | Parallelogram Position3 Direction3 Direction3 Direction3
            deriving Eq
 
 getNormal :: Position3 -> Shape -> Maybe Direction3
@@ -58,13 +59,16 @@ getNormal :: Position3 -> Shape -> Maybe Direction3
 getNormal _ (Plain n _) = Just n
 -- Sphere
 getNormal p (Sphere c _) = normalize (p - c)
+-- Parallelogram
+getNormal p (Parallelogram _ n _ _) = Just n 
 -- Point
 getNormal _ _ = Nothing
+
 
 distance :: Ray -> Shape -> [Double]
 -- Plain
 distance (pos, dir) (Plain n d)
-  | cos0 == 0  = []
+  | cos0 == 0 = []
   | otherwise = [(d + n <.> pos) / (-cos0)]
   where
     cos0 = n <.> dir
@@ -78,6 +82,22 @@ distance (pos, dir) (Sphere c r)
     t0 = o <.> dir
     t1 = r * r - (square o - (t0 * t0))
     t2 = sqrt t1
+-- Parallelogram
+distance r@(pos, dir) (Parallelogram p n d1 d2)
+  | detA == 0.0        = []
+  | u < 0.0 || u > 1.0 = []
+  | v < 0.0 || v > 1.0 = []
+  | otherwise          = [t]
+  where
+    -- ポリゴンの当たり判定
+    -- https://shikousakugo.wordpress.com/2012/07/01/ray-intersection-3/
+    re2  = dir <*> d2
+    detA = re2 <.> d1
+    p0   = pos - p
+    te1  = p0 <*> d1
+    u = (re2 <.> p0)  / detA
+    v = (te1 <.> dir) / detA
+    t = (te1 <.> d2)  / detA
 -- Point
 distance _ _ = []
 

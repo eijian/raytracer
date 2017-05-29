@@ -72,14 +72,19 @@ reflect p n os l wl = do
 -- RAY TRACING WITH PHOTON MAP
 -----
 
+sr_half :: Double
+sr_half = 1.0 / (2.0 * pi)
+
 traceRay :: Int -> Double -> KdTree Double PhotonInfo -> [Object] -> Ray
          -> Radiance
 traceRay 10 _ _ _ _ = radiance0
 traceRay l pw pmap objs r
   | is == Nothing = radiance0
-  | otherwise     = estimateRadiance pw pmap (fromJust is)
+  | otherwise     = sr_half *> emittance m
+                  + estimateRadiance pw pmap (p, n, m)
   where
     is = calcIntersection r objs
+    (p, n, m) = fromJust is
 
 estimateRadiance :: Double -> KdTree Double PhotonInfo -> Intersection
                  -> Radiance
