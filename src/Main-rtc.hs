@@ -6,11 +6,13 @@
 
 module Main where
 
+import qualified Data.Vector as V
+
 import Scene
 import Screen
 import Tracer
 
 main :: IO ()
 main = do
-  let image = map (traceRay' 0 lgts objs) $ map generateRay' scrmap
+  let image = V.map (traceRay' 0 lgts objs) $ V.map generateRay' scrmap
   outputImage image

@@ -13,7 +13,7 @@ module Tracer (
 
 import Control.Monad
 import Data.Maybe
-import Data.List
+import Data.List hiding (sum)
 import Data.Ord
 import Data.KdTree.Static
 import NumericPrelude
@@ -158,13 +158,13 @@ waitGauss pw rmax dp = pw * alpha * (1.0 - e_r / e_beta)
 ------
 
 amb :: Radiance
-amb = Radiance 0.001 0.001 0.001
+amb = Radiance 0.002 0.002 0.002
 --amb = Radiance 0.00 0.00 0.00
 
 traceRay' :: Int -> [Light] -> [Object] -> Ray -> Radiance
 traceRay' l lgts objs r
   | is == Nothing = radiance0
-  | otherwise     = brdf m (radDiff + amb)
+  | otherwise     = sr_half *> emittance m + brdf m (radDiff + amb)
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
@@ -172,22 +172,28 @@ traceRay' l lgts objs r
 
 getRadianceFromLight :: [Object] -> Position3 -> Direction3 -> Light
                      -> Radiance
-getRadianceFromLight objs p n l
-  | cos0 < 0      = radiance0
-  | ld == Nothing = radiance0
-  | longer > 0    = radiance0
-  | otherwise  = (cos0 * cos0) *> (getRadiance l p)
+getRadianceFromLight objs p n l = sum $ zipWith (*>) coss $ getRadiance l dists
   where
-    ldir = getDirection l p
-    ld   = normalize ldir
-    ld'  = fromJust ld
-    cos0 = n <.> ld'
-    lray = initRay p ld'
-    is = calcIntersection lray objs
+    (dists, coss) = unzip $ illuminated objs p n $ getDirection l p
+
+illuminated :: [Object] -> Position3 -> Direction3 -> [Direction3]
+            -> [(Double, Double)]
+illuminated _ _ _ []          = []
+illuminated os p n (ld:lds)
+  | ld' == Nothing           = illuminated os p n lds
+  | cos0 < 0.0               = illuminated os p n lds
+  | is == Nothing            = illuminated os p n lds
+  | sqLdist - sqOdist > 0.02 = illuminated os p n lds
+  | otherwise                = (sqLdist, cos0 * cos0) : illuminated os p n lds
+  where
+    ld'  = normalize ld
+    ld'' = fromJust ld'
+    cos0 = n <.> ld''
+    lray = initRay p ld''
+    is = calcIntersection lray os
     (p', _, _) = fromJust is
-    sqDistLgt = square ldir
-    sqDistObj = square (p' - p)
-    longer = sqDistLgt - sqDistObj -- compare distances of light and obj
+    sqLdist = square ld
+    sqOdist = square (p' - p)
 
 ---------------------------------
 -- COMMON FUNCTIONS

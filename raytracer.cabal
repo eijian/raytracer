@@ -29,6 +29,7 @@ executable pm
                      , mersenne-random >= 1.0
                      , QuickCheck
                      , kdt
+                     , vector
 
 -- Ray Tracer
 executable rt
@@ -44,6 +45,7 @@ executable rt
                      , mersenne-random >= 1.0
                      , QuickCheck
                      , kdt
+                     , vector
 
 -- Ray Tracer Classical
 executable rtc
@@ -59,6 +61,7 @@ executable rtc
                      , mersenne-random >= 1.0
                      , QuickCheck
                      , kdt
+                     , vector
 
 -- Photon Map Converter
 executable pm2img
@@ -73,6 +76,7 @@ executable pm2img
                      , random
                      , mersenne-random >= 1.0
                      , QuickCheck
+                     , vector
 
 
 --

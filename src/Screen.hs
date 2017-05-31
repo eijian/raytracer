@@ -16,6 +16,7 @@ module Screen (
 import System.IO
 import Control.Monad
 import Data.Maybe
+import qualified Data.Vector     as V
 import NumericPrelude
 
 import Ray.Algebra
@@ -79,7 +80,9 @@ origin :: Position3
 origin = eyepos + focus *> eyedir
   + ((-1.0 + 0.5 * stepx) *> eex)
   - (( 1.0 - 0.5 * stepy) *> eey)
-scrmap = [(y, x) | y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
+
+scrmap :: V.Vector (Int, Int)
+scrmap = V.fromList [(y, x) | y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
 
 -- FUNCTIONS --
 
@@ -93,7 +96,7 @@ generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
 
 generateRay' = generateRay eyepos origin step evec
 
-outputImage :: [Radiance] -> IO ()
+outputImage :: V.Vector Radiance -> IO ()
 outputImage rs = do
 {-
   putStrLn "P3"

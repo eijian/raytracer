@@ -57,24 +57,26 @@ generatePhoton (ParallelogramLight c _ p n d1 d2) = do
 pi4 :: Double
 pi4 = 4 * pi -- for decay by distance (1/ 4pi) 
 
-getDirection :: Light -> Position3 -> Direction3
-getDirection (PointLight _ _ lp) p = lp - p
-getDirection (ParallelogramLight _ _ lp _ d1 d2) p = c - p  -- dummy
-  where
-    t = 0.5 :: Double
-    c = p + t *> d1 + t *> d2
+paraDiv :: Double
+paraDiv = 0.2
+ts :: [Double]
+ts = [0.1, 0.3, 0.5, 0.7, 0.9]
+tss :: [(Double, Double)]
+tss = [(x, y) | x <- ts, y <- ts]
 
-getRadiance :: Light -> Position3 -> Radiance
-getRadiance l@(PointLight (Color r g b) f _) p
-  | r2 == 0 = radiance0
-  | otherwise = Radiance (r * l0) (g * l0) (b * l0)
+getDirection :: Light -> Position3 -> [Direction3]
+getDirection (PointLight _ _ lp) p = [lp - p]
+getDirection (ParallelogramLight _ _ lp _ d1 d2) p =
+  map (\(tx, ty) -> lp + tx *> d1 + ty *> d2 - p) tss
+
+getRadiance :: Light -> [Double] -> [Radiance]
+getRadiance _ [] = [radiance0]
+getRadiance l@(PointLight (Color r g b) f _) (d:ds) =
+  (Radiance (r * l0) (g * l0) (b * l0)) : getRadiance l ds
   where
-    r2 = square $ getDirection l p
-    l0 = f / (pi4 * r2)
-getRadiance l@(ParallelogramLight (Color r g b) f _ _ _ _) p  -- dummy
-  | r2 == 0 = radiance0
-  | otherwise = Radiance (r * l0) (g * l0) (b * l0)
+    l0 = f / (pi4 * d)
+getRadiance l@(ParallelogramLight (Color r g b) f _ _ _ _) (d:ds) =
+  (Radiance (r * l0) (g * l0) (b * l0)) : getRadiance l ds
   where
-    r2 = square $ getDirection l p
-    l0 = f / (pi4 * r2)
+    l0 = (f * paraDiv * paraDiv) / (pi4 * d)
 

@@ -9,6 +9,7 @@ module Main where
 --import Data.List
 import System.IO
 import Data.KdTree.Static
+import qualified Data.Vector as V
 
 --import Ray.Geometry
 --import Ray.Optics
@@ -22,7 +23,7 @@ main :: IO ()
 main = do
   (power, photonmap) <- readMap
   hPutStrLn stderr ("finished reading map:" ++ (show $ size photonmap))
-  let image = map (traceRay 0 power photonmap objs) $ map generateRay' scrmap
+  let image = V.map (traceRay 0 power photonmap objs) $ V.map generateRay' scrmap
   outputImage image
 {-
   let func = traceRay 0 power photonmap objs
