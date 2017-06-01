@@ -6,8 +6,10 @@
 
 module Screen (
   generateRay'
+, outputHeader
 , outputImage
-, scrmap
+, yline
+, oneLine
 , eyepos
 , eyedir
 , focus
@@ -16,7 +18,7 @@ module Screen (
 import System.IO
 import Control.Monad
 import Data.Maybe
-import qualified Data.Vector     as V
+import qualified Data.Vector as V
 import NumericPrelude
 
 import Ray.Algebra
@@ -81,10 +83,17 @@ origin = eyepos + focus *> eyedir
   + ((-1.0 + 0.5 * stepx) *> eex)
   - (( 1.0 - 0.5 * stepy) *> eey)
 
+
+yline :: [Int]
+yline = [0..(yres - 1)]
+
 scrmap :: V.Vector (Int, Int)
-scrmap = V.fromList [(y, x) | y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
+scrmap = V.fromList [(y, x) | y <- yline, x <- [0..(xres - 1)]]  
 
 -- FUNCTIONS --
+
+oneLine :: Int -> V.Vector (Int, Int)
+oneLine y = V.fromList [(y, x) | x <- [0..(xres - 1)]]
 
 generateRay :: Position3 -> Position3 -> (Double, Double)
             -> (Direction3, Direction3) -> (Int, Int) -> Ray
@@ -98,15 +107,12 @@ generateRay' = generateRay eyepos origin step evec
 
 outputImage :: V.Vector Radiance -> IO ()
 outputImage rs = do
-{-
-  putStrLn "P3"
-  putStrLn "## test"
-  putStrLn (show xres ++ " " ++ show yres)
-  putStrLn "255"
--}
-  mapM putStrLn $ createHeader xres yres
-  forM_ rs $ \i -> do
+  V.forM_ rs $ \i -> do
     putStrLn $ convertOneCell i
+
+outputHeader :: IO ()
+outputHeader = do
+  mapM_ putStrLn $ createHeader xres yres
 
 createHeader :: Int -> Int -> [String]
 createHeader xres yres =

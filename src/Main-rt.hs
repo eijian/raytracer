@@ -7,6 +7,7 @@
 module Main where
 
 --import Data.List
+import Control.Monad
 import System.IO
 import Data.KdTree.Static
 import qualified Data.Vector as V
@@ -23,15 +24,15 @@ main :: IO ()
 main = do
   (power, photonmap) <- readMap
   hPutStrLn stderr ("finished reading map:" ++ (show $ size photonmap))
-  let image = V.map (traceRay 0 power photonmap objs) $ V.map generateRay' scrmap
-  outputImage image
-{-
-  let func = traceRay 0 power photonmap objs
-      image = foldl' (calcRadiance func) [] $ map generateRay' scrmap
-  outputImage $ reverse image
--}
-  hPutStrLn stderr ("finished drawing image:" ++ (show $ length image))
-
+  let
+    tracer = traceRay 0 power photonmap objs
+  outputHeader
+  forM_ yline $ \y -> do
+    let
+      line = oneLine y
+    image <- V.mapM tracer $ V.map generateRay' line
+    outputImage image
+    
 --calcRadiance :: (Ray -> Radiance) -> [Radiance] -> Ray -> [Radiance]
 --calcRadiance f rads ray = (f ray) : rads
 

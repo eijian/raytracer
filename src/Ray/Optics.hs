@@ -36,7 +36,8 @@ import Ray.Physics
 --
 -- Radiance
 
-data Radiance = Radiance Double Double Double deriving (Read, Show)
+data Radiance = Radiance Double Double Double
+                deriving (Read, Show)
 
 instance Eq Radiance where
   (Radiance ar ag ab) == (Radiance br bg bb)
@@ -94,7 +95,7 @@ initPhoton l r = (l, r)
 
 type PhotonCache = Photon
 
-data PhotonInfo = PhotonInfo Wavelength Position3 Direction3
+data PhotonInfo = PhotonInfo !Wavelength !Position3 !Direction3
   deriving (Show, Eq)
 
 {-

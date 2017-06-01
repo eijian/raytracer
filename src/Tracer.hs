@@ -55,7 +55,7 @@ tracePhoton os l (wl, r) = do
         then reflect p n os l wl
         --then return []
         else return []
-      -- if l > 1 && diffuseness m > 0.0
+      --if l > 1 && diffuseness m > 0.0
       if diffuseness m > 0.0
         then return $ ((wl, initRay p (getDir r)) : pcs)
         else return pcs
@@ -76,12 +76,12 @@ sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)
 
 traceRay :: Int -> Double -> KdTree Double PhotonInfo -> [Object] -> Ray
-         -> Radiance
-traceRay 10 _ _ _ _ = radiance0
+         -> IO Radiance
+traceRay 10 _ _ _ _ = return radiance0
 traceRay l pw pmap objs r
-  | is == Nothing = radiance0
-  | otherwise     = sr_half *> emittance m
-                  + estimateRadiance pw pmap (p, n, m)
+  | is == Nothing = return radiance0
+  | otherwise     = return (sr_half *> emittance m
+                  + estimateRadiance pw pmap (p, n, m))
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
@@ -158,8 +158,8 @@ waitGauss pw rmax dp = pw * alpha * (1.0 - e_r / e_beta)
 ------
 
 amb :: Radiance
-amb = Radiance 0.002 0.002 0.002
---amb = Radiance 0.00 0.00 0.00
+--amb = Radiance 0.002 0.002 0.002
+amb = Radiance 0.00 0.00 0.00
 
 traceRay' :: Int -> [Light] -> [Object] -> Ray -> Radiance
 traceRay' l lgts objs r
@@ -180,11 +180,11 @@ illuminated :: [Object] -> Position3 -> Direction3 -> [Direction3]
             -> [(Double, Double)]
 illuminated _ _ _ []          = []
 illuminated os p n (ld:lds)
-  | ld' == Nothing           = illuminated os p n lds
-  | cos0 < 0.0               = illuminated os p n lds
-  | is == Nothing            = illuminated os p n lds
-  | sqLdist - sqOdist > 0.02 = illuminated os p n lds
-  | otherwise                = (sqLdist, cos0 * cos0) : illuminated os p n lds
+  | ld' == Nothing              = illuminated os p n lds
+  | cos0 < 0.0                  = illuminated os p n lds
+  | is == Nothing               = illuminated os p n lds
+  | sqLdist - sqOdist > 0.002   = illuminated os p n lds
+  | otherwise                   = (sqLdist, cos0 * cos0):illuminated os p n lds
   where
     ld'  = normalize ld
     ld'' = fromJust ld'
