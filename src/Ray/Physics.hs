@@ -21,7 +21,7 @@ data Wavelength = Red | Green | Blue deriving (Show, Read, Enum, Eq)
 --
 -- Color
 
-data Color = Color Double Double Double
+data Color = Color !Double !Double !Double
 
 black :: Color
 black = Color 0.0 0.0 0.0

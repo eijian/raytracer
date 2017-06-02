@@ -15,7 +15,8 @@ import Control.Monad
 import Data.Maybe
 import Data.List hiding (sum)
 import Data.Ord
-import Data.KdTree.Static
+import qualified Data.KdTree.Static as KT
+--import qualified Data.KdTree.Dynamic as KT
 import NumericPrelude
 --import Debug.Trace
 import System.IO
@@ -75,7 +76,7 @@ reflect p n os l wl = do
 sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)
 
-traceRay :: Int -> Double -> KdTree Double PhotonInfo -> [Object] -> Ray
+traceRay :: Int -> Double -> KT.KdTree Double PhotonInfo -> [Object] -> Ray
          -> IO Radiance
 traceRay 10 _ _ _ _ = return radiance0
 traceRay l pw pmap objs r
@@ -86,13 +87,13 @@ traceRay l pw pmap objs r
     is = calcIntersection r objs
     (p, n, m) = fromJust is
 
-estimateRadiance :: Double -> KdTree Double PhotonInfo -> Intersection
+estimateRadiance :: Double -> KT.KdTree Double PhotonInfo -> Intersection
                  -> Radiance
 estimateRadiance pw pmap (p, n, m)
   | ps == []  = radiance0
   | otherwise = (1.0 / (pi * rmax * rmax)) *> (brdf m rad)
   where
-    ps = filter (isValidPhoton p n) $ kNearest pmap nPhoton $ photonDummy p
+    ps = filter (isValidPhoton p n) $ KT.kNearest pmap nPhoton $ photonDummy p
     rs = map (\x -> norm ((photonPos x) - p)) ps
     rmax = maximum rs
     rad = sumRadiance1 n pw rmax rs ps
@@ -221,7 +222,7 @@ brdf :: Material -> Radiance -> Radiance
 brdf m rad = (diffuseness m / pi2) *> ((reflectance m) <**> rad)
 --brdf m rad = (1.0 / pi2) *> ((reflectance m) <**> rad)
 
-readMap :: IO (Double, KdTree Double PhotonInfo)
+readMap :: IO (Double, KT.KdTree Double PhotonInfo)
 readMap = do
   np' <- getLine
   pw' <- getLine
@@ -229,5 +230,8 @@ readMap = do
   let np = read np' :: Int
       pw = read pw' :: Double
       pcs = map (\x -> read x :: PhotonCache) (lines ps)
-      pmap = build infoToPointList (map convertToInfo pcs)
+      --pmap = build infoToPointList (map convertToInfo pcs)
+      pmap = KT.buildWithDist infoToPointList squaredDistance (map convertToInfo pcs)
+      --pmap0 = KT.emptyWithDist infoToPointList squaredDistance
+      --pmap = foldl' KT.insert pmap0 (map convertToInfo pcs)
   return (pw, pmap)

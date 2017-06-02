@@ -14,6 +14,7 @@ module Ray.Optics (
 , (<**>)
 , convertToInfo
 , infoToPointList
+, squaredDistance
 , initPhoton
 , photonDir
 , photonDummy
@@ -36,7 +37,7 @@ import Ray.Physics
 --
 -- Radiance
 
-data Radiance = Radiance Double Double Double
+data Radiance = Radiance !Double !Double !Double
                 deriving (Read, Show)
 
 instance Eq Radiance where
@@ -121,6 +122,11 @@ convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
 
 infoToPointList :: PhotonInfo -> [Double]
 infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
+
+squaredDistance :: PhotonInfo -> PhotonInfo -> Double
+squaredDistance (PhotonInfo _ v1 _) (PhotonInfo _ v2 _) = d <.> d
+  where
+    d = v1 - v2
 
 photonInfoToRadiance :: Direction3 -> Double -> PhotonInfo -> Radiance
 photonInfoToRadiance n pw (PhotonInfo wl p d)

@@ -48,10 +48,10 @@ getDir = snd
 -- Shape
 -----------------------
 
-data Shape = Point Position3
-           | Plain Direction3 Double
-           | Sphere Position3 Double
-           | Parallelogram Position3 Direction3 Direction3 Direction3
+data Shape = Point !Position3
+           | Plain !Direction3 !Double
+           | Sphere !Position3 !Double
+           | Parallelogram !Position3 !Direction3 !Direction3 !Direction3
            deriving Eq
 
 getNormal :: Position3 -> Shape -> Maybe Direction3

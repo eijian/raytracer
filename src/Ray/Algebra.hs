@@ -71,7 +71,7 @@ class (BasicMatrix a) => Vector a where
   square :: a -> Double
   square v = v <.> v
 
-data Vector3 = Vector3 Double Double Double deriving (Read, Show)
+data Vector3 = Vector3 !Double !Double !Double deriving (Read, Show)
 
 {-
 instance Show Vector3 where

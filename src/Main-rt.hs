@@ -10,6 +10,7 @@ module Main where
 import Control.Monad
 import System.IO
 import Data.KdTree.Static
+--import Data.KdTree.Dynamic
 import qualified Data.Vector as V
 
 --import Ray.Geometry
