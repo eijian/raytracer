@@ -26,7 +26,7 @@ main = do
   (power, photonmap) <- readMap
   hPutStrLn stderr ("finished reading map:" ++ (show $ size photonmap))
   let
-    tracer = traceRay 0 power photonmap objs
+    tracer = traceRay 0 power photonmap objs lgts
   outputHeader
   forM_ yline $ \y -> do
     let

@@ -103,7 +103,8 @@ getRadiance l@(PointLight (Color r g b) f _) (d:ds) =
 getRadiance l@(ParallelogramLight (Color r g b) f _ _ _ _) (d:ds) =
   (Radiance (r * l0) (g * l0) (b * l0)) : getRadiance l ds
   where
-    l0 = (f * paraDiv * paraDiv) / (pi4 * d)
+    -- 平面光源は片方向のみ放射するので2倍の出力になる
+    l0 = (2 * f * paraDiv * paraDiv) / (pi4 * d)
 getRadiance l@(SunLight (Color r g b) f _ _ _ _ _) (d:ds) =
   (Radiance (r * f) (g * f) (b * f)) : getRadiance l ds
 

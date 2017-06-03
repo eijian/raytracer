@@ -31,5 +31,5 @@ outputPhotonCaches n lgt = mapM_ (outputPhotonCache lgt) [1..n]
 
 outputPhotonCache :: Light -> Int -> IO ()
 outputPhotonCache lgt _ =
-  generatePhoton lgt >>= tracePhoton objs 1 >>= mapM_ (putStrLn.show)
+  generatePhoton lgt >>= tracePhoton objs 0 >>= mapM_ (putStrLn.show)
 

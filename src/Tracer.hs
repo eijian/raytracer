@@ -56,8 +56,8 @@ tracePhoton os l (wl, r) = do
         then reflect p n os l wl
         --then return []
         else return []
-      --if l > 1 && diffuseness m > 0.0
-      if diffuseness m > 0.0
+      if l > 0 && diffuseness m > 0.0
+      --if diffuseness m > 0.0
         then return $ ((wl, initRay p (getDir r)) : pcs)
         else return pcs
 
@@ -75,17 +75,32 @@ reflect p n os l wl = do
 
 sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)
-
+{-
 traceRay :: Int -> Double -> KT.KdTree Double PhotonInfo -> [Object] -> Ray
          -> IO Radiance
 traceRay 10 _ _ _ _ = return radiance0
-traceRay l pw pmap objs r
+traceRay l pw pmap objs lgts r
   | is == Nothing = return radiance0
   | otherwise     = return (sr_half *> emittance m
                   + estimateRadiance pw pmap (p, n, m))
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
+-}
+traceRay :: Int -> Double -> KT.KdTree Double PhotonInfo -> [Object]
+         -> [Light] -> Ray -> IO Radiance
+traceRay 10 _ _ _ _ _ = return radiance0
+traceRay l pw pmap objs lgts r
+  | is == Nothing = return radiance0
+  | otherwise     = return (em + di + ii)
+  where
+    is = calcIntersection r objs
+    (p, n, m) = fromJust is
+    em = sr_half *> emittance m
+    radDiff = foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
+    di = brdf m radDiff
+    --di = radiance0
+    ii = estimateRadiance pw pmap (p, n, m)
 
 estimateRadiance :: Double -> KT.KdTree Double PhotonInfo -> Intersection
                  -> Radiance
