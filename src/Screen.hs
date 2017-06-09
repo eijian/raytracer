@@ -9,6 +9,7 @@ module Screen (
 , outputHeader
 , outputImage
 , yline
+, scrmap
 , oneLine
 , eyepos
 , eyedir

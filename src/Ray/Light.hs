@@ -14,7 +14,7 @@ module Ray.Light (
 
 --import System.Random
 import System.Random.Mersenne as MT
---import Data.Maybe
+import Data.Maybe
 import NumericPrelude
 
 import Ray.Algebra
@@ -79,7 +79,17 @@ getDirection :: Light -> Position3 -> [Direction3]
 getDirection (PointLight _ _ lp) p = [lp - p]
 getDirection (ParallelogramLight _ _ lp _ d1 d2) p =
   map (\(tx, ty) -> lp + tx *> d1 + ty *> d2 - p) tss
-getDirection (SunLight _ _ lp _ d1 d2 dt) p
+getDirection (SunLight _ _ lp n d1 d2 dt) p
+  | cos > 0.0      = []
+  | res == Nothing = []
+  | otherwise      = [t *> dt']
+  where
+    d = lp - p
+    cos = n <.> d
+    dt' = negate dt
+    res = methodMoller 2.0 lp d1 d2 p dt'
+    (u, v, t) = fromJust res
+{-
   | detA == 0.0        = []
   | u < 0.0 || u > 1.0 = []
   | v < 0.0 || v > 1.0 = []
@@ -93,6 +103,7 @@ getDirection (SunLight _ _ lp _ d1 d2 dt) p
     u = (re2 <.> p0)  / detA
     v = (te1 <.> dt') / detA
     t = (te1 <.> d2)  / detA
+-}
 
 getRadiance :: Light -> [Double] -> [Radiance]
 getRadiance _ [] = [radiance0]

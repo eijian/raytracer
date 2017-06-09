@@ -16,8 +16,12 @@ import Tracer
 main :: IO ()
 main = do
   outputHeader
+{-
   forM_ yline $ \y -> do
     let
       line = oneLine y
       image = V.map (traceRay' 0 lgts objs) $ V.map generateRay' line
     outputImage image
+-}
+  let image = V.map (traceRay' 0 lgts objs) $ V.map generateRay' scrmap
+  outputImage image

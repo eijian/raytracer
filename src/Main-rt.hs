@@ -25,15 +25,7 @@ main :: IO ()
 main = do
   (power, photonmap) <- readMap
   hPutStrLn stderr ("finished reading map:" ++ (show $ size photonmap))
-  let
-    tracer = traceRay 0 power photonmap objs lgts
   outputHeader
-  forM_ yline $ \y -> do
-    let
-      line = oneLine y
-    image <- V.mapM tracer $ V.map generateRay' line
-    outputImage image
-    
---calcRadiance :: (Ray -> Radiance) -> [Radiance] -> Ray -> [Radiance]
---calcRadiance f rads ray = (f ray) : rads
-
+  let tracer = traceRay 0 power photonmap objs lgts
+  image <- V.mapM tracer $ V.map generateRay' scrmap
+  outputImage image

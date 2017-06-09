@@ -15,6 +15,7 @@ module Ray.Geometry (
 , initRayFromElem
 , target
 , diffuseReflection
+, methodMoller
 ) where
 
 import Data.Maybe
@@ -84,13 +85,17 @@ distance (pos, dir) (Sphere c r)
     t2 = sqrt t1
 -- Parallelogram
 distance r@(pos, dir) (Parallelogram p n d1 d2)
+  | res == Nothing = []
+  | otherwise      = [t]
+  where
+    res = methodMoller 2.0 p d1 d2 pos dir
+    (u, v, t) = fromJust res
+{-
   | detA == 0.0        = []
   | u < 0.0 || u > 1.0 = []
   | v < 0.0 || v > 1.0 = []
   | otherwise          = [t]
   where
-    -- ポリゴンの当たり判定
-    -- https://shikousakugo.wordpress.com/2012/07/01/ray-intersection-3/
     re2  = dir <*> d2
     detA = re2 <.> d1
     p0   = pos - p
@@ -98,6 +103,7 @@ distance r@(pos, dir) (Parallelogram p n d1 d2)
     u = (re2 <.> p0)  / detA
     v = (te1 <.> dir) / detA
     t = (te1 <.> d2)  / detA
+-}
 -- Point
 distance _ _ = []
 
@@ -110,3 +116,28 @@ diffuseReflection n = do
   d <- generateRandomDir4
   let cos = n <.> d
   return $ if cos > 0.0 then d else negate d
+
+--
+-- UTILS
+--
+
+-- ポリゴンの当たり判定
+-- https://shikousakugo.wordpress.com/2012/07/01/ray-intersection-3/
+methodMoller :: Double -> Position3 -> Direction3 -> Direction3
+             -> Position3 -> Direction3
+             -> Maybe (Double, Double, Double)
+methodMoller l p0 d1 d2 p d
+  | detA == 0.0        = Nothing
+  | u < 0.0 || u > 1.0 = Nothing
+  | v < 0.0 || v > 1.0 = Nothing
+  | u + v > l          = Nothing
+  | otherwise          = Just (u, v, t)
+  where
+    re2 = d <*> d2
+    detA = re2 <.> d1
+    p'   = p - p0
+    te1  = p' <*> d1
+    u    = (re2 <.> p') / detA
+    v    = (te1 <.> d)  / detA
+    t    = (te1 <.> d2) / detA
+
