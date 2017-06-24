@@ -49,11 +49,28 @@ getDir = snd
 -- Shape
 -----------------------
 
-data Shape = Point !Position3
-           | Plain !Direction3 !Double
-           | Sphere !Position3 !Double
-           | Parallelogram !Position3 !Direction3 !Direction3 !Direction3
-           deriving Eq
+data Shape =
+  Point
+  { pos    :: !Position3
+  }
+  |
+  Plain
+  { nvec   :: !Direction3
+  , d      :: !Double
+  }
+  |
+  Sphere
+  { center :: !Position3
+  , radius :: !Double
+  }
+  |
+  Parallelogram
+  { p0     :: !Position3
+  , nvec   :: !Direction3
+  , dir1   :: !Direction3
+  , dir2   :: !Direction3
+  }
+  deriving Eq
 
 getNormal :: Position3 -> Shape -> Maybe Direction3
 -- Plain
@@ -90,20 +107,6 @@ distance r@(pos, dir) (Parallelogram p n d1 d2)
   where
     res = methodMoller 2.0 p d1 d2 pos dir
     (u, v, t) = fromJust res
-{-
-  | detA == 0.0        = []
-  | u < 0.0 || u > 1.0 = []
-  | v < 0.0 || v > 1.0 = []
-  | otherwise          = [t]
-  where
-    re2  = dir <*> d2
-    detA = re2 <.> d1
-    p0   = pos - p
-    te1  = p0 <*> d1
-    u = (re2 <.> p0)  / detA
-    v = (te1 <.> dir) / detA
-    t = (te1 <.> d2)  / detA
--}
 -- Point
 distance _ _ = []
 
@@ -140,4 +143,3 @@ methodMoller l p0 d1 d2 p d
     u    = (re2 <.> p') / detA
     v    = (te1 <.> d)  / detA
     t    = (te1 <.> d2) / detA
-

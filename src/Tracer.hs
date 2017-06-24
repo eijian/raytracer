@@ -29,14 +29,10 @@ import Ray.Material
 import Ray.Physics
 import Ray.Optics
 
+import Screen
+
 --
 -- PARAMETERS
-
-nPhoton :: Int
-nPhoton = 200
-
-radius2 :: Double
-radius2 = 0.2 * 0.2
 
 sqpi2 :: Double
 sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
@@ -56,8 +52,7 @@ tracePhoton os l (wl, r) = do
         then reflect p n os l wl
         --then return []
         else return []
-      --if l > 0 && diffuseness m > 0.0
-      if diffuseness m > 0.0
+      if (useClassicForDirect == False || l > 0) && diffuseness m > 0.0
         then return $ ((wl, initRay p (getDir r)) : pcs)
         else return pcs
 
@@ -75,18 +70,7 @@ reflect p n os l wl = do
 
 sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)
-{-
-traceRay :: Int -> Double -> KT.KdTree Double PhotonInfo -> [Object] -> Ray
-         -> IO Radiance
-traceRay 10 _ _ _ _ = return radiance0
-traceRay l pw pmap objs lgts r
-  | is == Nothing = return radiance0
-  | otherwise     = return (sr_half *> emittance m
-                  + estimateRadiance pw pmap (p, n, m))
-  where
-    is = calcIntersection r objs
-    (p, n, m) = fromJust is
--}
+
 traceRay :: Int -> Double -> KT.KdTree Double PhotonInfo -> [Object]
          -> [Light] -> Ray -> IO Radiance
 traceRay 10 _ _ _ _ _ = return radiance0
@@ -97,9 +81,9 @@ traceRay l pw pmap objs lgts r
     is = calcIntersection r objs
     (p, n, m) = fromJust is
     em = sr_half *> emittance m
-    --radDiff = foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
-    --di = brdf m radDiff
-    di = radiance0
+    di = if useClassicForDirect
+      then brdf m $ foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
+      else radiance0
     ii = estimateRadiance pw pmap (p, n, m)
 
 estimateRadiance :: Double -> KT.KdTree Double PhotonInfo -> Intersection
@@ -114,8 +98,9 @@ estimateRadiance pw pmap (p, n, m)
     rad = sumRadiance1 n pw rmax rs ps
 
 isValidPhoton :: Position3 -> Direction3 -> PhotonInfo -> Bool
---isValidPhoton p n ph = True
-isValidPhoton p n ph = square (p - photonPos ph) < radius2
+isValidPhoton p n ph
+  | radius2 == 0.0 = True
+  | otherwise      = square (p - photonPos ph) < radius2
 
 -- filtering:
 --   sumRadiance1  non filter
@@ -172,10 +157,6 @@ waitGauss pw rmax dp = pw * alpha * (1.0 - e_r / e_beta)
 ------
 -- CLASICAL RAY TRACING
 ------
-
-amb :: Radiance
-amb = Radiance 0.002 0.002 0.002
---amb = Radiance 0.00 0.00 0.00
 
 traceRay' :: Int -> [Light] -> [Object] -> Ray -> Radiance
 traceRay' l lgts objs r

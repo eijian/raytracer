@@ -6,6 +6,10 @@
 
 module Screen (
   generateRay'
+, useClassicForDirect
+, nPhoton
+, amb
+, radius2
 , outputHeader
 , outputImage
 , yline
@@ -27,6 +31,25 @@ import Ray.Geometry
 import Ray.Optics
 
 -- PARAMETERS --
+
+-- for rendering
+
+useClassicForDirect :: Bool
+useClassicForDirect = False
+
+nPhoton :: Int
+nPhoton = 200
+
+amb :: Radiance
+amb = Radiance 0.002 0.002 0.002
+--amb = Radiance 0.00 0.00 0.00
+
+-- radius for estimation of radiance
+radius2 :: Double
+--radius2 = 0.0
+radius2 = 0.2 * 0.2
+
+
 
 -- for camera
 
@@ -58,6 +81,9 @@ gamma = 1.0 / 2.2
 
 rgbmax :: Double
 rgbmax = 255.0
+
+antiAliasing :: Bool
+antiAliasing = False
 
 -- CONSTANTS --
 

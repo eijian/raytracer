@@ -24,11 +24,31 @@ import Ray.Optics
 
 type Flux = Double
 
-data Light = PointLight Color Flux Position3
-           | ParallelogramLight Color Flux Position3
-               Direction3 Direction3 Direction3
-           | SunLight Color Flux Position3
-               Direction3 Direction3 Direction3 Direction3
+data Light =
+  PointLight
+  { lcolor :: Color
+  , lflux  :: Flux
+  , pos    :: Position3
+  }
+  |
+  ParallelogramLight
+  { lcolor :: Color
+  , lflux  :: Flux
+  , pos    :: Position3
+  , nvec   :: Direction3
+  , dir1   :: Direction3
+  , dir2   :: Direction3
+  }
+  |
+  SunLight
+  { lcolor :: Color
+  , lflux  :: Flux
+  , pos    :: Position3
+  , nvec   :: Direction3
+  , dir1   :: Direction3
+  , dir2   :: Direction3
+  , ldir   :: Direction3
+  }
 
 instance Show Light where
   show (PointLight c f p) = "[" ++ show c ++ "," ++ show f ++ "," ++ show p ++ "]"
@@ -52,9 +72,8 @@ generatePhoton (ParallelogramLight c _ p n d1 d2) = do
   wl <- MT.randomIO :: IO Double
   t1 <- MT.randomIO :: IO Double
   t2 <- MT.randomIO :: IO Double
-  d0 <- generateRandomDir4
-  let d = if (d0 <.> n) < 0 then negate d0 else d0
-      r = initRay (p + t1 *> d1 + t2 *> d2) d
+  d  <- diffuseReflection n
+  let r = initRay (p + t1 *> d1 + t2 *> d2) d
       w = decideWavelength c wl
   return (w, r)
 generatePhoton (SunLight c _ p n d1 d2 d0) = do
@@ -77,8 +96,11 @@ tss = [(x, y) | x <- ts, y <- ts]
 
 getDirection :: Light -> Position3 -> [Direction3]
 getDirection (PointLight _ _ lp) p = [lp - p]
-getDirection (ParallelogramLight _ _ lp _ d1 d2) p =
-  map (\(tx, ty) -> lp + tx *> d1 + ty *> d2 - p) tss
+getDirection (ParallelogramLight _ _ lp n d1 d2) p =
+  filter (\d -> n <.> d < 0.0) $ map (\(tx, ty) -> getPos tx ty - p) tss
+  where
+    getPos :: Double -> Double -> Position3
+    getPos tx ty = lp + tx *> d1 + ty *> d2
 getDirection (SunLight _ _ lp n d1 d2 dt) p
   | cos > 0.0      = []
   | res == Nothing = []
@@ -89,21 +111,6 @@ getDirection (SunLight _ _ lp n d1 d2 dt) p
     dt' = negate dt
     res = methodMoller 2.0 lp d1 d2 p dt'
     (u, v, t) = fromJust res
-{-
-  | detA == 0.0        = []
-  | u < 0.0 || u > 1.0 = []
-  | v < 0.0 || v > 1.0 = []
-  | otherwise          = [dt']
-  where
-    dt'  = negate dt
-    re2  = dt' <*> d2
-    detA = re2 <.> d1
-    p0   = p - lp
-    te1  = p0 <*> d1
-    u = (re2 <.> p0)  / detA
-    v = (te1 <.> dt') / detA
-    t = (te1 <.> d2)  / detA
--}
 
 getRadiance :: Light -> [Double] -> [Radiance]
 getRadiance _ [] = [radiance0]
@@ -118,4 +125,3 @@ getRadiance l@(ParallelogramLight (Color r g b) f _ _ _ _) (d:ds) =
     l0 = (2 * f * paraDiv * paraDiv) / (pi4 * d)
 getRadiance l@(SunLight (Color r g b) f _ _ _ _ _) (d:ds) =
   (Radiance (r * f) (g * f) (b * f)) : getRadiance l ds
-
