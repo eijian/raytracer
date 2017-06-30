@@ -28,4 +28,6 @@ main = do
   outputHeader
   let tracer = traceRay 0 power photonmap objs lgts
   image <- V.mapM tracer $ V.map generateRay' scrmap
-  outputImage image
+  let
+    ps = convertToPixels image
+  outputImage ps

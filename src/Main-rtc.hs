@@ -23,5 +23,7 @@ main = do
       image = V.map (traceRay' 0 lgts objs) $ V.map generateRay' line
     outputImage image
 -}
-  let image = V.map (traceRay' 0 lgts objs) $ V.map generateRay' scrmap
-  outputImage image
+  let
+    image = V.map (traceRay' 0 lgts objs) $ V.map generateRay' scrmap
+    pixels = convertToPixels image
+  outputImage pixels

@@ -18,6 +18,7 @@ module Screen (
 , eyepos
 , eyedir
 , focus
+, convertToPixels
 ) where
 
 import System.IO
@@ -132,10 +133,33 @@ generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
 
 generateRay' = generateRay eyepos origin step evec
 
-outputImage :: V.Vector Radiance -> IO ()
+convertToPixels :: V.Vector Radiance -> V.Vector [Int]
+convertToPixels rs = V.map toRgb rs
+  where
+    toRgb :: Radiance -> [Int]
+    toRgb (Radiance r g b) = [radianceToRgb clip r
+                            , radianceToRgb clip g
+                            , radianceToRgb clip b]
+
+outputImage :: V.Vector [Int] -> IO ()
 outputImage rs = do
   V.forM_ rs $ \i -> do
-    putStrLn $ convertOneCell i
+    putStrLn (show (i !! 0) ++ " " ++ show (i !! 1) ++ " " ++ show (i !! 2))
+
+{- |
+  diffCell
+
+>>> let a = [100, 110, 120]
+>>> let b = [ 98, 120,  70]
+>>> diffCell a b
+62
+-}
+
+diffCell :: [Int] -> [Int] -> Int
+diffCell a b = sum $ zipWith (\a b -> fabs (a - b)) a b
+  where
+    fabs :: Int -> Int
+    fabs s = if s > 0 then s else (-s)
 
 outputHeader :: IO ()
 outputHeader = do
