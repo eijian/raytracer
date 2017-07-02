@@ -158,10 +158,10 @@ waitGauss pw rmax dp = pw * alpha * (1.0 - e_r / e_beta)
 -- CLASICAL RAY TRACING
 ------
 
-traceRay' :: Int -> [Light] -> [Object] -> Ray -> Radiance
+traceRay' :: Int -> [Light] -> [Object] -> Ray -> IO Radiance
 traceRay' l lgts objs r
-  | is == Nothing = radiance0
-  | otherwise     = sr_half *> emittance m + brdf m (radDiff + amb)
+  | is == Nothing = return radiance0
+  | otherwise     = return (sr_half *> emittance m + brdf m (radDiff + amb))
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is

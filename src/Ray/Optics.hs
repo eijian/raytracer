@@ -41,8 +41,8 @@ data Radiance = Radiance !Double !Double !Double
                 deriving (Read, Show)
 
 instance Eq Radiance where
-  (Radiance ar ag ab) == (Radiance br bg bb)
-    = ar == br && ag == bg && ab == bb
+  (Radiance r1 g1 b1) == (Radiance r2 g2 b2)
+    = r1 == r2 && g1 == g2 && b1 == b2
 
 instance Arbitrary Radiance where
   arbitrary = do
@@ -53,21 +53,24 @@ instance Arbitrary Radiance where
 
 instance Additive.C Radiance where
   zero = Radiance 0 0 0
-  (Radiance ar ag ab) + (Radiance br bg bb)
-    = Radiance (ar + br) (ag + bg) (ab + bb)
-  (Radiance ar ag ab) - (Radiance br bg bb)
-    = Radiance (ar - br) (ag - bg) (ab - bb)
+  (Radiance r1 g1 b1) + (Radiance r2 g2 b2)
+    = Radiance (r1 + r2) (g1 + g2) (b1 + b2)
+  (Radiance r1 g1 b1) - (Radiance r2 g2 b2)
+    = Radiance (r1 - r2) (g1 - g2) (b1 - b2)
 
 instance Module.C Double Radiance where
   s *> (Radiance r g b) = Radiance (s * r) (s * g) (s * b)
 
 instance BasicMatrix Radiance where
-  norm (Radiance r g b) = r + g + b
+  norm (Radiance r g b) = rabs r + rabs g + rabs b
   a .=. b = norm (a - b) < nearly0
 
+rabs :: Double -> Double
+rabs d = if d < 0.0 then (-d) else d
+
 (<**>) :: Color -> Radiance -> Radiance
-(Color ar ag ab) <**> (Radiance br bg bb)
-  = Radiance (ar * br) (ag * bg) (ab * bb)
+(Color cr cg cb) <**> (Radiance r g b)
+  = Radiance (cr * r) (cg * g) (cb * b)
 infix 7 <**>
 
 elemR :: Radiance -> Double

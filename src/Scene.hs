@@ -24,8 +24,8 @@ pl1 :: Light
 --pl2 :: Light
 lgts :: [Light]
 --pl1 = PointLight (initColor 1 1 1) 5.0 (initPos 0 3.99 3.0) -- 5W
---pl1 = ParallelogramLight (initColor 1 1 1) 5.0 (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3  -- 5W Parallelogram
-pl1 = SunLight (initColor 1 1 1) 20.0 (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3 (fromJust $ normalize $ Vector3 1 (-1) 1)  -- 10W Sun
+pl1 = ParallelogramLight (initColor 1 1 1) 5.0 (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3  -- 5W Parallelogram
+--pl1 = SunLight (initColor 1 1 1) 20.0 (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3 (fromJust $ normalize $ Vector3 1 (-1) 1)  -- 10W Sun
 --pl1 = PointLight (initColor 1 1 1) 1.0 (initPos (-1.5) 3.5 4.5) -- 1W
 --pl2 = PointLight (initColor 2 1 0) 1.0 (initPos 1.5 3.5 4.5) -- 1W
 lgts = [pl1]
@@ -52,8 +52,8 @@ wall_bk = initObject (Plain ez3 6) m_wall
 wall_ft = initObject (Plain (negate ez3) 5) m_wall
 ball1   = initObject (Sphere (initPos 0 0.8 3.0) 0.8) m_ball
 --ball1   = initObject (Sphere (initPos 1 0.8 3.0) 0.8) m_ball
---paralgt = initObject (Parallelogram (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3) m_paral
-paralgt = initObject (Parallelogram (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3) m_sunl
+paralgt = initObject (Parallelogram (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3) m_paral
+--paralgt = initObject (Parallelogram (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3) m_sunl
 
 objs :: [Object]
 objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1, paralgt]

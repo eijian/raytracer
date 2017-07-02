@@ -10,18 +10,17 @@ module Screen (
 , nPhoton
 , amb
 , radius2
-, outputHeader
-, outputImage
-, yline
+--, outputHeader
+, createHeader
+--, outputImage
 , scrmap
-, oneLine
 , eyepos
 , eyedir
 , focus
-, convertToPixels
+, antiAliasing
+, radianceToRgb
 ) where
 
-import System.IO
 import Control.Monad
 import Data.Maybe
 import qualified Data.Vector as V
@@ -36,13 +35,14 @@ import Ray.Optics
 -- for rendering
 
 useClassicForDirect :: Bool
-useClassicForDirect = False
+--useClassicForDirect = False
+useClassicForDirect = True
 
 nPhoton :: Int
 nPhoton = 200
 
 amb :: Radiance
-amb = Radiance 0.002 0.002 0.002
+amb = Radiance 0.001 0.001 0.001
 --amb = Radiance 0.00 0.00 0.00
 
 -- radius for estimation of radiance
@@ -57,8 +57,11 @@ radius2 = 0.2 * 0.2
 eyepos :: Position3
 eyepos = initPos 0 2 (-4.5)
 
+targetPos :: Position3
+targetPos = initPos 0 2 0
+
 eyedir :: Direction3
-eyedir = ez3
+eyedir = fromJust $ normalize (targetPos - eyepos)
 
 upper :: Vector3
 upper = ey3
@@ -74,8 +77,11 @@ yres = 256
 
 -- for image output
 
-clip :: Double
-clip = 0.005
+maxRadiance :: Double
+maxRadiance = 0.005
+
+diffAliasing :: Double
+diffAliasing = maxRadiance * 0.1
 
 gamma :: Double
 gamma = 1.0 / 2.2
@@ -98,10 +104,10 @@ step :: (Double, Double)
 step = (stepx, stepy)
 
 eex :: Vector3
-eex = ex3
+eex = fromJust $ normalize (upper <*> eyedir)
 
 eey :: Vector3
-eey = negate ey3
+eey = fromJust $ normalize (eex <*> eyedir)
 
 evec :: (Vector3, Vector3)
 evec = (eex, eey)
@@ -111,28 +117,23 @@ origin = eyepos + focus *> eyedir
   + ((-1.0 + 0.5 * stepx) *> eex)
   - (( 1.0 - 0.5 * stepy) *> eey)
 
-
-yline :: [Int]
-yline = [0..(yres - 1)]
-
-scrmap :: V.Vector (Int, Int)
-scrmap = V.fromList [(y, x) | y <- yline, x <- [0..(xres - 1)]]  
+scrmap :: V.Vector (Double, Double)
+scrmap = V.fromList [(fromIntegral y, fromIntegral x) |
+  y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
 
 -- FUNCTIONS --
 
-oneLine :: Int -> V.Vector (Int, Int)
-oneLine y = V.fromList [(y, x) | x <- [0..(xres - 1)]]
-
 generateRay :: Position3 -> Position3 -> (Double, Double)
-            -> (Direction3, Direction3) -> (Int, Int) -> Ray
+            -> (Direction3, Direction3) -> (Double, Double) -> Ray
 generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
   where
-    tgt   = o + ((sx * fromIntegral x) *> ex) + ((sy * fromIntegral y) *> ey)
+    tgt   = o + ((sx * x) *> ex) + ((sy * y) *> ey)
     edir  = tgt - e 
     edir' = fromJust $ normalize edir
 
 generateRay' = generateRay eyepos origin step evec
 
+{-
 convertToPixels :: V.Vector Radiance -> V.Vector [Int]
 convertToPixels rs = V.map toRgb rs
   where
@@ -140,47 +141,24 @@ convertToPixels rs = V.map toRgb rs
     toRgb (Radiance r g b) = [radianceToRgb clip r
                             , radianceToRgb clip g
                             , radianceToRgb clip b]
-
-outputImage :: V.Vector [Int] -> IO ()
-outputImage rs = do
-  V.forM_ rs $ \i -> do
-    putStrLn (show (i !! 0) ++ " " ++ show (i !! 1) ++ " " ++ show (i !! 2))
-
-{- |
-  diffCell
-
->>> let a = [100, 110, 120]
->>> let b = [ 98, 120,  70]
->>> diffCell a b
-62
 -}
 
-diffCell :: [Int] -> [Int] -> Int
-diffCell a b = sum $ zipWith (\a b -> fabs (a - b)) a b
-  where
-    fabs :: Int -> Int
-    fabs s = if s > 0 then s else (-s)
-
-outputHeader :: IO ()
-outputHeader = do
-  mapM_ putStrLn $ createHeader xres yres
-
-createHeader :: Int -> Int -> [String]
-createHeader xres yres =
+createHeader :: [String]
+createHeader =
   ["P3"
   ,"## test"
   ,show xres ++ " " ++ show yres
   ,"255"
   ]
 
-convertOneCell :: Radiance -> String
-convertOneCell (Radiance r g b) =
-  (show $ radianceToRgb clip r) ++ " " ++
-  (show $ radianceToRgb clip g) ++ " " ++
-  (show $ radianceToRgb clip b)
+radianceToRgb :: Radiance -> String
+radianceToRgb (Radiance r g b) =
+  (show $ clip maxRadiance r) ++ " " ++
+  (show $ clip maxRadiance g) ++ " " ++
+  (show $ clip maxRadiance b)
 
-radianceToRgb :: Double -> Double -> Int
-radianceToRgb c d = floor (r * rgbmax)
+clip :: Double -> Double -> Int
+clip c d = floor (r * rgbmax)
   where
     d' = d / c
     r  = (if d' > 1.0 then 1.0 else d') ** gamma

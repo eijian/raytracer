@@ -13,11 +13,10 @@ import Data.KdTree.Static
 --import Data.KdTree.Dynamic
 import qualified Data.Vector as V
 
---import Ray.Geometry
---import Ray.Optics
 import Scene
 import Screen
 import Tracer
+import Antialias
 
 -- FUNCTIONS --
 
@@ -25,9 +24,9 @@ main :: IO ()
 main = do
   (power, photonmap) <- readMap
   hPutStrLn stderr ("finished reading map:" ++ (show $ size photonmap))
-  outputHeader
+  mapM_ putStrLn $ createHeader
   let tracer = traceRay 0 power photonmap objs lgts
   image <- V.mapM tracer $ V.map generateRay' scrmap
-  let
-    ps = convertToPixels image
-  outputImage ps
+  forM_ [0..(V.length image - 1)] $ \i -> do
+    putStrLn $ radianceToRgb $ smooth antiAliasing tracer image i
+

@@ -12,18 +12,13 @@ import qualified Data.Vector as V
 import Scene
 import Screen
 import Tracer
+import Antialias
 
 main :: IO ()
 main = do
-  outputHeader
-{-
-  forM_ yline $ \y -> do
-    let
-      line = oneLine y
-      image = V.map (traceRay' 0 lgts objs) $ V.map generateRay' line
-    outputImage image
--}
+  mapM_ putStrLn $ createHeader
   let
-    image = V.map (traceRay' 0 lgts objs) $ V.map generateRay' scrmap
-    pixels = convertToPixels image
-  outputImage pixels
+    tracer = traceRay' 0 lgts objs
+  image <- V.mapM tracer $ V.map generateRay' scrmap
+  forM_ [0..(V.length image - 1)] $ \i -> do
+    putStrLn $ radianceToRgb $ smooth antiAliasing tracer image i
