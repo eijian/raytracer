@@ -17,8 +17,11 @@ module Screen (
 , eyepos
 , eyedir
 , focus
+, xres
 , antiAliasing
+, diffAliasing
 , radianceToRgb
+, rgbToString
 ) where
 
 import Control.Monad
@@ -90,7 +93,8 @@ rgbmax :: Double
 rgbmax = 255.0
 
 antiAliasing :: Bool
-antiAliasing = False
+--antiAliasing = False
+antiAliasing = True
 
 -- CONSTANTS --
 
@@ -151,14 +155,18 @@ createHeader =
   ,"255"
   ]
 
-radianceToRgb :: Radiance -> String
+radianceToRgb :: Radiance -> (Int, Int, Int)
 radianceToRgb (Radiance r g b) =
-  (show $ clip maxRadiance r) ++ " " ++
-  (show $ clip maxRadiance g) ++ " " ++
-  (show $ clip maxRadiance b)
+  ( clip maxRadiance r
+  , clip maxRadiance g
+  , clip maxRadiance b
+  )
 
 clip :: Double -> Double -> Int
 clip c d = floor (r * rgbmax)
   where
     d' = d / c
     r  = (if d' > 1.0 then 1.0 else d') ** gamma
+
+rgbToString :: (Int, Int, Int) -> String
+rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b

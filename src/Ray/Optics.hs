@@ -12,6 +12,7 @@ module Ray.Optics (
 , PhotonInfo
 , Radiance (Radiance)
 , (<**>)
+, rabs'
 , convertToInfo
 , infoToPointList
 , squaredDistance
@@ -21,6 +22,7 @@ module Ray.Optics (
 , photonInfoToRadiance
 , photonPos
 , radiance0
+, norm
 ) where
 
 import NumericPrelude
@@ -51,6 +53,13 @@ instance Arbitrary Radiance where
     b <- arbitrary
     return $ Radiance r g b
 
+{- |
+
+>>> let r1 = Radiance 0.01 0.02 0.005
+>>> let r2 = Radiance 0.008 0.015 0.009
+>>> norm (r1 - r2)
+0 0 0
+-}
 instance Additive.C Radiance where
   zero = Radiance 0 0 0
   (Radiance r1 g1 b1) + (Radiance r2 g2 b2)
@@ -67,6 +76,14 @@ instance BasicMatrix Radiance where
 
 rabs :: Double -> Double
 rabs d = if d < 0.0 then (-d) else d
+
+{- |
+>>> rabs' (Radiance 0.001 (-0.02) (-0.00005))
+0.0
+-}
+
+rabs' :: Radiance -> Radiance
+rabs' (Radiance r g b) = Radiance (rabs r) (rabs g) (rabs b)
 
 (<**>) :: Color -> Radiance -> Radiance
 (Color cr cg cb) <**> (Radiance r g b)
@@ -87,7 +104,7 @@ radiance0 = Radiance 0 0 0
 -- >>> let a = Radiance 0.1 0.8 0.3
 -- >>> let b = Radiance 1.1 0.2 2.5
 -- >>> a + b
--- Radiance 1 1 1
+-- Radiance 1.2 1.0 2.8
 
 --
 -- Photon 

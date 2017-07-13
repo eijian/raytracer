@@ -28,5 +28,9 @@ main = do
   let tracer = traceRay 0 power photonmap objs lgts
   image <- V.mapM tracer $ V.map generateRay' scrmap
   forM_ [0..(V.length image - 1)] $ \i -> do
-    putStrLn $ radianceToRgb $ smooth antiAliasing tracer image i
-
+    putStrLn $ rgbToString.radianceToRgb $ smooth antiAliasing tracer image i
+{-
+  let cells = V.map radianceToRgb image
+  forM_ [0..(V.length cells - 1)] $ \i -> do
+    putStrLn $ smooth antiAliasing tracer cells i
+-}

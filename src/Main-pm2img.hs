@@ -21,9 +21,9 @@ import Screen
 
 -- PARAMETERS --
 
-xres, yres :: Int
-xres = 2048
-yres = 2048
+xr, yr :: Int
+xr = 2048
+yr = 2048
 
 ----
 
@@ -47,8 +47,8 @@ getMap :: Position3 -> Shape -> [PhotonCache] -> [(Wavelength, Int, Int)]
 getMap _ _ [] = []
 getMap cp sc (pc:pcs)
   | t < focus = getMap cp sc pcs
-  | px < 0 || px > (xres - 1) = getMap cp sc pcs
-  | py < 0 || py > (yres - 1) = getMap cp sc pcs
+  | px < 0 || px > (xr - 1) = getMap cp sc pcs
+  | py < 0 || py > (yr - 1) = getMap cp sc pcs
   | otherwise = (getWl pc, px, py) : getMap cp sc pcs
   where
     d = (getPt pc) - eyepos
@@ -59,8 +59,8 @@ getMap cp sc (pc:pcs)
     --cos = ez3 <.> d'
     --t = focus / cos
     --p = eyepos + t *> d'
-    px = round ((elemX p + 1.0) * (fromIntegral xres / 2))
-    py = round ((1.0 - elemY p) * (fromIntegral yres / 2))
+    px = round ((elemX p + 1.0) * (fromIntegral xr / 2))
+    py = round ((1.0 - elemY p) * (fromIntegral yr / 2))
 
 getPt :: PhotonCache -> Position3
 getPt (_, (p, _)) = p

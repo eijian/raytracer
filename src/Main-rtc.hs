@@ -21,4 +21,4 @@ main = do
     tracer = traceRay' 0 lgts objs
   image <- V.mapM tracer $ V.map generateRay' scrmap
   forM_ [0..(V.length image - 1)] $ \i -> do
-    putStrLn $ radianceToRgb $ smooth antiAliasing tracer image i
+    putStrLn $ rgbToString.radianceToRgb $ smooth antiAliasing tracer image i
