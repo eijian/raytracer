@@ -10,9 +10,7 @@ module Screen (
 , nPhoton
 , amb
 , radius2
---, outputHeader
 , createHeader
---, outputImage
 , scrmap
 , eyepos
 , eyedir
@@ -83,8 +81,8 @@ yres = 256
 maxRadiance :: Double
 maxRadiance = 0.005
 
-diffAliasing :: Double
-diffAliasing = maxRadiance * 0.1
+diffAliasing :: Int
+diffAliasing = 20
 
 gamma :: Double
 gamma = 1.0 / 2.2

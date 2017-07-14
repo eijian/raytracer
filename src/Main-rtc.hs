@@ -17,8 +17,10 @@ import Antialias
 main :: IO ()
 main = do
   mapM_ putStrLn $ createHeader
-  let
-    tracer = traceRay' 0 lgts objs
+  let tracer = traceRay' 0 lgts objs
   image <- V.mapM tracer $ V.map generateRay' scrmap
-  forM_ [0..(V.length image - 1)] $ \i -> do
-    putStrLn $ rgbToString.radianceToRgb $ smooth antiAliasing tracer image i
+  let cells = V.map radianceToRgb image
+  forM_ [0..(V.length cells - 1)] $ \i -> do
+    rgb <- smooth antiAliasing tracer cells i
+    putStrLn $ rgbToString rgb
+
