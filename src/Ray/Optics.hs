@@ -149,7 +149,7 @@ squaredDistance (PhotonInfo _ v1 _) (PhotonInfo _ v2 _) = d <.> d
     d = v1 - v2
 
 photonInfoToRadiance :: Direction3 -> Double -> PhotonInfo -> Radiance
-photonInfoToRadiance n pw (PhotonInfo wl p d)
+photonInfoToRadiance n pw (PhotonInfo wl _ d)
   | wl == Red   = Radiance (pw * cos) 0 0
   | wl == Green = Radiance 0 (pw * cos) 0
   | wl == Blue  = Radiance 0 0 (pw * cos)

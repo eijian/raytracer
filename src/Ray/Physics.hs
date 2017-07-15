@@ -63,14 +63,14 @@ russianRoulette
 
 russianRoulette :: Wavelength -> [Color] -> IO Int
 russianRoulette wl cs = do
-  r <- MT.randomIO :: IO Double
-  return $ rr wl cs 0.0 r (length cs)
+  rnd <- MT.randomIO :: IO Double
+  return $ rr wl cs 0.0 rnd (length cs)
 
 rr :: Wavelength -> [Color] -> Double -> Double -> Int -> Int
 rr _ [] _ _ len = len
-rr wl (c:cs) c0 r len
-  | r < c'    = len
-  | otherwise = rr wl cs c' r (len - 1)
+rr wl (c:cs) c0 rnd len
+  | rnd < c'  = len
+  | otherwise = rr wl cs c' rnd (len - 1)
   where
     c' = c0 + selWl wl c
     selWl :: Wavelength -> Color -> Double

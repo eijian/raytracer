@@ -110,7 +110,7 @@ getDirection (SunLight _ _ lp n d1 d2 dt) p
     cos = n <.> d
     dt' = negate dt
     res = methodMoller 2.0 lp d1 d2 p dt'
-    (u, v, t) = fromJust res
+    (_, _, t) = fromJust res
 
 getRadiance :: Light -> [Double] -> [Radiance]
 getRadiance _ [] = [radiance0]
@@ -123,5 +123,5 @@ getRadiance l@(ParallelogramLight (Color r g b) f _ _ _ _) (d:ds) =
   where
     -- 平面光源は片方向のみ放射するので2倍の出力になる
     l0 = (2 * f * paraDiv * paraDiv) / (pi4 * d)
-getRadiance l@(SunLight (Color r g b) f _ _ _ _ _) (d:ds) =
+getRadiance l@(SunLight (Color r g b) f _ _ _ _ _) (_:ds) =
   (Radiance (r * f) (g * f) (b * f)) : getRadiance l ds

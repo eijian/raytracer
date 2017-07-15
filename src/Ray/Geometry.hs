@@ -26,19 +26,19 @@ import Ray.Algebra
 type Ray = (Position3, Direction3)
 
 initRay :: Position3 -> Direction3 -> Ray
-initRay p d = (p, d)
+initRay pos dir = (pos, dir)
 
 initRayFromElem :: Double -> Double -> Double -> Double -> Double -> Double
                 -> Maybe Ray
 initRayFromElem px py pz dx dy dz
-  | d == Nothing = Nothing
-  | otherwise    = Just (p, fromJust d)
+  | dir == Nothing = Nothing
+  | otherwise      = Just (pos, fromJust dir)
   where
-    p = initPos px py pz
-    d = initDir dx dy dz
+    pos = initPos px py pz
+    dir = initDir dx dy dz
 
 target :: Double -> Ray -> Position3
-target t (p, d) = p + t *> d
+target t (pos, dir) = pos + t *> dir
 
 getPos :: Ray -> Position3
 getPos = fst
@@ -78,7 +78,7 @@ getNormal _ (Plain n _) = Just n
 -- Sphere
 getNormal p (Sphere c _) = normalize (p - c)
 -- Parallelogram
-getNormal p (Parallelogram _ n _ _) = Just n 
+getNormal _ (Parallelogram _ n _ _) = Just n 
 -- Point
 getNormal _ _ = Nothing
 
@@ -101,12 +101,12 @@ distance (pos, dir) (Sphere c r)
     t1 = r * r - (square o - (t0 * t0))
     t2 = sqrt t1
 -- Parallelogram
-distance r@(pos, dir) (Parallelogram p n d1 d2)
+distance (pos, dir) (Parallelogram p _ d1 d2)
   | res == Nothing = []
   | otherwise      = [t]
   where
     res = methodMoller 2.0 p d1 d2 pos dir
-    (u, v, t) = fromJust res
+    (_, _, t) = fromJust res
 -- Point
 distance _ _ = []
 
@@ -116,9 +116,9 @@ distance _ _ = []
 
 diffuseReflection :: Direction3 -> IO Direction3
 diffuseReflection n = do
-  d <- generateRandomDir4
-  let cos = n <.> d
-  return $ if cos > 0.0 then d else negate d
+  dir <- generateRandomDir4
+  let cos = n <.> dir
+  return $ if cos > 0.0 then dir else negate dir
 
 --
 -- UTILS

@@ -16,14 +16,15 @@ import Ray.Optics
 
 import Screen
 
+type Rgb = (Int, Int, Int)
+
 imgOffset :: [Int]
 imgOffset = [-xres-1, -xres, -xres+1, -1, 1, xres-1, xres, xres+1]
 
 blur :: [(Double, Double)]
 blur = [(-0.25, -0.25), (-0.25,  0.25), ( 0.25, -0.25), ( 0.25,  0.25)]
 
-smooth :: Bool -> (Ray -> IO Radiance) -> V.Vector (Int, Int, Int) -> Int
-       -> IO (Int, Int, Int)
+smooth :: Bool -> (Ray -> IO Radiance) -> V.Vector Rgb -> Int -> IO Rgb
 smooth False _ ims i = return (ims V.! i)
 smooth True tracer ims i
   | isDifferent i ims imgOffset == False = return (ims V.! i)
@@ -31,13 +32,13 @@ smooth True tracer ims i
     l <- retrace tracer i
     return $ avg ((ims V.! i):l)
 
-avg :: [(Int, Int, Int)] -> (Int, Int, Int)
+avg :: [Rgb] -> Rgb
 avg ls = (r `div` len, g `div` len, b `div` len)
   where
     len = length ls
     (r, g, b) = avg' ls
 
-avg' :: [(Int, Int, Int)] -> (Int, Int, Int)
+avg' :: [Rgb] -> Rgb
 avg' [] = (0, 0, 0)
 avg' ((r1, g1, b1):ls) = (r1 + r2, g1 + g2, b1 + b2)
   where
@@ -52,7 +53,7 @@ avg' ((r1, g1, b1):ls) = (r1 + r2, g1 + g2, b1 + b2)
        false = no need to detail tracing
 -}
 
-isDifferent :: Int -> V.Vector (Int, Int, Int) -> [Int] ->  Bool
+isDifferent :: Int -> V.Vector Rgb -> [Int] ->  Bool
 isDifferent _ _ [] = False
 isDifferent p rs (i:is)
   | p' <  0         = isDifferent p rs is
@@ -63,7 +64,7 @@ isDifferent p rs (i:is)
     p' = p + i
     df = diffRgb (rs V.! p) (rs V.! p')
 
-diffRgb :: (Int, Int, Int) -> (Int, Int, Int) -> Bool
+diffRgb :: Rgb -> Rgb -> Bool
 diffRgb (r1, g1, b1) (r2, g2, b2) =
   abs (r1 - r2) > diffAliasing ||
   abs (g1 - g2) > diffAliasing ||
@@ -72,7 +73,7 @@ diffRgb (r1, g1, b1) (r2, g2, b2) =
     abs :: Int -> Int
     abs i = if i < 0 then (-i) else i
 
-retrace :: (Ray -> IO Radiance) -> Int -> IO [(Int, Int, Int)]
+retrace :: (Ray -> IO Radiance) -> Int -> IO [Rgb]
 retrace tracer p = do
   let p' = (fromIntegral (p `div` xres), fromIntegral (p `mod` xres))
   ls <- mapM tracer $ map generateRay' (map (badd p') blur)

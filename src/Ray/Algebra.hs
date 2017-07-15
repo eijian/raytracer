@@ -224,7 +224,6 @@ generateRandomDir4 = do
       x = r * (cos p)
       z = r * (sin p)
       v = initPos x y z
-      len = norm v
   return $ fromJust $ normalize v
 
 o3 :: Vector3

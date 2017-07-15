@@ -9,7 +9,7 @@ module Scene (
 , objs
 ) where
 
-import Data.Maybe
+--import Data.Maybe
 import NumericPrelude
 
 import Ray.Algebra

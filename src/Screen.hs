@@ -22,7 +22,7 @@ module Screen (
 , rgbToString
 ) where
 
-import Control.Monad
+--import Control.Monad
 import Data.Maybe
 import qualified Data.Vector as V
 import NumericPrelude
@@ -114,8 +114,12 @@ eey = fromJust $ normalize (eex <*> eyedir)
 evec :: (Vector3, Vector3)
 evec = (eex, eey)
 
+center :: Position3
+center = target focus (initRay eyepos eyedir)
+
 origin :: Position3
-origin = eyepos + focus *> eyedir
+--origin = eyepos + focus *> eyedir
+origin = center
   + ((-1.0 + 0.5 * stepx) *> eex)
   - (( 1.0 - 0.5 * stepy) *> eey)
 
@@ -133,6 +137,7 @@ generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
     edir  = tgt - e 
     edir' = fromJust $ normalize edir
 
+generateRay' :: (Double, Double) -> Ray
 generateRay' = generateRay eyepos origin step evec
 
 {-
