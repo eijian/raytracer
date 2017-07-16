@@ -97,17 +97,17 @@ tss = [(x, y) | x <- ts, y <- ts]
 getDirection :: Light -> Position3 -> [Direction3]
 getDirection (PointLight _ _ lp) p = [lp - p]
 getDirection (ParallelogramLight _ _ lp n d1 d2) p =
-  filter (\d -> n <.> d < 0.0) $ map (\(tx, ty) -> getPos tx ty - p) tss
+  filter (\d -> n <.> d < 0.0) $ map (\(tx, ty) -> genPos tx ty - p) tss
   where
-    getPos :: Double -> Double -> Position3
-    getPos tx ty = lp + tx *> d1 + ty *> d2
+    genPos :: Double -> Double -> Position3
+    genPos tx ty = lp + tx *> d1 + ty *> d2
 getDirection (SunLight _ _ lp n d1 d2 dt) p
-  | cos > 0.0      = []
+  | cos0 > 0.0     = []
   | res == Nothing = []
   | otherwise      = [t *> dt']
   where
     d = lp - p
-    cos = n <.> d
+    cos0 = n <.> d
     dt' = negate dt
     res = methodMoller 2.0 lp d1 d2 p dt'
     (_, _, t) = fromJust res

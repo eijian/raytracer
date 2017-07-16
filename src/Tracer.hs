@@ -19,7 +19,7 @@ import qualified Data.KdTree.Static as KT
 --import qualified Data.KdTree.Dynamic as KT
 import NumericPrelude
 --import Debug.Trace
-import System.IO
+--import System.IO
 
 import Ray.Algebra
 import Ray.Geometry
@@ -110,7 +110,7 @@ isValidPhoton p n ph
 -- Normal (non filter)
 sumRadiance1 :: Direction3 -> Double -> Double -> [Double] -> [PhotonInfo]
              -> Radiance
-sumRadiance1 n pw rmax rs ps = foldl (+) radiance0 rads
+sumRadiance1 n pw _ _ ps = foldl (+) radiance0 rads
   where
     rads = map (photonInfoToRadiance n pw) ps
 
@@ -148,11 +148,10 @@ sumRadiance3 n pw rmax rs ps = foldl (+) radiance0 rads
   where
     wt = map (waitGauss pw rmax) rs
     rads = zipWith (photonInfoToRadiance n) wt ps
-
-waitGauss :: Double -> Double -> Double -> Double
-waitGauss pw rmax dp = pw * alpha * (1.0 - e_r / e_beta)
-  where
-    e_r = 1.0 - exp (-beta * dp * dp / (2.0 * rmax * rmax))
+    waitGauss :: Double -> Double -> Double -> Double
+    waitGauss p r dp = p * alpha * (1.0 - e_r / e_beta)
+      where
+        e_r = 1.0 - exp (-beta * dp * dp / (2.0 * r * r))
 
 ------
 -- CLASICAL RAY TRACING
@@ -208,10 +207,11 @@ calcIntersection r os
     (t, (Object s m)) = head $ sortBy (comparing fst) iss
 
 calcDistance :: Ray -> Object -> [(Double, Object)]
-calcDistance r o@(Object s m) = zip ts (replicate (length ts) o)
+calcDistance r o@(Object s _) = zip ts (replicate (length ts) o)
   where
     ts = distance r s
 
+pi2 :: Double
 pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
 
 brdf :: Material -> Radiance -> Radiance

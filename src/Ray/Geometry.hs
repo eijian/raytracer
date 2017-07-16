@@ -51,12 +51,12 @@ getDir = snd
 
 data Shape =
   Point
-  { pos    :: !Position3
+  { position :: !Position3
   }
   |
   Plain
   { nvec   :: !Direction3
-  , d      :: !Double
+  , dist   :: !Double
   }
   |
   Sphere
@@ -65,10 +65,10 @@ data Shape =
   }
   |
   Parallelogram
-  { p0     :: !Position3
-  , nvec   :: !Direction3
-  , dir1   :: !Direction3
-  , dir2   :: !Direction3
+  { position :: !Position3
+  , nvec     :: !Direction3
+  , dir1     :: !Direction3
+  , dir2     :: !Direction3
   }
   deriving Eq
 
