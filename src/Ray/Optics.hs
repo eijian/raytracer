@@ -22,6 +22,7 @@ module Ray.Optics (
 , photonInfoToRadiance
 , photonPos
 , radiance0
+, radiance1
 , norm
 ) where
 
@@ -99,6 +100,8 @@ elemB (Radiance _ _ g) = g
 
 radiance0 :: Radiance
 radiance0 = Radiance 0 0 0
+
+radiance1 = Radiance 1 1 1
 
 -- | Radiance
 -- >>> let a = Radiance 0.1 0.8 0.3

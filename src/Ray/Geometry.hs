@@ -15,6 +15,7 @@ module Ray.Geometry (
 , initRayFromElem
 , target
 , diffuseReflection
+, specularReflection
 , methodMoller
 ) where
 
@@ -119,6 +120,11 @@ diffuseReflection n = do
   dir <- generateRandomDir4
   let cos = n <.> dir
   return $ if cos > 0.0 then dir else negate dir
+
+specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
+specularReflection n e = (e + (2.0 * c) *> n, c)
+  where
+    c = (negate e) <.> n
 
 --
 -- UTILS

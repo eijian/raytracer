@@ -9,6 +9,7 @@ module Ray.Physics (
 , initColor
 , decideWavelength
 , russianRoulette
+, reflectionIndex
 ) where
 
 import System.Random.Mersenne as MT
@@ -53,6 +54,11 @@ decideWavelength (Color r g _) p
   | p < r + g = Green
   | otherwise = Blue
 
+selectWavelength :: Wavelength -> Color -> Double
+selectWavelength Red   (Color r _ _) = r
+selectWavelength Green (Color _ g _) = g
+selectWavelength Blue  (Color _ _ b) = b
+
 {- |
 russianRoulette
 
@@ -72,9 +78,10 @@ rr wl (c:cs) c0 rnd len
   | rnd < c'  = len
   | otherwise = rr wl cs c' rnd (len - 1)
   where
-    c' = c0 + selWl wl c
-    selWl :: Wavelength -> Color -> Double
-    selWl Red   (Color r _ _) = r
-    selWl Green (Color _ g _) = g
-    selWl Blue  (Color _ _ b) = b
+    c' = c0 + selectWavelength wl c
 
+reflectionIndex :: Color -> Double -> Color
+reflectionIndex (Color r g b) c =
+  Color (r + (1-r) * c') (g + (1-g) * c') (b + (1-b) * c')
+  where
+    c' = (1.0 - c) ** 5.0

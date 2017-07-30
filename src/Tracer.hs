@@ -76,7 +76,12 @@ traceRay :: Int -> Double -> KT.KdTree Double PhotonInfo -> [Object]
 traceRay 10 _ _ _ _ _ = return radiance0
 traceRay l pw pmap objs lgts r
   | is == Nothing = return radiance0
-  | otherwise     = return (em + di + ii)
+  | otherwise     = do
+    si <- if (specularRate m) > 0.0 then
+            traceRay (l+1) pw pmap objs lgts (initRay p rdir)
+          else
+            return radiance0
+    return (em + (diffuseness m *> di) + ii + (f <**> si))
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
@@ -85,6 +90,8 @@ traceRay l pw pmap objs lgts r
       then brdf m $ foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
       else radiance0
     ii = estimateRadiance pw pmap (p, n, m)
+    (rdir, cos0) = specularReflection n (getDir r)
+    f = reflectionIndex (specularRefl m) cos0
 
 estimateRadiance :: Double -> KT.KdTree Double PhotonInfo -> Intersection
                  -> Radiance
