@@ -47,23 +47,41 @@ tracePhoton os l (wl, r) = do
     then return []
     else do
       let (p, n, m) = fromJust is
-      i <- russianRoulette wl [reflectance m]
-      pcs <- if i > 0
-        then reflect p n os l wl
-        --then return []
+      i <- russianRoulette [selectWavelength wl $ reflectance m]
+      rRad <- if i > 0
+        then reflect r p n os l wl m
         else return []
       if (useClassicForDirect == False || l > 0) && diffuseness m > 0.0
-        then return $ ((wl, initRay p (getDir r)) : pcs)
-        else return pcs
+        then return $ ((wl, initRay p $ getDir r) : rRad)
+        else return rRad
 
-reflect :: Position3 -> Direction3 -> [Object] -> Int -> Wavelength
-        -> IO [PhotonCache]
-reflect p n os l wl = do
-  dr <- diffuseReflection n
-  let r' = initRay p dr
-  pcs <- tracePhoton os (l+1) (wl, r')
-  return pcs
-
+reflect :: Ray -> Position3 -> Direction3 -> [Object] -> Int -> Wavelength
+        -> Material -> IO [PhotonCache]
+reflect (_, ed) p n os l wl m = do
+  i <- russianRoulette [diffuseness m]
+  if i > 0  -- diffuse
+    then do
+      dr <- diffuseReflection n
+      tracePhoton os (l+1) $ (wl, initRay p dr)
+    else do
+      let
+        f0 = selectWavelength wl $ specularRefl m
+        (rdir, cos0) = specularReflection n ed
+        f' = f0 + (1.0 - f0) * (1.0 - cos0) ** 5.0
+      j <- russianRoulette [f']
+      if j > 0  -- spacular reflection
+        then tracePhoton os (l+1) $ (wl, initRay p rdir)
+        else do
+          k <- russianRoulette [metallicRate m]
+          if k > 0
+            then return []
+            else do
+              if selectWavelength wl (ior m) == 0.0
+                then do
+                  dr' <- diffuseReflection n
+                  tracePhoton os (l+1) $ (wl, initRay p dr')
+                else return []
+              
 -----
 -- RAY TRACING WITH PHOTON MAP
 -----
@@ -77,27 +95,27 @@ traceRay 10 _ _ _ _ _ = return radiance0
 traceRay l pw pmap objs lgts r
   | is == Nothing = return radiance0
   | otherwise     = do
-    si <- if (specularRate m) > 0.0 then
-            traceRay (l+1) pw pmap objs lgts (initRay p rdir)
-          else
-            return radiance0
-    return (em + (diffuseness m *> di) + ii + (f <**> si))
+    si <- if diffuseness m < 1.0
+      then traceRay (l+1) pw pmap objs lgts (initRay p rdir)
+      else return radiance0
+    return (em + (negateColor f) <**> (brdf m (di + ii)) + (f <**> si))
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
     em = sr_half *> emittance m
     di = if useClassicForDirect
-      then brdf m $ foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
+      then foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
       else radiance0
     ii = estimateRadiance pw pmap (p, n, m)
     (rdir, cos0) = specularReflection n (getDir r)
+    --f = scaleColor (1.0 - diffuseness m) (reflectionIndex (specularRefl m) cos0)
     f = reflectionIndex (specularRefl m) cos0
 
 estimateRadiance :: Double -> KT.KdTree Double PhotonInfo -> Intersection
                  -> Radiance
 estimateRadiance pw pmap (p, n, m)
   | ps == []  = radiance0
-  | otherwise = (1.0 / (pi * rmax * rmax)) *> (brdf m rad)
+  | otherwise = (1.0 / (pi * rmax * rmax)) *> rad
   where
     ps = filter (isValidPhoton p n) $ KT.kNearest pmap nPhoton $ photonDummy p
     rs = map (\x -> norm ((photonPos x) - p)) ps

@@ -8,6 +8,9 @@ module Ray.Physics (
 , Wavelength (Red, Green, Blue)
 , initColor
 , decideWavelength
+, selectWavelength
+, negateColor
+, scaleColor
 , russianRoulette
 , reflectionIndex
 ) where
@@ -59,26 +62,32 @@ selectWavelength Red   (Color r _ _) = r
 selectWavelength Green (Color _ g _) = g
 selectWavelength Blue  (Color _ _ b) = b
 
+negateColor :: Color -> Color
+negateColor (Color r g b) = Color (1.0 - r) (1.0 - g) (1.0 - b)
+
+scaleColor :: Double -> Color -> Color
+scaleColor s (Color r g b) = Color (s * r) (s * g) (s * b)
+
 {- |
 russianRoulette
 
->>> russianRoulette Red [(Color 0.5 0.0 0.0)]
+>>> russianRoulette [0.5]
 0
 
 -}
 
-russianRoulette :: Wavelength -> [Color] -> IO Int
-russianRoulette wl cs = do
+russianRoulette :: [Double] -> IO Int
+russianRoulette cs = do
   rnd <- MT.randomIO :: IO Double
-  return $ rr wl cs 0.0 rnd (length cs)
+  return $ rr cs 0.0 rnd (length cs)
 
-rr :: Wavelength -> [Color] -> Double -> Double -> Int -> Int
-rr _ [] _ _ len = len
-rr wl (c:cs) c0 rnd len
+rr :: [Double] -> Double -> Double -> Int -> Int
+rr [] _ _ len = len
+rr (c:cs) c0 rnd len
   | rnd < c'  = len
-  | otherwise = rr wl cs c' rnd (len - 1)
+  | otherwise = rr cs c' rnd (len-1)
   where
-    c' = c0 + selectWavelength wl c
+    c' = c0 + c
 
 reflectionIndex :: Color -> Double -> Color
 reflectionIndex (Color r g b) c =

@@ -10,7 +10,7 @@ module Ray.Material (
 , emittance
 , ior
 , diffuseness
-, specularRate
+, metallicRate
 , smoothness
 , diffSpec
 ) where
@@ -31,7 +31,7 @@ data Material = Material
   , emittance     :: Radiance
   , ior           :: Color      -- index of refraction
   , diffuseness   :: Double     -- diffuse reflection
-  , specularRate  :: Double
+  , metallicRate  :: Double
   , smoothness    :: Double
   } deriving Eq
 
