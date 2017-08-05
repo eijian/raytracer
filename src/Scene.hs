@@ -7,6 +7,7 @@
 module Scene (
   lgts
 , objs
+, m_air
 ) where
 
 import Data.Maybe
@@ -32,24 +33,28 @@ lgts = [pl1]
     --pl1 = PointLight (initColor 1 1 1) 1.0 (initPos (-1.5) 3.5 4.5) -- 1W
     --pl2 = PointLight (initColor 2 1 0) 1.0 (initPos 1.5 3.5 4.5) -- 1W
 
+m_air :: Material
+m_air = Material white white black radiance0 (Radiance 1.0 1.0 1.0) 0.0 0.0 0.0
+
 objs :: [Object]
 objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1, paralgt]
 --objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1]
   where
     --m_ball, m_wall, m_ceil, m_flor :: Material
-    --m_ball = Material (Color 0.5 0.2 0.2)  black black radiance0 black 1.0 0.0 0.0
-    --m_ball = Material (Color 0.5 0.5 0.5)  black black radiance0 black 1.0 0.0 0.0
-    m_ball = Material (Color 0.5 0.5 0.5)  black (Color 0.21 0.21 0.21) radiance0 black 1.0 0.0 0.0
-    --m_ball = Material (Color 1.0 1.0 1.0)  black (Color 1.0 0.71 0.29) radiance0 black 0.0 1.0 0.0
-    --m_ball = Material (Color 0.0 0.0 0.0)  black (Color 0.78 0.78 0.78) radiance0 black 0.0 1.0 0.0
-    m_wall = Material (Color 0.5 0.5 0.5)  black black radiance0 black 1.0 0.0 0.0
-    --m_ceil = Material (Color 0.4 0.2 0.02) black black radiance0 black 1.0 0.0 0.0
-    --m_flor = Material (Color 0.5 0.3 0.1)  black black radiance0 black 1.0 0.0 0.0
-    m_wallr = Material (Color 0.4 0.0 0.0)  black black radiance0 black 1.0 0.0 0.0
-    m_wallb = Material (Color 0.0 0.0 0.4)  black black radiance0 black 1.0 0.0 0.0
+    --m_ball = Material (Color 0.5 0.2 0.2)  black black radiance0 radiance0 1.0 0.0 0.0
+    --m_ball = Material (Color 0.5 0.5 0.5)  black black radiance0 radiance0 1.0 0.0 0.0
+    --m_ball = Material (Color 0.5 0.5 0.5)  black (Color 0.05 0.05 0.05) radiance0 radiance0 0.7 1.0 0.0
+    --m_ball = Material (Color 1.0 1.0 1.0)  black (Color 1.0 0.71 0.29) radiance0 radiance0 0.0 1.0 0.0
+    --m_ball = Material (Color 0.0 0.0 0.0)  black (Color 0.78 0.78 0.78) radiance0 radiance0 0.0 1.0 0.0
+    m_ball = Material (Color 0.0 0.0 0.0)  black (Color 0.08 0.08 0.08) radiance0 (Radiance 1.5 1.5 1.5) 0.0 0.0 0.0
+    m_wall = Material (Color 0.5 0.5 0.5)  black black radiance0 radiance0 1.0 0.0 0.0
+    --m_ceil = Material (Color 0.4 0.2 0.02) black black radiance0 radiance0 1.0 0.0 0.0
+    --m_flor = Material (Color 0.5 0.3 0.1)  black black radiance0 radiance0 1.0 0.0 0.0
+    m_wallr = Material (Color 0.4 0.0 0.0)  black black radiance0 radiance0 1.0 0.0 0.0
+    m_wallb = Material (Color 0.0 0.0 0.4)  black black radiance0 radiance0 1.0 0.0 0.0
     pw = 5.0 / 1.0 / (2.0 * pi) :: Double
-    m_paral = Material black black black (Radiance pw pw pw) black 0.0 0.0 0.0
-    --m_sunl = Material black black black (Radiance 0.01 0.015 0.02) black 0.0 0.0 0.0
+    m_paral = Material black black black (Radiance pw pw pw) radiance0 0.0 0.0 0.0
+    --m_sunl = Material black black black (Radiance 0.01 0.015 0.02) radiance0 0.0 0.0 0.0
 
     wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1 :: Object
     wall_bt = initObject (Plain ey3 0) m_wall -- bottom

@@ -10,9 +10,10 @@ module Ray.Material (
 , emittance
 , ior
 , diffuseness
-, metallicRate
+, metalness
 , smoothness
 , diffSpec
+, averageIor
 ) where
 
 import Ray.Physics
@@ -29,12 +30,14 @@ data Material = Material
   , transmittance :: Color
   , specularRefl  :: Color      -- specular reflectance
   , emittance     :: Radiance
-  , ior           :: Color      -- index of refraction
+  , ior           :: Radiance   -- index of refraction
   , diffuseness   :: Double     -- diffuse reflection
-  , metallicRate  :: Double
+  , metalness     :: Double
   , smoothness    :: Double
   } deriving Eq
 
 diffSpec :: Material -> Color
 diffSpec (Material r _ _ _ _ _ _ _) = r
 
+averageIor :: Material -> Double
+averageIor (Material _ _ _ _ (Radiance r g b) _ _ _) = (r + g + b) / 3.0

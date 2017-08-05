@@ -16,6 +16,7 @@ module Ray.Geometry (
 , target
 , diffuseReflection
 , specularReflection
+, specularRefraction
 , methodMoller
 ) where
 
@@ -125,6 +126,16 @@ specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
 specularReflection n e = (e + (2.0 * c) *> n, c)
   where
     c = (negate e) <.> n
+
+specularRefraction :: Double -> Double -> Double -> Direction3 -> Direction3
+                   -> (Direction3, Double)
+specularRefraction ior0 ior1 c0 ed n
+  | t == Nothing = (o3, 0.0)
+  | otherwise    = (fromJust t, ior')
+  where
+    ior' = ior0 / ior1
+    a = sqrt (1.0 / (ior' * ior') - (1.0 - c0 * c0)) - c0
+    t = normalize (ior' *> (ed - a *> n))
 
 --
 -- UTILS

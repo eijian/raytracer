@@ -5,12 +5,14 @@
 module Ray.Physics (
   Color (Color)
 , black
+, white
 , Wavelength (Red, Green, Blue)
 , initColor
 , decideWavelength
 , selectWavelength
 , negateColor
 , scaleColor
+, addColor
 , russianRoulette
 , reflectionIndex
 ) where
@@ -29,6 +31,8 @@ data Color = Color !Double !Double !Double
 
 black :: Color
 black = Color 0.0 0.0 0.0
+white :: Color
+white = Color 1.0 1.0 1.0
 
 instance Show Color where
   show (Color r g b) = "[" ++ show r ++ "," ++ show g ++ "," ++ show b ++ "]"
@@ -67,6 +71,9 @@ negateColor (Color r g b) = Color (1.0 - r) (1.0 - g) (1.0 - b)
 
 scaleColor :: Double -> Color -> Color
 scaleColor s (Color r g b) = Color (s * r) (s * g) (s * b)
+
+addColor :: Color -> Color -> Color
+addColor (Color r1 g1 b1) (Color r2 g2 b2) = Color (r1+r2) (g1+g2) (b1+b2)
 
 {- |
 russianRoulette
