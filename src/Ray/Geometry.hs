@@ -7,6 +7,8 @@
 module Ray.Geometry (
   Ray
 , Shape (Point, Plain, Sphere, Parallelogram)
+, initPolygon
+, initParallelogram
 , distance
 , getDir
 , getPos
@@ -66,6 +68,13 @@ data Shape =
   , radius :: !Double
   }
   |
+  Polygon
+  { position :: !Position3
+  , nvec     :: !Direction3
+  , dir1     :: !Direction3
+  , dir2     :: !Direction3
+  }
+  |
   Parallelogram
   { position :: !Position3
   , nvec     :: !Direction3
@@ -74,11 +83,28 @@ data Shape =
   }
   deriving Eq
 
+initPolygon :: Position3 -> Position3 -> Position3 -> Shape
+initPolygon p0 p1 p2 = Polygon p0 n d1 d2
+  where
+    d1 = p1 - p0
+    d2 = p2 - p0
+    n  = d1 <*> d2
+
+initParallelogram :: Position3 -> Position3 -> Position3 -> Shape
+initParallelogram p0 p1 p2 = Parallelogram p0 n d1 d2
+  where
+    d1 = p1 - p0
+    d2 = p2 - p0
+    n  = d1 <*> d2
+
+
 getNormal :: Position3 -> Shape -> Maybe Direction3
 -- Plain
 getNormal _ (Plain n _) = Just n
 -- Sphere
 getNormal p (Sphere c _) = normalize (p - c)
+-- Polygon
+getNormal _ (Polygon _ n _ _) = Just n
 -- Parallelogram
 getNormal _ (Parallelogram _ n _ _) = Just n 
 -- Point
@@ -102,6 +128,13 @@ distance (pos, dir) (Sphere c r)
     t0 = o <.> dir
     t1 = r * r - (square o - (t0 * t0))
     t2 = sqrt t1
+-- Polygon
+distance (pos, dir) (Polygon p _ d1 d2)
+  | res == Nothing = []
+  | otherwise      = [t]
+  where
+    res = methodMoller 1.0 p d1 d2 pos dir
+    (_, _, t) = fromJust res
 -- Parallelogram
 distance (pos, dir) (Parallelogram p _ d1 d2)
   | res == Nothing = []
@@ -123,9 +156,11 @@ diffuseReflection n = do
   return $ if cos > 0.0 then dir else negate dir
 
 specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
-specularReflection n e = (e + (2.0 * c) *> n, c)
+specularReflection n e
+  | c < 0.0   = (e - (2.0 * c) *> n, -c)
+  | otherwise = (e - (2.0 * c) *> n, c)
   where
-    c = (negate e) <.> n
+    c = e <.> n
 
 specularRefraction :: Double -> Double -> Double -> Direction3 -> Direction3
                    -> (Direction3, Double)
@@ -133,9 +168,10 @@ specularRefraction ior0 ior1 c0 ed n
   | t == Nothing = (o3, 0.0)
   | otherwise    = (fromJust t, ior')
   where
+    n' = if ed <.> n > 0.0 then negate n else n
     ior' = ior0 / ior1
-    a = sqrt (1.0 / (ior' * ior') - (1.0 - c0 * c0)) - c0
-    t = normalize (ior' *> (ed - a *> n))
+    a = c0 - sqrt (1.0 / (ior' * ior') + c0 * c0 - 1.0)
+    t = normalize (ior' *> (ed + a *> n'))
 
 --
 -- UTILS

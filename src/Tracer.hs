@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE BangPatterns #-}
 
 --
 -- Tracer
@@ -43,9 +44,10 @@ sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
 
 tracePhoton :: Material -> [Object] -> Int -> Photon -> IO [PhotonCache]
 tracePhoton _ _ 10 _        = return []
-tracePhoton m0 os l (wl, r) = do
+tracePhoton !m0 !os !l !(wl, r) = do
   let is = calcIntersection r os
   if is == Nothing
+    --then return []
     then return []
     else do
       let
@@ -59,13 +61,6 @@ tracePhoton m0 os l (wl, r) = do
       if (useClassicForDirect == False || l > 0) && d > 0.0
         then return $ ((wl, initRay p $ getDir r) : ref)
         else return ref
-
-{-
-      i <- russianRoulette [selectWavelength wl $ reflectance m]
-      rRad <- if i > 0
-        then reflect m0 r p n os l wl m
-        else return []
--}
 
 reflectDiff :: Material -> [Object] -> Int -> Wavelength -> Intersection
             -> IO [PhotonCache]
@@ -88,7 +83,7 @@ reflectSpec m0 os l (wl, (_, ed)) (p, n, m) = do
   if j > 0
     then tracePhoton m0 os (l+1) (wl, initRay p rdir)
     else do
-      if (elemRad wl $ ior m) == 0.0
+      if (selectWavelength wl $ ior m) == 0.0
         then return []   -- non transparency
         else reflectTrans m0 os l wl ed (p, n, m) cos0
 
@@ -96,40 +91,11 @@ reflectTrans :: Material -> [Object] -> Int -> Wavelength -> Direction3
              -> Intersection -> Double -> IO [PhotonCache]
 reflectTrans m0 os l wl ed (p, n, m) c0 = do
   let
-    ior0 = elemRad wl $ ior m0
-    ior1 = elemRad wl $ ior m
+    ior0 = selectWavelength wl $ ior m0
+    ior1 = selectWavelength wl $ ior m
     (tdir, ior') = specularRefraction ior0 ior1 c0 ed n
     m0' = if tdir <.> n < 0.0 then m else m_air
   tracePhoton m0' os (l+1) (wl, initRay p tdir)
-
-{-
-reflect :: Ray -> Position3 -> Direction3 -> [Object] -> Int -> Wavelength
-        -> Material -> IO [PhotonCache]
-reflect (_, ed) p n os l wl m = do
-  i <- russianRoulette [diffuseness m]
-  if i > 0  -- diffuse
-    then do
-      dr <- diffuseReflection n
-      tracePhoton os (l+1) $ (wl, initRay p dr)
-    else do
-      let
-        f0 = selectWavelength wl $ specularRefl m
-        (rdir, cos0) = specularReflection n ed
-        f' = f0 + (1.0 - f0) * (1.0 - cos0) ** 5.0
-      j <- russianRoulette [f']
-      if j > 0  -- spacular reflection
-        then tracePhoton os (l+1) $ (wl, initRay p rdir)
-        else do
-          k <- russianRoulette [metallicRate m]
-          if k > 0
-            then return []
-            else do
-              if selectWavelength wl (ior m) == 0.0
-                then do
-                  dr' <- diffuseReflection n
-                  tracePhoton os (l+1) $ (wl, initRay p dr')
-                else return []
--}
 
 -----
 -- RAY TRACING WITH PHOTON MAP
@@ -140,8 +106,8 @@ sr_half = 1.0 / (2.0 * pi)
 
 traceRay :: Material -> Int -> Double -> KT.KdTree Double PhotonInfo
          -> [Object] -> [Light] -> Ray -> IO Radiance
-traceRay _ 4 _ _ _ _ _ = return radiance0
-traceRay m0 l pw pmap objs lgts r
+traceRay _ 10 _ _ _ _ _ = return radiance0
+traceRay !m0 !l !pw !pmap !objs !lgts !r
   | is == Nothing = return radiance0
   | otherwise     = do
     si <- if f' == black
@@ -156,7 +122,8 @@ traceRay m0 l pw pmap objs lgts r
           m0' = if tdir <.> n < 0.0 then m else m_air
         traceRay m0' (l+1) pw pmap objs lgts (initRay p tdir)
     return (sr_half *> emittance m
-          + d' <**> (brdf m (di + ii))
+          -- + d' <**> (brdf m (di + ii))
+          + brdf m (di + ii)
           + f' <**> si
           + fi <**> ti)
   where
@@ -306,8 +273,8 @@ pi2 :: Double
 pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
 
 brdf :: Material -> Radiance -> Radiance
-brdf m rad = (diffuseness m / pi2) *> ((reflectance m) <**> rad)
---brdf m rad = (1.0 / pi2) *> ((reflectance m) <**> rad)
+--brdf m rad = (diffuseness m / pi2) *> ((reflectance m) <**> rad)
+brdf m rad = (1.0 / pi2) *> ((reflectance m) <**> rad)
 
 readMap :: IO (Double, KT.KdTree Double PhotonInfo)
 readMap = do

@@ -50,8 +50,9 @@ import qualified Algebra.Module as Module
 import Test.QuickCheck
 
 nearly0 :: Double
-nearly0 = 0.00001  -- 10 micro meter
---nearly0 = 0.0001  -- 100 micro meter
+--nearly0 = 0.00001  -- 10 micro meter
+nearly0 = 0.0001   -- 100 micro meter
+--nearly0 = 0.001      -- 1 mili meter
 
 class (Show a, Eq a, Additive.C a, Module.C Double a) => BasicMatrix a where
   (/>) :: a -> Double -> Maybe a

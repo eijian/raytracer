@@ -26,18 +26,18 @@ import Ray.Optics
 ----
 
 data Material = Material
-  { reflectance   :: Color
+  { emittance     :: Radiance
+  , reflectance   :: Color
   , transmittance :: Color
   , specularRefl  :: Color      -- specular reflectance
-  , emittance     :: Radiance
-  , ior           :: Radiance   -- index of refraction
+  , ior           :: Color      -- index of refraction
   , diffuseness   :: Double     -- diffuse reflection
   , metalness     :: Double
   , smoothness    :: Double
   } deriving Eq
 
 diffSpec :: Material -> Color
-diffSpec (Material r _ _ _ _ _ _ _) = r
+diffSpec (Material _ r _ _ _ _ _ _) = r
 
 averageIor :: Material -> Double
-averageIor (Material _ _ _ _ (Radiance r g b) _ _ _) = (r + g + b) / 3.0
+averageIor (Material _ _ _ _ (Color r g b) _ _ _) = (r + g + b) / 3.0

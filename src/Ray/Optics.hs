@@ -13,7 +13,9 @@ module Ray.Optics (
 , Radiance (Radiance)
 , (<**>)
 , rabs'
-, elemRad
+, elemR
+, elemG
+, elemB
 , convertToInfo
 , infoToPointList
 , squaredDistance
@@ -100,9 +102,10 @@ elemRad Blue  (Radiance _ _ b) = b
 elemR = elemRad Red
 elemG = elemRad Green
 elemB = elemRad Blue
+
 radiance0 :: Radiance
 radiance0 = Radiance 0 0 0
-
+radiance1 :: Radiance
 radiance1 = Radiance 1 1 1
 
 -- | Radiance
