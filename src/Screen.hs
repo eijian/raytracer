@@ -79,7 +79,8 @@ yres = 256
 -- for image output
 
 maxRadiance :: Double
-maxRadiance = 0.005
+--maxRadiance = 0.005
+maxRadiance = 0.02
 
 diffAliasing :: Int
 diffAliasing = 20

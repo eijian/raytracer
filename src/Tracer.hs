@@ -269,12 +269,12 @@ calcDistance r o@(Object s _) = zip ts (replicate (length ts) o)
   where
     ts = distance r s
 
-pi2 :: Double
-pi2 = 2 * pi :: Double  -- half steradian = 2 * pi
+one_pi :: Double
+one_pi = 1.0 / pi :: Double  -- one of pi (integral of hemisphere)
 
 brdf :: Material -> Radiance -> Radiance
 --brdf m rad = (diffuseness m / pi2) *> ((reflectance m) <**> rad)
-brdf m rad = (1.0 / pi2) *> ((reflectance m) <**> rad)
+brdf m rad = one_pi *> ((reflectance m) <**> rad)
 
 readMap :: IO (Double, KT.KdTree Double PhotonInfo)
 readMap = do
