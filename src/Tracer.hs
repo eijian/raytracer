@@ -34,10 +34,16 @@ import Screen
 import Scene
 
 --
--- PARAMETERS
+-- CONSTANTS
 
 sqpi2 :: Double
 sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
+
+one_pi :: Double
+one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
+
+sr_half :: Double
+sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 
 --
 --
@@ -101,9 +107,6 @@ reflectTrans m0 os l wl ed (p, n, m) c0 = do
 -- RAY TRACING WITH PHOTON MAP
 -----
 
-sr_half :: Double
-sr_half = 1.0 / (2.0 * pi)
-
 traceRay :: Material -> Int -> Double -> KT.KdTree Double PhotonInfo
          -> [Object] -> [Light] -> Ray -> IO Radiance
 traceRay _ 10 _ _ _ _ _ = return radiance0
@@ -150,15 +153,14 @@ estimateRadiance pw pmap (p, n, m)
   | ps == []  = radiance0
   | otherwise = (1.0 / (pi * rmax * rmax)) *> rad
   where
-    ps = filter (isValidPhoton p n) $ KT.kNearest pmap nPhoton $ photonDummy p
+    ps = filter adopt $ KT.kNearest pmap nPhotonForEst $ photonDummy p
     rs = map (\x -> norm ((photonPos x) - p)) ps
     rmax = maximum rs
     rad = sumRadiance1 n pw rmax rs ps
-
-isValidPhoton :: Position3 -> Direction3 -> PhotonInfo -> Bool
-isValidPhoton p n ph
-  | radius2 == 0.0 = True
-  | otherwise      = square (p - photonPos ph) < radius2
+    adopt :: PhotonInfo -> Bool
+    adopt ph
+      | radius2 == 0.0 = True
+      | otherwise      = square (p - photonPos ph) < radius2
 
 -- filtering:
 --   sumRadiance1  non filter
@@ -268,9 +270,6 @@ calcDistance :: Ray -> Object -> [(Double, Object)]
 calcDistance r o@(Object s _) = zip ts (replicate (length ts) o)
   where
     ts = distance r s
-
-one_pi :: Double
-one_pi = 1.0 / pi :: Double  -- one of pi (integral of hemisphere)
 
 brdf :: Material -> Radiance -> Radiance
 --brdf m rad = (diffuseness m / pi2) *> ((reflectance m) <**> rad)

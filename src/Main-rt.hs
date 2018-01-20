@@ -24,7 +24,7 @@ main :: IO ()
 main = do
   (power, photonmap) <- readMap
   hPutStrLn stderr ("finished reading map:" ++ (show $ size photonmap))
-  mapM_ putStrLn $ createHeader
+  mapM_ putStrLn $ pnmHeader
   let tracer = traceRay m_air 0 power photonmap objs lgts
   image <- V.mapM tracer $ V.map generateRay' scrmap
   let pixels = V.map radianceToRgb image

@@ -21,6 +21,15 @@ import Ray.Optics
 import Ray.Object
 import Ray.Material
 
+--
+-- CONSTANTS
+--
+
+m_air :: Material
+m_air = Material radiance0 white white black (Color 1.0 1.0 1.0) 0.0 0.0 0.0
+
+--
+
 --pl1 :: Light
 --pl2 :: Light
 lgts :: [Light]
@@ -32,9 +41,6 @@ lgts = [pl1]
     --pl1 = SunLight (initColor 1 1 1) 20.0 (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3 (fromJust $ normalize $ Vector3 1 (-1) 1)  -- 10W Sun
     --pl1 = PointLight (initColor 1 1 1) 1.0 (initPos (-1.5) 3.5 4.5) -- 1W
     --pl2 = PointLight (initColor 2 1 0) 1.0 (initPos 1.5 3.5 4.5) -- 1W
-
-m_air :: Material
-m_air = Material radiance0 white white black (Color 1.0 1.0 1.0) 0.0 0.0 0.0
 
 bp1, bp2, bp3, bp4, bp5, bp6, bp7, bp8 :: Position3
 bp1 = Vector3 (-1.2) 1.8 2.6
@@ -57,11 +63,11 @@ objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1, paralgt]
   where
     --m_ball, m_wall, m_ceil, m_flor :: Material
     --m_ball = Material radiance0 (Color 0.5 0.2 0.2)  black black black 1.0 0.0 0.0
-    --m_ball = Material radiance0 (Color 0.5 0.5 0.5)  black black black 1.0 0.0 0.0
+    m_ball = Material radiance0 (Color 0.5 0.5 0.5)  black black black 1.0 0.0 0.0
     --m_ball = Material radiance0 (Color 0.5 0.5 0.5)  black (Color 0.2 0.2 0.2) black 0.5 1.0 0.0
     --m_ball = Material radiance0 (Color 0.0 0.0 0.0)  black (Color 1.0 0.71 0.29) black 0.0 1.0 0.0
     --m_ball = Material radiance0 (Color 0.0 0.0 0.0)  black (Color 0.78 0.78 0.78) black 0.0 1.0 0.0
-    m_ball = Material radiance0 (Color 0.0 0.0 0.0)  black (Color 0.08 0.08 0.08) (Color 1.5 1.5 1.5) 0.0 0.0 0.0
+    --m_ball = Material radiance0 (Color 0.0 0.0 0.0)  black (Color 0.08 0.08 0.08) (Color 1.5 1.5 1.5) 0.0 0.0 0.0
     m_wall = Material radiance0 (Color 0.5 0.5 0.5)  black black black 1.0 0.0 0.0
     --m_ceil = Material radiance0 (Color 0.4 0.2 0.02) black black black 1.0 0.0 0.0
     --m_flor = Material radiance0 (Color 0.5 0.3 0.1)  black black black 1.0 0.0 0.0

@@ -10,15 +10,13 @@ import Control.Monad
 
 import Ray.Light
 import Tracer
+import Screen
 import Scene
-
-nphoton :: Int
-nphoton = 200000
 
 main :: IO ()
 main = do
-  putStrLn $ show nphoton
-  let power = (sum $ map flux lgts) / (fromIntegral nphoton)
+  putStrLn $ show nPhoton
+  let power = (sum $ map flux lgts) / (fromIntegral nPhoton)
       ns    = map (calcN power) lgts
   putStrLn $ show power
   zipWithM_ outputPhotonCaches ns lgts

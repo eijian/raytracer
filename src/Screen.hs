@@ -5,19 +5,20 @@
 --
 
 module Screen (
-  generateRay'
-, useClassicForDirect
+  useClassicForDirect
 , nPhoton
+, nPhotonForEst
 , amb
 , radius2
-, createHeader
-, scrmap
 , eyepos
 , eyedir
 , focus
 , xres
+, scrmap
+, pnmHeader
 , antiAliasing
 , diffAliasing
+, generateRay'
 , radianceToRgb
 , rgbToString
 ) where
@@ -40,7 +41,10 @@ useClassicForDirect :: Bool
 useClassicForDirect = True
 
 nPhoton :: Int
-nPhoton = 200
+nPhoton = 200000
+
+nPhotonForEst :: Int
+nPhotonForEst = 200
 
 amb :: Radiance
 amb = Radiance 0.001 0.001 0.001
@@ -80,7 +84,7 @@ yres = 256
 
 maxRadiance :: Double
 --maxRadiance = 0.005
-maxRadiance = 0.02
+maxRadiance = 0.01
 
 diffAliasing :: Int
 diffAliasing = 20
@@ -151,8 +155,8 @@ convertToPixels rs = V.map toRgb rs
                             , radianceToRgb clip b]
 -}
 
-createHeader :: [String]
-createHeader =
+pnmHeader :: [String]
+pnmHeader =
   ["P3"
   ,"## test"
   ,show xres ++ " " ++ show yres

@@ -16,7 +16,7 @@ import Antialias
 
 main :: IO ()
 main = do
-  mapM_ putStrLn $ createHeader
+  mapM_ putStrLn $ pnmHeader
   let tracer = traceRay' 0 lgts objs
   image <- V.mapM tracer $ V.map generateRay' scrmap
   let cells = V.map radianceToRgb image
