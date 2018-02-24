@@ -12,15 +12,15 @@ module Tracer (
 , traceRay'
 ) where
 
-import Control.Monad
-import Data.Maybe
-import Data.List hiding (sum)
-import Data.Ord
+import           Control.Monad
+import qualified Data.Map.Strict as Map
+import           Data.Maybe
+import           Data.List hiding (sum)
+import           Data.Ord
 import qualified Data.KdTree.Static as KT
 --import qualified Data.KdTree.Dynamic as KT
-import NumericPrelude
---import Debug.Trace
---import System.IO
+import           Debug.Trace
+import           NumericPrelude
 
 import Ray.Algebra
 import Ray.Geometry
@@ -35,6 +35,7 @@ import Scene
 
 --
 -- CONSTANTS
+--
 
 sqpi2 :: Double
 sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
@@ -45,15 +46,18 @@ one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
 sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 
---
+pfilters = Map.fromList [(Nonfilter, sumRadiance1)
+                        ,(Conefilter, sumRadiance2)
+                        ,(Gaussfilter, sumRadiance3)]
+
 --
 
-tracePhoton :: Material -> [Object] -> Int -> Photon -> IO [PhotonCache]
-tracePhoton _ _ 10 _        = return []
-tracePhoton !m0 !os !l !(wl, r) = do
+tracePhoton :: Bool -> Material -> [Object] -> Int -> Photon
+            -> IO [PhotonCache]
+tracePhoton _   _   _   10 _        = return []
+tracePhoton !uc !m0 !os !l !(wl, r) = do
   let is = calcIntersection r os
   if is == Nothing
-    --then return []
     then return []
     else do
       let
@@ -62,60 +66,60 @@ tracePhoton !m0 !os !l !(wl, r) = do
         d = diffuseness m
       i <- russianRoulette [d]
       ref <- if i > 0
-        then reflectDiff m0 os l wl is'
-        else reflectSpec m0 os l (wl, r) is'
-      if (useClassicForDirect == False || l > 0) && d > 0.0
+        then reflectDiff uc m0 os l wl is'
+        else reflectSpec uc m0 os l (wl, r) is'
+      if (uc == False || l > 0) && d > 0.0
         then return $ ((wl, initRay p $ getDir r) : ref)
         else return ref
 
-reflectDiff :: Material -> [Object] -> Int -> Wavelength -> Intersection
-            -> IO [PhotonCache]
-reflectDiff m0 os l wl (p, n, m) = do
+reflectDiff :: Bool -> Material -> [Object] -> Int -> Wavelength
+            -> Intersection -> IO [PhotonCache]
+reflectDiff uc m0 os l wl (p, n, m) = do
   i <- russianRoulette [selectWavelength wl $ reflectance m]
   if i > 0
     then do  -- diffuse reflection
       dr <- diffuseReflection n
-      tracePhoton m0 os (l+1) $ (wl, initRay p dr)
+      tracePhoton uc m0 os (l+1) $ (wl, initRay p dr)
     else return [] -- absorption
 
-reflectSpec :: Material -> [Object] -> Int -> Photon -> Intersection
+reflectSpec :: Bool -> Material -> [Object] -> Int -> Photon -> Intersection
             -> IO [PhotonCache]
-reflectSpec m0 os l (wl, (_, ed)) (p, n, m) = do
+reflectSpec uc m0 os l (wl, (_, ed)) (p, n, m) = do
   let
     f0 = selectWavelength wl $ specularRefl m
     (rdir, cos0) = specularReflection n ed
     f' = f0 + (1.0 - f0) * (1.0 - cos0) ** 5.0
   j <- russianRoulette [f']
   if j > 0
-    then tracePhoton m0 os (l+1) (wl, initRay p rdir)
+    then tracePhoton uc m0 os (l+1) (wl, initRay p rdir)
     else do
       if (selectWavelength wl $ ior m) == 0.0
         then return []   -- non transparency
-        else reflectTrans m0 os l wl ed (p, n, m) cos0
+        else reflectTrans uc m0 os l wl ed (p, n, m) cos0
 
-reflectTrans :: Material -> [Object] -> Int -> Wavelength -> Direction3
+reflectTrans :: Bool -> Material -> [Object] -> Int -> Wavelength -> Direction3
              -> Intersection -> Double -> IO [PhotonCache]
-reflectTrans m0 os l wl ed (p, n, m) c0 = do
+reflectTrans uc m0 os l wl ed (p, n, m) c0 = do
   let
     ior0 = selectWavelength wl $ ior m0
     ior1 = selectWavelength wl $ ior m
     (tdir, ior') = specularRefraction ior0 ior1 c0 ed n
     m0' = if tdir <.> n < 0.0 then m else m_air
-  tracePhoton m0' os (l+1) (wl, initRay p tdir)
+  tracePhoton uc m0' os (l+1) (wl, initRay p tdir)
 
 -----
 -- RAY TRACING WITH PHOTON MAP
 -----
 
-traceRay :: Material -> Int -> Double -> KT.KdTree Double PhotonInfo
-         -> [Object] -> [Light] -> Ray -> IO Radiance
-traceRay _ 10 _ _ _ _ _ = return radiance0
-traceRay !m0 !l !pw !pmap !objs !lgts !r
+traceRay :: Screen -> Material -> Int -> PhotonMap -> [Object] -> [Light]
+         -> Ray -> IO Radiance
+traceRay _    _   10 _     _     _     _  = return radiance0
+traceRay !scr !m0 !l !pmap !objs !lgts !r
   | is == Nothing = return radiance0
   | otherwise     = do
     si <- if f' == black
       then return radiance0
-      else traceRay m0 (l+1) pw pmap objs lgts (initRay p rdir)
+      else traceRay scr m0 (l+1) pmap objs lgts (initRay p rdir)
     ti <- if fi == black || ior1 == 0.0
       then return radiance0
       else do
@@ -123,7 +127,7 @@ traceRay !m0 !l !pw !pmap !objs !lgts !r
           ior0 = averageIor m0
           (tdir, ior') = specularRefraction ior0 ior1 cos0 (getDir r) n
           m0' = if tdir <.> n < 0.0 then m else m_air
-        traceRay m0' (l+1) pw pmap objs lgts (initRay p tdir)
+        traceRay scr m0' (l+1) pmap objs lgts (initRay p tdir)
     return (sr_half *> emittance m
           -- + d' <**> (brdf m (di + ii))
           + brdf m (di + ii)
@@ -132,10 +136,10 @@ traceRay !m0 !l !pw !pmap !objs !lgts !r
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
-    di = if useClassicForDirect
+    di = if useClassicForDirect scr
       then foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
       else radiance0
-    ii = estimateRadiance pw pmap (p, n, m)
+    ii = estimateRadiance scr pmap (p, n, m)
     (rdir, cos0) = specularReflection n (getDir r)
     d = diffuseness m
     mn = 1.0 - metalness m
@@ -147,20 +151,21 @@ traceRay !m0 !l !pw !pmap !objs !lgts !r
     fi = scaleColor (mn * (1.0 - d)) $ negateColor f
     ior1 = averageIor m
 
-estimateRadiance :: Double -> KT.KdTree Double PhotonInfo -> Intersection
-                 -> Radiance
-estimateRadiance pw pmap (p, n, m)
+estimateRadiance :: Screen -> PhotonMap -> Intersection -> Radiance
+estimateRadiance scr pmap (p, n, m)
   | ps == []  = radiance0
   | otherwise = (1.0 / (pi * rmax * rmax)) *> rad
   where
-    ps = filter adopt $ KT.kNearest pmap nPhotonForEst $ photonDummy p
+    ps = filter adopt $ (nearest pmap) $ photonDummy p
     rs = map (\x -> norm ((photonPos x) - p)) ps
     rmax = maximum rs
-    rad = sumRadiance1 n pw rmax rs ps
+    --sumfunc = fromJust (Map.lookup (pfilter scr) pfilters)
+    sumfunc = pfilters Map.! (pfilter scr)
+    rad = sumfunc n (power pmap) rmax rs ps
     adopt :: PhotonInfo -> Bool
     adopt ph
-      | radius2 == 0.0 = True
-      | otherwise      = square (p - photonPos ph) < radius2
+      | radius2 scr == 0.0 = True
+      | otherwise          = square (p - photonPos ph) < (radius2 scr)
 
 -- filtering:
 --   sumRadiance1  non filter
@@ -217,10 +222,13 @@ sumRadiance3 n pw rmax rs ps = foldl (+) radiance0 rads
 -- CLASICAL RAY TRACING
 ------
 
-traceRay' :: Int -> [Light] -> [Object] -> Ray -> IO Radiance
-traceRay' l lgts objs r
+traceRay' :: Screen -> Int -> [Light] -> [Object] -> Ray -> IO Radiance
+traceRay' !scr l lgts objs r
   | is == Nothing = return radiance0
-  | otherwise     = return (sr_half *> emittance m + brdf m (radDiff + amb))
+  | otherwise     = return (
+                    sr_half *> emittance m
+                  + brdf m (radDiff + (ambient scr))
+                  )
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
@@ -260,11 +268,13 @@ type Intersection = (Position3, Direction3, Material)
 calcIntersection :: Ray -> [Object] -> Maybe Intersection
 calcIntersection r os
   | iss == [] = Nothing
-  | otherwise = Just (p, fromJust (getNormal p s), m)
+  | nvec == Nothing = Nothing
+  | otherwise = Just (p, fromJust nvec, m)
   where
     p = target t r
     iss = filter (\x -> fst x > nearly0) (concat $ map (calcDistance r) os)
     (t, (Object s m)) = head $ sortBy (comparing fst) iss
+    nvec = getNormal p s
 
 calcDistance :: Ray -> Object -> [(Double, Object)]
 calcDistance r o@(Object s _) = zip ts (replicate (length ts) o)
@@ -275,16 +285,3 @@ brdf :: Material -> Radiance -> Radiance
 --brdf m rad = (diffuseness m / pi2) *> ((reflectance m) <**> rad)
 brdf m rad = one_pi *> ((reflectance m) <**> rad)
 
-readMap :: IO (Double, KT.KdTree Double PhotonInfo)
-readMap = do
-  np' <- getLine
-  pw' <- getLine
-  ps <- getContents
-  let np = read np' :: Int
-      pw = read pw' :: Double
-      pcs = map (\x -> read x :: PhotonCache) (lines ps)
-      --pmap = build infoToPointList (map convertToInfo pcs)
-      pmap = KT.buildWithDist infoToPointList squaredDistance (map convertToInfo pcs)
-      --pmap0 = KT.emptyWithDist infoToPointList squaredDistance
-      --pmap = foldl' KT.insert pmap0 (map convertToInfo pcs)
-  return (pw, pmap)

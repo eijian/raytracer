@@ -16,21 +16,29 @@ import Ray.Optics
 
 import Screen
 
-type Rgb = (Int, Int, Int)
+--
+-- CONSTANTS
+--
 
-imgOffset :: [Int]
-imgOffset = [-xres-1, -xres, -xres+1, -1, 1, xres-1, xres, xres+1]
+diffAliasing :: Int
+diffAliasing = 20
+
+--
 
 blur :: [(Double, Double)]
 blur = [(-0.25, -0.25), (-0.25,  0.25), ( 0.25, -0.25), ( 0.25,  0.25)]
 
-smooth :: Bool -> (Ray -> IO Radiance) -> V.Vector Rgb -> Int -> IO Rgb
-smooth False _ ims i = return (ims V.! i)
-smooth True tracer ims i
-  | isDifferent i ims imgOffset == False = return (ims V.! i)
+smooth :: Bool -> (Ray -> IO Radiance) -> Screen -> V.Vector Rgb -> Int
+       -> IO Rgb
+smooth False _      _   ims i = return (ims V.! i)
+smooth True  tracer scr ims i
+  | isDifferent i ims offset == False = return (ims V.! i)
   | otherwise = do
-    l <- retrace tracer i
+    l <- retrace tracer scr i
     return $ avg ((ims V.! i):l)
+  where
+    xr = xreso scr
+    offset = [-xr-1, -xr, -xr+1, -1, 1, xr-1, xr, xr+1]
 
 avg :: [Rgb] -> Rgb
 avg ls = (r `div` len, g `div` len, b `div` len)
@@ -73,10 +81,11 @@ diffRgb (r1, g1, b1) (r2, g2, b2) =
     abs :: Int -> Int
     abs i = if i < 0 then (-i) else i
 
-retrace :: (Ray -> IO Radiance) -> Int -> IO [Rgb]
-retrace tracer p = do
-  let p' = (fromIntegral (p `div` xres), fromIntegral (p `mod` xres))
-  ls <- mapM tracer $ map generateRay' (map (badd p') blur)
+retrace :: (Ray -> IO Radiance) -> Screen -> Int -> IO [Rgb]
+retrace tracer scr p = do
+  let p' = ( fromIntegral (p `div` (xreso scr))
+           , fromIntegral (p `mod` (xreso scr)))
+  ls <- mapM tracer $ map generateRay (map (badd p') blur)
   return $ map radianceToRgb ls
     
 badd :: (Double, Double) -> (Double, Double) -> (Double, Double)

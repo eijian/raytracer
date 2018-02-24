@@ -16,11 +16,13 @@ import Antialias
 
 main :: IO ()
 main = do
+  (lgts, objs) <- readScene ""
+  scr <- readScreen ""
   mapM_ putStrLn $ pnmHeader
-  let tracer = traceRay' 0 lgts objs
-  image <- V.mapM tracer $ V.map generateRay' scrmap
+  let tracer = traceRay' scr 0 lgts objs
+  image <- V.mapM tracer $ V.map generateRay scrmap
   let cells = V.map radianceToRgb image
   forM_ [0..(V.length cells - 1)] $ \i -> do
-    rgb <- smooth antiAliasing tracer cells i
+    rgb <- smooth antiAliasing tracer scr cells i
     putStrLn $ rgbToString rgb
 

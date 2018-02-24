@@ -10,6 +10,7 @@ module Ray.Optics (
   Photon
 , PhotonCache
 , PhotonInfo
+, PhotonMap
 , Radiance (Radiance)
 , (<**>)
 , rabs'
@@ -17,20 +18,24 @@ module Ray.Optics (
 , elemG
 , elemB
 , convertToInfo
-, infoToPointList
 , squaredDistance
 , initPhoton
+, nearest
+, norm
 , photonDir
 , photonDummy
 , photonInfoToRadiance
 , photonPos
+, power
 , radiance0
 , radiance1
-, norm
+, readMap
 ) where
 
 import NumericPrelude
 --import Debug.Trace
+import qualified Data.KdTree.Static as KT
+--import qualified Data.KdTree.Dynamic as KT
 
 import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
@@ -127,6 +132,11 @@ type PhotonCache = Photon
 data PhotonInfo = PhotonInfo !Wavelength !Position3 !Direction3
   deriving (Show, Eq)
 
+data PhotonMap = PhotonMap
+  { power :: Double
+  , nearest :: PhotonInfo -> [PhotonInfo]
+  }
+
 {-
 instance Point PhotonInfo where
   dimension _ = 3
@@ -148,9 +158,6 @@ photonPos (PhotonInfo _ p _) = p
 convertToInfo :: PhotonCache -> PhotonInfo
 convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
 
-infoToPointList :: PhotonInfo -> [Double]
-infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
-
 squaredDistance :: PhotonInfo -> PhotonInfo -> Double
 squaredDistance (PhotonInfo _ v1 _) (PhotonInfo _ v2 _) = d <.> d
   where
@@ -165,3 +172,19 @@ photonInfoToRadiance n pw (PhotonInfo wl _ d)
     cos0 = n <.> d
     power = if cos0 > 0.0 then pw * cos0 else 0.0
 
+readMap :: Int -> IO (Int, PhotonMap)
+readMap nsample = do
+  np' <- getLine
+  pw' <- getLine
+  ps <- getContents
+  let np = read np' :: Int
+      pw = read pw' :: Double
+      pcs = map (\x -> read x :: PhotonCache) (lines ps)
+      --pmap = build infoToPointList (map convertToInfo pcs)
+      pmap = KT.buildWithDist infoToPointList squaredDistance (map convertToInfo pcs)
+      --pmap0 = KT.emptyWithDist infoToPointList squaredDistance
+      --pmap = foldl' KT.insert pmap0 (map convertToInfo pcs)
+  return (KT.size pmap, PhotonMap pw (KT.kNearest pmap nsample))
+
+infoToPointList :: PhotonInfo -> [Double]
+infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]

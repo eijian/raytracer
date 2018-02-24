@@ -5,22 +5,29 @@
 --
 
 module Screen (
-  useClassicForDirect
+  Rgb
+, useClassicForDirect
 , nPhoton
-, nPhotonForEst
-, amb
+, nSamplePhoton
 , radius2
 , eyepos
 , eyedir
 , focus
-, xres
+--, xres
+--, yres
+, xreso
+, yreso
+, pfilter
 , scrmap
 , pnmHeader
 , antiAliasing
-, diffAliasing
-, generateRay'
+, generateRay
 , radianceToRgb
+, readScreen
 , rgbToString
+, Screen
+, ambient
+, PhotonFilter(..)
 ) where
 
 --import Control.Monad
@@ -32,30 +39,57 @@ import Ray.Algebra
 import Ray.Geometry
 import Ray.Optics
 
--- PARAMETERS --
+type Rgb = (Int, Int, Int)
+
+data Screen = Screen
+  { nPhoton :: Int
+  , nSamplePhoton :: Int
+  , useClassicForDirect :: Bool
+  , radius2 :: Double
+  , ambient :: Radiance
+  , antialias :: Bool
+  , xreso     :: Int
+  , yreso     :: Int
+  , pfilter   :: PhotonFilter
+  }
+
+data PhotonFilter = Nonfilter | Conefilter | Gaussfilter deriving (Eq, Ord)
+
+--
+-- CONSTANTS
+--
+
+gamma :: Double
+gamma = 1.0 / 2.2
+
+rgbmax :: Double
+rgbmax = 255.0
+
+
+--
+-- PUBLIC
+--
+
+readScreen :: String -> IO Screen
+readScreen conf = return scr
+  where
+    scr = Screen
+      100000       -- nPhoton
+      100          -- nSamplePhoton
+      True         -- useClassicForDirect
+      (0.2 * 0.2)  -- radius for estimation of radiance
+      amb          -- ambient radiance
+      antiAliasing -- anti aliasing on/off
+      xres
+      yres
+      Nonfilter
+      
 
 -- for rendering
-
-useClassicForDirect :: Bool
---useClassicForDirect = False
-useClassicForDirect = True
-
-nPhoton :: Int
-nPhoton = 200000
-
-nPhotonForEst :: Int
-nPhotonForEst = 200
 
 amb :: Radiance
 amb = Radiance 0.001 0.001 0.001
 --amb = Radiance 0.00 0.00 0.00
-
--- radius for estimation of radiance
-radius2 :: Double
---radius2 = 0.0
-radius2 = 0.2 * 0.2
-
-
 
 -- for camera
 
@@ -85,15 +119,6 @@ yres = 256
 maxRadiance :: Double
 --maxRadiance = 0.005
 maxRadiance = 0.01
-
-diffAliasing :: Int
-diffAliasing = 20
-
-gamma :: Double
-gamma = 1.0 / 2.2
-
-rgbmax :: Double
-rgbmax = 255.0
 
 antiAliasing :: Bool
 --antiAliasing = False
@@ -134,26 +159,16 @@ scrmap = V.fromList [(fromIntegral y, fromIntegral x) |
 
 -- FUNCTIONS --
 
-generateRay :: Position3 -> Position3 -> (Double, Double)
-            -> (Direction3, Direction3) -> (Double, Double) -> Ray
-generateRay e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
+generateRay0 :: Position3 -> Position3 -> (Double, Double)
+             -> (Direction3, Direction3) -> (Double, Double) -> Ray
+generateRay0 e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
   where
     tgt   = o + ((sx * x) *> ex) + ((sy * y) *> ey)
     edir  = tgt - e 
     edir' = fromJust $ normalize edir
 
-generateRay' :: (Double, Double) -> Ray
-generateRay' = generateRay eyepos origin step evec
-
-{-
-convertToPixels :: V.Vector Radiance -> V.Vector [Int]
-convertToPixels rs = V.map toRgb rs
-  where
-    toRgb :: Radiance -> [Int]
-    toRgb (Radiance r g b) = [radianceToRgb clip r
-                            , radianceToRgb clip g
-                            , radianceToRgb clip b]
--}
+generateRay :: (Double, Double) -> Ray
+generateRay = generateRay0 eyepos origin step evec
 
 pnmHeader :: [String]
 pnmHeader =
@@ -163,18 +178,18 @@ pnmHeader =
   ,"255"
   ]
 
-radianceToRgb :: Radiance -> (Int, Int, Int)
+radianceToRgb :: Radiance -> Rgb
 radianceToRgb (Radiance r g b) =
   ( clip maxRadiance r
   , clip maxRadiance g
   , clip maxRadiance b
   )
-
-clip :: Double -> Double -> Int
-clip c d = floor (r * rgbmax)
   where
-    d' = d / c
-    r  = (if d' > 1.0 then 1.0 else d') ** gamma
+    clip :: Double -> Double -> Int
+    clip c d = floor (r' * rgbmax)
+      where
+        d' = d / c
+        r'  = (if d' > 1.0 then 1.0 else d') ** gamma
 
-rgbToString :: (Int, Int, Int) -> String
+rgbToString :: Rgb -> String
 rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b

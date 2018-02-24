@@ -88,15 +88,14 @@ initPolygon p0 p1 p2 = Polygon p0 n d1 d2
   where
     d1 = p1 - p0
     d2 = p2 - p0
-    n  = d1 <*> d2
+    n  = fromJust (normalize (d1 <*> d2))
 
 initParallelogram :: Position3 -> Position3 -> Position3 -> Shape
 initParallelogram p0 p1 p2 = Parallelogram p0 n d1 d2
   where
     d1 = p1 - p0
     d2 = p2 - p0
-    n  = d1 <*> d2
-
+    n  = fromJust (normalize (d1 <*> d2))
 
 getNormal :: Position3 -> Shape -> Maybe Direction3
 -- Plain
@@ -157,10 +156,12 @@ diffuseReflection n = do
 
 specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
 specularReflection n e
-  | c < 0.0   = (e - (2.0 * c) *> n, -c)
-  | otherwise = (e - (2.0 * c) *> n, c)
+  | v == Nothing = (n, 0.0)
+  | c < 0.0      = (fromJust v, -c)
+  | otherwise    = (fromJust v,  c)
   where
     c = e <.> n
+    v = normalize (e - (2.0 * c) *> n)
 
 specularRefraction :: Double -> Double -> Double -> Direction3 -> Direction3
                    -> (Direction3, Double)

@@ -22,12 +22,14 @@ import Antialias
 
 main :: IO ()
 main = do
-  (power, photonmap) <- readMap
-  hPutStrLn stderr ("finished reading map:" ++ (show $ size photonmap))
+  (lgts, objs) <- readScene ""
+  scr <- readScreen ""
+  (msize, photonmap) <- readMap (nSamplePhoton scr)
+  hPutStrLn stderr ("finished reading map:" ++ (show msize))
   mapM_ putStrLn $ pnmHeader
-  let tracer = traceRay m_air 0 power photonmap objs lgts
-  image <- V.mapM tracer $ V.map generateRay' scrmap
+  let tracer = traceRay scr m_air 0 photonmap objs lgts
+  image <- V.mapM tracer $ V.map generateRay scrmap
   let pixels = V.map radianceToRgb image
   forM_ [0..(V.length pixels - 1)] $ \i -> do
-    rgb <- smooth antiAliasing tracer pixels i
+    rgb <- smooth antiAliasing tracer scr pixels i
     putStrLn $ rgbToString rgb

@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                raytracer
-version:             2.4.0.0
+version:             2.4.1.0
 synopsis:            Ray Tracing by Haskell
 description:         Ray tracing program supported 'photon mapping'
 license:             BSD3
@@ -24,6 +24,7 @@ executable pm
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >= 4.8 && < 5
+                     , containers
                      , numeric-prelude >= 0.4.2
                      , random
                      , mersenne-random >= 1.0
@@ -40,6 +41,7 @@ executable rt
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >= 4.8 && < 5
+                     , containers
                      , numeric-prelude >= 0.4.2
                      , random
                      , mersenne-random >= 1.0
@@ -56,6 +58,7 @@ executable rtc
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >= 4.8 && < 5
+                     , containers
                      , numeric-prelude >= 0.4.2
                      , random
                      , mersenne-random >= 1.0
@@ -76,6 +79,7 @@ executable pm2img
                      , random
                      , mersenne-random >= 1.0
                      , QuickCheck
+                     , kdt
                      , vector
 
 
