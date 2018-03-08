@@ -104,8 +104,11 @@ elemRad Red   (Radiance r _ _) = r
 elemRad Green (Radiance _ g _) = g
 elemRad Blue  (Radiance _ _ b) = b
 
+elemR :: Radiance -> Double
 elemR = elemRad Red
+elemG :: Radiance -> Double
 elemG = elemRad Green
+elemB :: Radiance -> Double
 elemB = elemRad Blue
 
 radiance0 :: Radiance
@@ -171,19 +174,19 @@ photonInfoToRadiance n pw (PhotonInfo wl _ d)
   where
     cos0 = n <.> d
     power = if cos0 > 0.0 then pw * cos0 else 0.0
+photonInfoToRadiance _ _ (PhotonInfo _ _ _) = radiance0
 
 readMap :: Int -> IO (Int, PhotonMap)
 readMap nsample = do
-  np' <- getLine
+  --np' <- getLine
+  getLine           -- discard infomation about the number of photon 
   pw' <- getLine
   ps <- getContents
-  let np = read np' :: Int
-      pw = read pw' :: Double
-      pcs = map (\x -> read x :: PhotonCache) (lines ps)
-      --pmap = build infoToPointList (map convertToInfo pcs)
-      pmap = KT.buildWithDist infoToPointList squaredDistance (map convertToInfo pcs)
-      --pmap0 = KT.emptyWithDist infoToPointList squaredDistance
-      --pmap = foldl' KT.insert pmap0 (map convertToInfo pcs)
+  let
+    --np = read np' :: Int
+    pw = read pw' :: Double
+    pcs = map convertToInfo (map (\x -> read x :: PhotonCache) (lines ps))
+    pmap = KT.buildWithDist infoToPointList squaredDistance pcs
   return (KT.size pmap, PhotonMap pw (KT.kNearest pmap nsample))
 
 infoToPointList :: PhotonInfo -> [Double]

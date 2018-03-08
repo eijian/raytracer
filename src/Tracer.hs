@@ -17,9 +17,9 @@ import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import           Data.List hiding (sum)
 import           Data.Ord
-import qualified Data.KdTree.Static as KT
+--import qualified Data.KdTree.Static as KT
 --import qualified Data.KdTree.Dynamic as KT
-import           Debug.Trace
+--import           Debug.Trace
 import           NumericPrelude
 
 import Ray.Algebra
@@ -37,8 +37,8 @@ import Scene
 -- CONSTANTS
 --
 
-sqpi2 :: Double
-sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
+--sqpi2 :: Double
+--sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
 
 one_pi :: Double
 one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
@@ -46,6 +46,8 @@ one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
 sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 
+pfilters :: Map.Map PhotonFilter
+  (Direction3 -> Double -> Double -> [Double] -> [PhotonInfo] -> Radiance)
 pfilters = Map.fromList [(Nonfilter, sumRadiance1)
                         ,(Conefilter, sumRadiance2)
                         ,(Gaussfilter, sumRadiance3)]
@@ -55,22 +57,22 @@ pfilters = Map.fromList [(Nonfilter, sumRadiance1)
 tracePhoton :: Bool -> Material -> [Object] -> Int -> Photon
             -> IO [PhotonCache]
 tracePhoton _   _   _   10 _        = return []
-tracePhoton !uc !m0 !os !l !(wl, r) = do
-  let is = calcIntersection r os
-  if is == Nothing
-    then return []
-    else do
-      let
-        is' = fromJust is
-        (p, _, m) = is'
-        d = diffuseness m
-      i <- russianRoulette [d]
-      ref <- if i > 0
-        then reflectDiff uc m0 os l wl is'
-        else reflectSpec uc m0 os l (wl, r) is'
-      if (uc == False || l > 0) && d > 0.0
-        then return $ ((wl, initRay p $ getDir r) : ref)
-        else return ref
+tracePhoton !uc !m0 !os !l !(wl, r)
+  | is == Nothing = return []
+  | otherwise     = do
+    let
+      is' = fromJust is
+      (p, _, m) = is'
+      d = diffuseness m
+    i <- russianRoulette [d]
+    ref <- if i > 0
+      then reflectDiff uc m0 os l wl is'
+      else reflectSpec uc m0 os l (wl, r) is'
+    if (uc == False || l > 0) && d > 0.0
+      then return $ ((wl, initRay p $ getDir r) : ref)
+      else return ref
+  where
+    is = calcIntersection r os
 
 reflectDiff :: Bool -> Material -> [Object] -> Int -> Wavelength
             -> Intersection -> IO [PhotonCache]

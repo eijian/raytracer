@@ -151,8 +151,8 @@ distance _ _ = []
 diffuseReflection :: Direction3 -> IO Direction3
 diffuseReflection n = do
   dir <- generateRandomDir4
-  let cos = n <.> dir
-  return $ if cos > 0.0 then dir else negate dir
+  let c = n <.> dir
+  return $ if c > 0.0 then dir else negate dir
 
 specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
 specularReflection n e
