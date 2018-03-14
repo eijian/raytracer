@@ -29,6 +29,7 @@ yr = 2048
 
 main :: IO ()
 main = do
+  scr <- readScreen ""
   np <- getLine
   pw <- getLine
   let nphoton = read np :: Int
@@ -36,31 +37,30 @@ main = do
   dat <- getContents
   pcs <- forM (lines dat) $ \i -> do
     return $ (read i :: PhotonCache)
-  let cp  = target focus (initRay eyepos eyedir)
-      sc  = Plain eyedir (negate eyedir <.> cp)
-      map = getMap cp sc pcs
+  let cp  = target (focus scr) (initRay (eyePos scr) (eyeDir scr))
+      sc  = Plain (eyeDir scr) (negate (eyeDir scr) <.> cp)
+      map = getMap scr cp sc pcs
   a <- forM (map) $ \i -> do
     putStrLn $ show i
   return ()
 
-getMap :: Position3 -> Shape -> [PhotonCache] -> [(Wavelength, Int, Int)]
-getMap _ _ [] = []
-getMap cp sc (pc:pcs)
-  | t < focus = getMap cp sc pcs
-  | px < 0 || px > (xr - 1) = getMap cp sc pcs
-  | py < 0 || py > (yr - 1) = getMap cp sc pcs
-  | otherwise = (getWl pc, px, py) : getMap cp sc pcs
+getMap :: Screen -> Position3 -> Shape -> [PhotonCache]
+       -> [(Wavelength, Int, Int)]
+getMap _ _ _ [] = []
+getMap scr cp sc (pc:pcs)
+  | t < (focus scr)         = next
+  | px < 0 || px > (xr - 1) = next
+  | py < 0 || py > (yr - 1) = next
+  | otherwise = (getWl pc, px, py) : next
   where
-    d = (getPt pc) - eyepos
+    d = (getPt pc) - (eyePos scr)
     d' = fromJust $ normalize d
-    r = initRay eyepos d'
+    r = initRay (eyePos scr) d'
     t = head $ distance r sc
     p = (target t r) - cp
-    --cos = ez3 <.> d'
-    --t = focus / cos
-    --p = eyepos + t *> d'
     px = round ((elemX p + 1.0) * (fromIntegral xr / 2))
     py = round ((1.0 - elemY p) * (fromIntegral yr / 2))
+    next = getMap scr cp sc pcs
 
 getPt :: PhotonCache -> Position3
 getPt (_, (p, _)) = p

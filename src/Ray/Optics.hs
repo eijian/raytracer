@@ -168,18 +168,18 @@ squaredDistance (PhotonInfo _ v1 _) (PhotonInfo _ v2 _) = d <.> d
 
 photonInfoToRadiance :: Direction3 -> Double -> PhotonInfo -> Radiance
 photonInfoToRadiance n pw (PhotonInfo wl _ d)
-  | wl == Red   = Radiance power 0 0
-  | wl == Green = Radiance 0 power 0
-  | wl == Blue  = Radiance 0 0 power
+  | wl == Red   = Radiance pw' 0 0
+  | wl == Green = Radiance 0 pw' 0
+  | wl == Blue  = Radiance 0 0 pw'
   where
     cos0 = n <.> d
-    power = if cos0 > 0.0 then pw * cos0 else 0.0
+    pw'  = if cos0 > 0.0 then pw * cos0 else 0.0
 photonInfoToRadiance _ _ (PhotonInfo _ _ _) = radiance0
 
 readMap :: Int -> IO (Int, PhotonMap)
 readMap nsample = do
   --np' <- getLine
-  getLine           -- discard infomation about the number of photon 
+  _ <-getLine           -- discard infomation about the number of photon 
   pw' <- getLine
   ps <- getContents
   let

@@ -28,10 +28,9 @@ diffAliasing = 20
 blur :: [(Double, Double)]
 blur = [(-0.25, -0.25), (-0.25,  0.25), ( 0.25, -0.25), ( 0.25,  0.25)]
 
-smooth :: Bool -> (Ray -> IO Radiance) -> Screen -> V.Vector Rgb -> Int
-       -> IO Rgb
-smooth False _      _   ims i = return (ims V.! i)
-smooth True  tracer scr ims i
+smooth :: (Ray -> IO Radiance) -> Screen -> V.Vector Rgb -> Int -> IO Rgb
+smooth tracer scr ims i
+  | antialias scr == False            = return (ims V.! i)
   | isDifferent i ims offset == False = return (ims V.! i)
   | otherwise = do
     l <- retrace tracer scr i
@@ -85,8 +84,8 @@ retrace :: (Ray -> IO Radiance) -> Screen -> Int -> IO [Rgb]
 retrace tracer scr p = do
   let p' = ( fromIntegral (p `div` (xreso scr))
            , fromIntegral (p `mod` (xreso scr)))
-  ls <- mapM tracer $ map generateRay (map (badd p') blur)
-  return $ map radianceToRgb ls
+  ls <- mapM tracer $ map (generateRay scr) (map (badd p') blur)
+  return $ map (radianceToRgb scr) ls
     
 badd :: (Double, Double) -> (Double, Double) -> (Double, Double)
 badd (px, py) (bx, by) = (px + bx, py + by)

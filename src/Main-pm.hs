@@ -17,10 +17,12 @@ import Scene
 main :: IO ()
 main = do
   (lgts, objs) <- readScene ""
-  scr <- readScreen ""
-  putStrLn $ show $ nPhoton scr
-  let power = (sum $ map flux lgts) / (fromIntegral $ nPhoton scr)
-      ns    = map (calcN power) lgts
+  scr          <- readScreen ""
+  let
+    nPhoton = 100000
+    power = (sum $ map flux lgts) / (fromIntegral nPhoton)
+    ns    = map (calcN power) lgts
+  putStrLn $ show nPhoton
   putStrLn $ show power
   zipWithM_ (outputPhotonCaches (useClassicForDirect scr) objs) lgts ns
   

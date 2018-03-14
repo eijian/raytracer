@@ -75,6 +75,7 @@ executable pm2img
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >= 4.8 && < 5
+                     , containers
                      , numeric-prelude >= 0.4.2
                      , random
                      , mersenne-random >= 1.0

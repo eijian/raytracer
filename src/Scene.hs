@@ -43,14 +43,14 @@ readScene conf = return (lgts, objs)
 --pl1 :: Light
 --pl2 :: Light
 lgts :: [Light]
---lgts = [pl1]
-lgts = [pl1, pl2]
+lgts = [pl1]
+--lgts = [pl1, pl2]
   where
     --pl1 = PointLight (initColor 1 1 1) 5.0 (initPos 0 3.99 3.0) -- 5W
-    --pl1 = ParallelogramLight (initColor 1 1 1) 5.0 (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3  -- 5W Parallelogram
+    pl1 = ParallelogramLight (initColor 1 1 1) 5.0 (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3  -- 5W Parallelogram
     --pl1 = SunLight (initColor 1 1 1) 20.0 (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3 (fromJust $ normalize $ Vector3 1 (-1) 1)  -- 10W Sun
-    pl1 = PointLight (initColor 1 1 1) 1.0 (initPos (-1.5) 3.5 4.5) -- 1W
-    pl2 = PointLight (initColor 2 1 0) 1.0 (initPos 1.5 3.5 4.5) -- 1W
+    --pl1 = PointLight (initColor 1 1 1) 1.0 (initPos (-1.5) 3.5 4.5) -- 1W
+    --pl2 = PointLight (initColor 2 1 0) 1.0 (initPos 1.5 3.5 4.5) -- 1W
 
 bp1, bp2, bp3, bp4, bp5, bp6, bp7, bp8 :: Position3
 bp1 = Vector3 (-1.2) 1.8 2.6
@@ -71,8 +71,8 @@ objs :: [Object]
 --objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1, paralgt]
 --objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, box_u, box_b, box_f, box_r, box_i, box_l, paralgt]
 --objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, box_u, box_b, box_f, box_r, box_i, box_l, ball2, paralgt]
-objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball2, ball3]
---objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball2, ball3, paralgt]
+--objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball2, ball3]
+objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball2, ball3, paralgt]
 --objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, tetra1, tetra2, tetra3, tetra4, paralgt]
 --objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1]
   where

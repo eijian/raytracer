@@ -18,11 +18,11 @@ main :: IO ()
 main = do
   (lgts, objs) <- readScene ""
   scr <- readScreen ""
-  mapM_ putStrLn $ pnmHeader
+  mapM_ putStrLn $ pnmHeader scr
   let tracer = traceRay' scr 0 lgts objs
-  image <- V.mapM tracer $ V.map generateRay scrmap
-  let cells = V.map radianceToRgb image
+  image <- V.mapM tracer $ V.map (generateRay scr) $ screenMap scr
+  let cells = V.map (radianceToRgb scr) image
   forM_ [0..(V.length cells - 1)] $ \i -> do
-    rgb <- smooth antiAliasing tracer scr cells i
+    rgb <- smooth tracer scr cells i
     putStrLn $ rgbToString rgb
 

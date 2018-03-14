@@ -46,11 +46,11 @@ one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
 sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 
-pfilters :: Map.Map PhotonFilter
-  (Direction3 -> Double -> Double -> [Double] -> [PhotonInfo] -> Radiance)
-pfilters = Map.fromList [(Nonfilter, sumRadiance1)
-                        ,(Conefilter, sumRadiance2)
-                        ,(Gaussfilter, sumRadiance3)]
+--pfilters :: Map.Map PhotonFilter
+--  (Direction3 -> Double -> Double -> [Double] -> [PhotonInfo] -> Radiance)
+--pfilters = Map.fromList [(Nonfilter, sumRadiance1)
+--                        ,(Conefilter, sumRadiance2)
+--                        ,(Gaussfilter, sumRadiance3)]
 
 --
 
@@ -161,8 +161,10 @@ estimateRadiance scr pmap (p, n, m)
     ps = filter adopt $ (nearest pmap) $ photonDummy p
     rs = map (\x -> norm ((photonPos x) - p)) ps
     rmax = maximum rs
-    --sumfunc = fromJust (Map.lookup (pfilter scr) pfilters)
-    sumfunc = pfilters Map.! (pfilter scr)
+    sumfunc = case (pfilter scr) of
+                Nonfilter   -> sumRadiance1
+                Conefilter  -> sumRadiance2
+                Gaussfilter -> sumRadiance3
     rad = sumfunc n (power pmap) rmax rs ps
     adopt :: PhotonInfo -> Bool
     adopt ph
