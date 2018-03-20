@@ -19,11 +19,15 @@ vertex:
   bp8: [ 0.4, 0.2, 1.8]
 
 material:
-  - name: m_ball
-    emittance:
-    specular:
+  - name         : m_ball
+    emittance    :
+    reflectance  :
     transmittance:
-    diffuseness:
+    specularrefl :
+    ior          :
+    diffuseness  :
+    metalness    :
+    smoothness   :
 
 
   - name: m_wall

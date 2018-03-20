@@ -65,8 +65,8 @@ rgbmax = 255.0
 
 defconf :: M.Map String String
 defconf = M.fromList [
-    (rXresolution   , "512")
-  , (rYresolution   , "512")
+    (rXresolution   , "256")
+  , (rYresolution   , "256")
   , (rAntialias     , "True")
   , (rSamplePhoton  , "100")
   , (rUseClassic    , "True")
@@ -85,23 +85,24 @@ defconf = M.fromList [
 --
 
 readScreen :: String -> IO Screen
-readScreen file = return scr
-  where
+readScreen file = do
+  lines <- readConfig file
+  let
     -- input params
-    xres       = read (defconf M.! rXresolution   ) :: Int
-    yres       = read (defconf M.! rYresolution   ) :: Int
-    antialias  = read (defconf M.! rAntialias     ) :: Bool
-    samphoton  = read (defconf M.! rSamplePhoton  ) :: Int
-    useclassic = read (defconf M.! rUseClassic    ) :: Bool
-    radius     = read (defconf M.! rEstimateRadius) :: Double
-    amb        = read (defconf M.! rAmbient       ) :: Radiance
-    maxrad     = read (defconf M.! rMaxRadiance   ) :: Double
-    eyepos     = read (defconf M.! rEyePosition   ) :: Vector3
-    targetpos  = read (defconf M.! rTargetPosition) :: Vector3
-    upper      = read (defconf M.! rUpperDirection) :: Vector3
-    focus      = read (defconf M.! rFocus         ) :: Double
-    pfilt      = read (defconf M.! rPhotonFilter  ) :: PhotonFilter
-
+    conf = parseLines defconf lines
+    xres       = read (conf M.! rXresolution   ) :: Int
+    yres       = read (conf M.! rYresolution   ) :: Int
+    antialias  = read (conf M.! rAntialias     ) :: Bool
+    samphoton  = read (conf M.! rSamplePhoton  ) :: Int
+    useclassic = read (conf M.! rUseClassic    ) :: Bool
+    radius     = read (conf M.! rEstimateRadius) :: Double
+    amb        = read (conf M.! rAmbient       ) :: Radiance
+    maxrad     = read (conf M.! rMaxRadiance   ) :: Double
+    eyepos     = read (conf M.! rEyePosition   ) :: Vector3
+    targetpos  = read (conf M.! rTargetPosition) :: Vector3
+    upper      = read (conf M.! rUpperDirection) :: Vector3
+    focus      = read (conf M.! rFocus         ) :: Double
+    pfilt      = read (conf M.! rPhotonFilter  ) :: PhotonFilter
     fmaxrad = radianceToRgb0 maxrad
     fheader = pnmHeader0 xres yres
     smap = V.fromList [(fromIntegral y, fromIntegral x) |
@@ -125,6 +126,7 @@ readScreen file = return scr
       fheader      -- func to generate header of PNM format
       fmaxrad      -- func to convert from radiance to rgb
       fgenray      -- func to generate rays
+  return scr
 
 rgbToString :: Rgb -> String
 rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b
@@ -132,6 +134,16 @@ rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b
 --
 -- PRIVATE FUNCTIONS
 --
+
+readConfig :: String -> IO [String]
+readConfig file = do
+  return []
+
+parseLines :: M.Map String String -> [String] -> M.Map String String
+parseLines c [] = c
+parseLines c (l:ls) = parseLines c' ls
+  where
+    c' = c
 
 makeGenerateRay :: Position3 -> Direction3 -> Int -> Int -> Direction3
                 -> Double -> ((Double, Double) -> Ray)
