@@ -5,8 +5,7 @@
 --
 
 module Screen (
-  PhotonFilter(..)
-, Rgb
+  Rgb
 , Screen(..)
 , readScreen
 , rgbToString
@@ -48,11 +47,6 @@ data Screen = Screen
   , generateRay   :: (Double, Double) -> Ray
   }
 
-data PhotonFilter = Nonfilter
-                  | Conefilter
-                  | Gaussfilter
-                  deriving (Eq, Ord, Show, Read)
-
 --
 -- CONSTANTS
 --
@@ -89,7 +83,8 @@ readScreen file = do
   lines <- readConfig file
   let
     -- input params
-    conf = parseLines defconf lines
+    conf = parseConfig defconf lines
+    --conf = defconf
     xres       = read (conf M.! rXresolution   ) :: Int
     yres       = read (conf M.! rYresolution   ) :: Int
     antialias  = read (conf M.! rAntialias     ) :: Bool
@@ -103,6 +98,7 @@ readScreen file = do
     upper      = read (conf M.! rUpperDirection) :: Vector3
     focus      = read (conf M.! rFocus         ) :: Double
     pfilt      = read (conf M.! rPhotonFilter  ) :: PhotonFilter
+
     fmaxrad = radianceToRgb0 maxrad
     fheader = pnmHeader0 xres yres
     smap = V.fromList [(fromIntegral y, fromIntegral x) |
@@ -137,13 +133,18 @@ rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b
 
 readConfig :: String -> IO [String]
 readConfig file = do
-  return []
+  f <- readFile file
+  return $ map removeComment $ lines f
 
-parseLines :: M.Map String String -> [String] -> M.Map String String
-parseLines c [] = c
-parseLines c (l:ls) = parseLines c' ls
+parseConfig :: M.Map String String -> [String] -> M.Map String String
+parseConfig c ls = updateConfig c ps
   where
-    c' = c
+    ps = parseLines ls
+    updateConfig :: M.Map String String -> [Param] -> M.Map String String
+    updateConfig c []     = c
+    updateConfig c ((k,v):ps) = updateConfig c' ps
+      where
+        c' = if k /= "" then M.insert k v c else c
 
 makeGenerateRay :: Position3 -> Direction3 -> Int -> Int -> Direction3
                 -> Double -> ((Double, Double) -> Ray)

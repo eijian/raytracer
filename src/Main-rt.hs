@@ -2,28 +2,34 @@
 -- Ray tracer w/Photon map
 --
 -- compile: ghc -o rt RT.hs
--- usage  : ./rt < photonmapfile > imagefile.ppm
+-- usage  : ./rt [screen info file] < [photonmapfile] > [imagefile.ppm]
 
 module Main where
 
 --import Data.List
-import Control.Monad
-import System.IO
-import Data.KdTree.Static
---import Data.KdTree.Dynamic
+import           Control.Monad
 import qualified Data.Vector as V
+import           System.Environment
+import           System.IO
 
 import Scene
 import Screen
 import Tracer
 import Antialias
 
+usage :: String
+usage = "Usage: rt [screen info file] < [photon map file]"
+
 -- FUNCTIONS --
 
 main :: IO ()
 main = do
+  as <- getArgs
+  fn <- if length as == 1
+    then return $ head as
+    else error usage
+  scr <- readScreen fn
   (lgts, objs) <- readScene ""
-  scr <- readScreen ""
   (msize, photonmap) <- readMap (nSamplePhoton scr)
   hPutStrLn stderr ("finished reading map:" ++ (show msize))
   mapM_ putStrLn $ pnmHeader scr

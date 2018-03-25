@@ -5,11 +5,11 @@ yresolution   : 256
 antialias     : yes                # yes or no
 samplephoton  : 100
 useclassic    : yes                # yes or no
-radius        : 0.2
+estimateradius: 0.2
 ambient       : [ 0.001, 0.001, 0.001 ]
 maxradiance   : 0.01
-eysposition   : [ 0.0, 2.0, -4.5 ]
-targetposition: [ 0.0, 2.0, 0.0 ]
+eyeposition   : [ 0.0, 2.0, -4.5 ]
+targetposition: [ 0.0, 1.0, 0.0 ]
 upperdirection: [ 0.0, 1.0, 0.0 ]
 focus         : 2.7
 photonfilter  : none               # cone, gauss

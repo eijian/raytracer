@@ -11,6 +11,7 @@ module Ray.Optics (
 , PhotonCache
 , PhotonInfo
 , PhotonMap
+, PhotonFilter (..)
 , Radiance (Radiance)
 , (<**>)
 , rabs'
@@ -46,6 +47,15 @@ import Ray.Geometry
 import Ray.Physics
 
 --
+-- Photon Filter
+--
+
+data PhotonFilter = Nonfilter
+                  | Conefilter
+                  | Gaussfilter
+                  deriving (Eq, Ord, Show, Read)
+
+--
 -- Radiance
 
 data Radiance = Radiance !Double !Double !Double
@@ -67,7 +77,7 @@ instance Arbitrary Radiance where
 >>> let r1 = Radiance 0.01 0.02 0.005
 >>> let r2 = Radiance 0.008 0.015 0.009
 >>> norm (r1 - r2)
-0 0 0
+1.1e-2
 -}
 instance Additive.C Radiance where
   zero = Radiance 0 0 0
@@ -88,7 +98,7 @@ rabs d = if d < 0.0 then (-d) else d
 
 {- |
 >>> rabs' (Radiance 0.001 (-0.02) (-0.00005))
-0.0
+Radiance 1.0e-3 2.0e-2 5.0e-5
 -}
 
 rabs' :: Radiance -> Radiance
@@ -117,10 +127,10 @@ radiance1 :: Radiance
 radiance1 = Radiance 1 1 1
 
 -- | Radiance
--- >>> let a = Radiance 0.1 0.8 0.3
--- >>> let b = Radiance 1.1 0.2 2.5
+-- >>> let a = Radiance 0.3 0.8 0.3
+-- >>> let b = Radiance 1.2 0.5 2.5
 -- >>> a + b
--- Radiance 1.2 1.0 2.8
+-- Radiance 1.5 1.3 2.8
 
 --
 -- Photon 
