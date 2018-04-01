@@ -27,10 +27,11 @@ main = do
   scr <- readScreen fn
   (lgts, objs) <- readScene ""
   let
-    nPhoton = 100000
-    power = (sum $ map flux lgts) / (fromIntegral nPhoton)
+    --nPhoton = 100000
+    --power = (sum $ map flux lgts) / (fromIntegral nPhoton)
+    power = (sum $ map flux lgts) / (fromIntegral $ nphoton scr)
     ns    = map (calcN power) lgts
-  putStrLn $ show nPhoton
+  putStrLn $ show $ nphoton scr
   putStrLn $ show power
   zipWithM_ (outputPhotonCaches (useClassicForDirect scr) objs) lgts ns
   

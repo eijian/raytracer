@@ -3,7 +3,8 @@
 --
 
 module Parser (
-  rXresolution
+  rNPhoton
+, rXresolution
 , rYresolution
 , rAntialias
 , rSamplePhoton
@@ -79,6 +80,9 @@ rName = "name"
 
 rNormal :: String
 rNormal = "normal"
+
+rNPhoton :: String
+rNPhoton = "nphoton"
 
 rParallelogram :: String
 rParallelogram = "parallelogram"
@@ -188,6 +192,74 @@ removeComment (c:cs)
   | otherwise        = c:(removeComment cs)
 
 {- |
+material :: Parser (String, Material)
+material = do
+  _ <- spaces
+  _ <- char '-'
+  t <- mtype
+  n <- mname
+  em <- emittance
+  rl <- reflectance
+  tr <- transmittance
+  sp <- speculaRefl
+  ir <- ior
+  df <- diffuseness
+  mt <- metalness
+  sm <- smoothness
+  let
+    mat = 
+  return (n, mat)
+-}
+
+{- |
+>>> parse mtype pname "  type  : solid\n"
+Right "solid"
+>>> parse mtype pname "  type  : solid  \n"
+Right "solid"
+>>> parse mtype pname "type  : solid\n"
+Left "rt parser" (line 1, column 1):
+unexpected "t"
+expecting space
+>>> parse mtype pname "  type  : solid  a"
+Left "rt parser" (line 1, column 18):
+unexpected "a"
+expecting lf new-line
+>>> parse mtype pname "  type  : sol\n"
+Left "rt parser" (line 1, column 11):
+unexpected "\n"
+expecting "solid"
+>>> parse mtype pname "  type: solid\n"
+Right "solid"
+>>> parse mtype pname "  type  :solid\n"
+Left "rt parser" (line 1, column 10):
+unexpected "s"
+expecting space
+-}
+
+mtype :: Parser String
+mtype = do
+  _ <- many1 space
+  _ <- string "type"
+  _ <- separator
+  n <- string "solid"
+  _ <- eoline
+  return n
+  
+
+{-
+mname
+emittance
+reflectance
+transmittance
+specularRefl
+ior
+diffuseness
+metalness
+smoothness
+-}
+
+
+{- |
 >>> parse line pname "xresolution : 256"
 Right ("xresolution","256")
 >>> parse line pname "yresolution : 256"
@@ -199,12 +271,13 @@ Right ("ambient","Radiance 1.0e-2 2.0e-2 1.0e-2")
 >>> parse line pname "xreso : 256"
 Left "rt parser" (line 1, column 1):
 unexpected 'x'
-expecting "xresolution", "yresolution", "antialias", "samplephoton", "useclassic", "estimateradius", "ambient", "maxradiance", "eyeposition", "targetposition", "upperdirection", "focus", "photonfilter", space or end of input
+expecting "nphoton", "xresolution", "yresolution", "antialias", "samplephoton", "useclassic", "estimateradius", "ambient", "maxradiance", "eyeposition", "targetposition", "upperdirection", "focus", "photonfilter", space or end of input
 -}
 
 line :: Parser Param
 line = do
-  p <- (try xreso)      <|>
+  p <- (try nphoton)    <|>
+       (try xreso)      <|>
        (try yreso)      <|>
        (try antialias)  <|>
        (try samphoton)  <|>
@@ -219,6 +292,23 @@ line = do
        (try pfilt)      <|>
        (try blanc)
   return p
+
+{- |
+>>> parse nphoton pname "nphoton : 256"
+Right ("nphoton","256")
+>>> parse nphoton pname "nphoton :256"           -- YAML error
+Left "rt parser" (line 1, column 10):
+unexpected "2"
+expecting space
+-}
+
+nphoton :: Parser Param
+nphoton = do
+  _ <- string rNPhoton
+  _ <- separator
+  i <- integer
+  _ <- blanc
+  return (rNPhoton, show i)
 
 {- |
 >>> parse xreso pname "xresolution : 256"
@@ -519,3 +609,48 @@ yesno :: Parser Bool
 yesno = do
   s <- string "yes" <|> string "no"
   return $ if s == "yes" then True else False
+
+{- |
+>>> parse name pname "  yes  "
+Right "yes"
+>>> parse name pname "yes  "
+Right "yes"
+>>> parse name pname "  yes\n"
+Right "yes"
+>>> parse name pname "  yes"
+Right "yes"
+>>> parse name pname "  001a"
+Right "001a"
+>>> parse name pname "  -!%"
+Left "rt parser" (line 1, column 3):
+unexpected "-"
+expecting space or letter or digit
+-}
+
+name :: Parser String
+name = do
+  _ <- spaces
+  --s <- many1 (noneOf " \t\v\f\r\n")
+  s <- many1 alphaNum
+  _ <- spaces
+  return s
+
+{- |
+>>> parse eoline pname "   \n"
+Right ""
+>>> parse eoline pname "\t   \n"
+Right ""
+>>> parse eoline pname "\n"
+Right ""
+>>> parse eoline pname "bb"
+Left "rt parser" (line 1, column 1):
+unexpected "b"
+expecting lf new-line
+-}
+
+eoline :: Parser String
+eoline = do
+  _ <- many (oneOf " \t")
+  _ <- newline
+  return ""
+

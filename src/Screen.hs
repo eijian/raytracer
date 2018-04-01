@@ -30,21 +30,22 @@ import           Parser
 type Rgb = (Int, Int, Int)
 
 data Screen = Screen
-  { xreso     :: Int
-  , yreso     :: Int
-  , antialias :: Bool
-  , nSamplePhoton :: Int
+  { nphoton             :: Int
+  , xreso               :: Int
+  , yreso               :: Int
+  , antialias           :: Bool
+  , nSamplePhoton       :: Int
   , useClassicForDirect :: Bool
-  , radius2 :: Double
-  , pfilter   :: PhotonFilter
-  , ambient :: Radiance
-  , eyePos        :: Position3
-  , eyeDir        :: Direction3
-  , focus         :: Double
-  , screenMap     :: V.Vector (Double, Double)
-  , pnmHeader     :: [String]
-  , radianceToRgb :: Radiance -> Rgb
-  , generateRay   :: (Double, Double) -> Ray
+  , radius2             :: Double
+  , pfilter             :: PhotonFilter
+  , ambient             :: Radiance
+  , eyePos              :: Position3
+  , eyeDir              :: Direction3
+  , focus               :: Double
+  , screenMap           :: V.Vector (Double, Double)
+  , pnmHeader           :: [String]
+  , radianceToRgb       :: Radiance -> Rgb
+  , generateRay         :: (Double, Double) -> Ray
   }
 
 --
@@ -59,7 +60,8 @@ rgbmax = 255.0
 
 defconf :: M.Map String String
 defconf = M.fromList [
-    (rXresolution   , "256")
+    (rNPhoton       , "100000")
+  , (rXresolution   , "256")
   , (rYresolution   , "256")
   , (rAntialias     , "True")
   , (rSamplePhoton  , "100")
@@ -85,6 +87,7 @@ readScreen file = do
     -- input params
     conf = parseConfig defconf lines
     --conf = defconf
+    nphoton    = read (conf M.! rNPhoton       ) :: Int
     xres       = read (conf M.! rXresolution   ) :: Int
     yres       = read (conf M.! rYresolution   ) :: Int
     antialias  = read (conf M.! rAntialias     ) :: Bool
@@ -107,6 +110,7 @@ readScreen file = do
     fgenray = makeGenerateRay eyepos eyedir xres yres upper focus
     r2 = radius * radius
     scr = Screen
+      nphoton
       xres
       yres
       antialias    -- anti aliasing on/off

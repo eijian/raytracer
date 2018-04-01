@@ -1,7 +1,8 @@
 #
 
 material:
-  - name         : m_ball
+  - type         : solid
+    name         : m_ball
     emittance    : [ 0.0, 0.0, 0.0 ]
     reflectance  : [ 0.5, 0.5, 0.5 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
@@ -10,16 +11,18 @@ material:
     diffuseness  : 1.0
     metalness    : 0.0
     smoothness   : 0.0
-  - name: m_wall
-    emittance:     [ 0.0, 0.0, 0.0 ]
-    reflectance:   [ 0.5, 0.5, 0.5 ]
+  - type         : solid
+    name         : m_wall
+    emittance    : [ 0.0, 0.0, 0.0 ]
+    reflectance  : [ 0.5, 0.5, 0.5 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
-    specularRefl:  [ 0.0, 0.0, 0.0 ]
-    ior:           [ 0.0, 0.0, 0.0 ]
-    diffuseness:   1.0
-    metalness:     0.0
-    smoothness:    0.0
-  - name: m_wallr
+    specularRefl : [ 0.0, 0.0, 0.0 ]
+    ior          : [ 0.0, 0.0, 0.0 ]
+    diffuseness  : 1.0
+    metalness    : 0.0
+    smoothness   : 0.0
+  - type         : solid
+    name: m_wallr
     emittance:     [ 0.0, 0.0, 0.0 ]
     reflectance:   [ 0.4, 0.0, 0.0 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
@@ -28,7 +31,8 @@ material:
     diffuseness:   1.0
     metalness:     0.0
     smoothness:    0.0
-  - name: m_wallb
+  - type         : solid
+    name: m_wallb
     emittance:     [ 0.0, 0.0, 0.0 ]
     reflectance:   [ 0.0, 0.0, 0.4 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
@@ -37,7 +41,8 @@ material:
     diffuseness:   1.0
     metalness:     0.0
     smoothness:    0.0
-  - name: m_paral
+  - type         : solid
+    name: m_paral
     emittance:     [ 0.7958, 0.7958, 0.7958 ]
     reflectance:   [ 0.0, 0.0, 0.0 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
@@ -65,12 +70,12 @@ object:
     normal  : [ 0.0, -1.0, 0.0]
 
 light:
-#  - type: pointlight
+#  - type: point
 #    name: pl1
 #    color: [ 1.0, 1.0, 1.0 ]
 #    power: 5.0
 #    position: [ 0.0, 3.99, 3.0 ]
-  - type    : parallelogramlight
+  - type    : parallelogram
     name    : pl1
     color   : [ 1.0, 1.0, 1.0 ]
     power   : 5.0

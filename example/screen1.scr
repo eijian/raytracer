@@ -1,5 +1,6 @@
 #
 
+nphoton       : 100000
 xresolution   : 256
 yresolution   : 256
 antialias     : yes                # yes or no
