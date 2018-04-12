@@ -25,11 +25,11 @@ usage = "Usage: rt [screen info file] < [photon map file]"
 main :: IO ()
 main = do
   as <- getArgs
-  fn <- if length as == 1
-    then return $ head as
+  (fn1, fn2) <- if length as == 2
+    then return (as !! 0, as !! 1)
     else error usage
-  scr <- readScreen fn
-  (lgts, objs) <- readScene ""
+  scr <- readScreen fn1
+  (lgts, objs) <- readScene fn2
   (msize, photonmap) <- readMap (nSamplePhoton scr)
   hPutStrLn stderr ("finished reading map:" ++ (show msize))
   mapM_ putStrLn $ pnmHeader scr

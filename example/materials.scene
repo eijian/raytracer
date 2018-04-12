@@ -2,7 +2,7 @@
 
 material:
   - type         : solid
-    name         : m_ball
+    name         : mball0
     emittance    : [ 0.0, 0.0, 0.0 ]
     reflectance  : [ 0.5, 0.5, 0.5 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
@@ -12,7 +12,7 @@ material:
     metalness    : 0.0
     smoothness   : 0.0
   - type         : solid
-    name         : m_wall
+    name         : mwall
     emittance    : [ 0.0, 0.0, 0.0 ]
     reflectance  : [ 0.5, 0.5, 0.5 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
@@ -22,7 +22,7 @@ material:
     metalness    : 0.0
     smoothness   : 0.0
   - type         : solid
-    name: m_wallr
+    name         : mwallr
     emittance:     [ 0.0, 0.0, 0.0 ]
     reflectance:   [ 0.4, 0.0, 0.0 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
@@ -32,7 +32,7 @@ material:
     metalness:     0.0
     smoothness:    0.0
   - type         : solid
-    name: m_wallb
+    name: mwallb
     emittance:     [ 0.0, 0.0, 0.0 ]
     reflectance:   [ 0.0, 0.0, 0.4 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
@@ -42,7 +42,7 @@ material:
     metalness:     0.0
     smoothness:    0.0
   - type         : solid
-    name: m_paral
+    name: mparal
     emittance:     [ 0.7958, 0.7958, 0.7958 ]
     reflectance:   [ 0.0, 0.0, 0.0 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
@@ -51,36 +51,23 @@ material:
     diffuseness:   0.0
     metalness:     0.0
     smoothness:    0.0
-    
-object:
-  - type    : sphere
-    name    : ball1
-    material: m_ball
-    center  : [ 0.0, 0.8, 3.0 ]
-    radius  : 0.8
-  - type    : plain
-    name    : wall_bt
-    material: m_wall
-    position: [ 0.0, 0.0, 0.0]
-    normal  : [ 0.0, 1.0, 0.0]
-  - type    : plain
-    name    : wall_tp
-    material: m_wall
-    position: [ 0.0, 4.0, 0.0]
-    normal  : [ 0.0, -1.0, 0.0]
-
-light:
-#  - type: point
-#    name: pl1
-#    color: [ 1.0, 1.0, 1.0 ]
-#    power: 5.0
-#    position: [ 0.0, 3.99, 3.0 ]
-  - type    : parallelogram
-    name    : pl1
-    color   : [ 1.0, 1.0, 1.0 ]
-    power   : 5.0
-    position: [ -0.5, 3.99, 2.5 ]
-    dir1    : [ 1.0, 0.0, 0.0 ]
-    dir2    : [ 0.0, 0.0, 1.0 ]
-
-    
+  - type         : solid
+    name         : mball
+    emittance:     [ 0.0, 0.0, 0.0 ]
+    reflectance:   [ 0.0, 0.0, 0.0 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl:  [ 0.08, 0.08, 0.08 ]
+    ior:           [ 1.5, 1.5, 1.5 ]
+    diffuseness:   0.0
+    metalness:     0.0
+    smoothness:    0.0
+  - type         : solid
+    name         : mball2
+    emittance:     [ 0.0, 0.0, 0.0 ]
+    reflectance:   [ 0.0, 0.0, 0.0 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl:  [ 0.78, 0.78, 0.78 ]
+    ior:           [ 0.0, 0.0, 0.0 ]
+    diffuseness:   0.0
+    metalness:     1.0
+    smoothness:    0.0

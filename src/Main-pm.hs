@@ -21,11 +21,11 @@ usage = "Usage: pm [screen info file] > [photon map file]"
 main :: IO ()
 main = do
   as <- getArgs
-  fn <- if length as == 1
-    then return $ head as
+  (fn1, fn2) <- if length as == 2
+    then return (as !! 0, as !! 1)
     else error usage
-  scr <- readScreen fn
-  (lgts, objs) <- readScene ""
+  scr <- readScreen fn1
+  (lgts, objs) <- readScene fn2
   let
     --nPhoton = 100000
     --power = (sum $ map flux lgts) / (fromIntegral nPhoton)

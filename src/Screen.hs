@@ -150,6 +150,14 @@ parseConfig c ls = updateConfig c ps
       where
         c' = if k /= "" then M.insert k v c else c
 
+parseLines :: [String] -> [Param]
+parseLines []     = []
+parseLines (l:ls) = p:(parseLines ls)
+  where
+    p = case (parse sline "rt screen file parse error" l) of
+        Left  e  -> error $ (show e ++ "\nLINE: " ++ l)
+        Right p' -> p'
+
 makeGenerateRay :: Position3 -> Direction3 -> Int -> Int -> Direction3
                 -> Double -> ((Double, Double) -> Ray)
 makeGenerateRay epos edir xr yr udir fc = generateRay0 epos origin step evec

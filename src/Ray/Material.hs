@@ -34,7 +34,7 @@ data Material = Material
   , diffuseness   :: Double     -- diffuse reflection
   , metalness     :: Double
   , smoothness    :: Double
-  } deriving Eq
+  } deriving (Eq, Show)
 
 diffSpec :: Material -> Color
 diffSpec (Material _ r _ _ _ _ _ _) = r

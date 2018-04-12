@@ -11,7 +11,9 @@ module Scene (
 --, objs
 ) where
 
+import Data.List
 import Data.Maybe
+import qualified Data.Map.Strict as M
 import NumericPrelude
 
 import Ray.Algebra
@@ -21,6 +23,8 @@ import Ray.Physics
 import Ray.Optics
 import Ray.Object
 import Ray.Material
+
+import Parser
 
 --
 -- CONSTANTS
@@ -34,11 +38,55 @@ m_air = Material radiance0 white white black (Color 1.0 1.0 1.0) 0.0 0.0 0.0
 --
 
 readScene :: String -> IO ([Light], [Object])
-readScene conf = return (lgts, objs)
+readScene file = do
+--  return (lgts, objs)
+  lines <- readConfig file
+  parseConfig ((intercalate "\n" lines) ++ "\n")
 
 --
 -- PRIVATE
 --
+
+readConfig :: String -> IO [String]
+readConfig file = do
+  f <- readFile file
+  return $ map removeComment $ lines f
+
+parseConfig :: String -> IO ([Light], [Object])
+parseConfig conf = do
+  let
+    (ms) = case (parse scene "rt scene file parse error" conf) of
+      Left e -> error (show e)
+      Right (m') -> (m')
+    mmap = M.fromList ms
+    shps = [
+        (Plain ey3 0, "mwall") -- bottom
+      , (Plain (negate ey3) 4, "mwall")
+      , (Plain (negate ex3) 2, "mwallb")
+      , (Plain ex3 2, "mwallr")
+      , (Plain ez3 6, "mwall")
+      , (Plain (negate ez3) 5, "mwall")
+--      , (Sphere (initPos 0 0.8 3.0) 0.8, "mball")
+--      , (Sphere (initPos 1 0.8 2.0) 0.8, "mball")
+      , (Sphere (initPos (-1) 0.8 1.5) 0.8, "mball2")
+      , (Sphere (initPos 1 0.8 2.5) 0.8, "mball")
+--      , (initParallelogram bp1 bp2 bp4, "mball")
+--      , (initParallelogram bp1 bp4 bp5, "mball")
+--      , (initParallelogram bp4 bp3 bp8, "mball")
+--      , (initParallelogram bp2 bp6 bp3, "mball")
+--      , (initParallelogram bp7 bp6 bp8, "mball")
+--      , (initParallelogram bp1 bp5 bp2, "mball")
+--      , (initPolygon (tetra!!0) (tetra!!3) (tetra!!1), "mball")
+--      , (initPolygon (tetra!!0) (tetra!!2) (tetra!!3), "mball")
+--      , (initPolygon (tetra!!0) (tetra!!1) (tetra!!2), "mball")
+--      , (initPolygon (tetra!!3) (tetra!!2) (tetra!!1), "m_ball")
+      , (Parallelogram (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3, "mparal")
+--      , (Parallelogram (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3, "msunl")
+      ]
+    (shapes, mapnames) = unzip shps
+    os = zipWith initObject shapes $ map ((M.!) mmap) mapnames
+  --return (lgts, objs)
+  return (lgts, os)
 
 --pl1 :: Light
 --pl2 :: Light

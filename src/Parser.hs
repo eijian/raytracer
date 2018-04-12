@@ -18,16 +18,21 @@ module Parser (
 , rFocus
 , rPhotonFilter
 , Param
-, parseLines
 , removeComment
+, sline
+, scene
+, parse
 ) where
 
+--import qualified Data.Map.Strict                      as M
 import           Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Char   as PC
 import qualified Text.ParserCombinators.Parsec.Number as PN
 
 import Ray.Algebra
+import Ray.Material
 import Ray.Optics
+import Ray.Physics
 
 --
 -- RESERVED WORD
@@ -166,14 +171,6 @@ pname = "rt parser"
 charComment :: Char
 charComment = '#'
 
-parseLines :: [String] -> [Param]
-parseLines []     = []
-parseLines (l:ls) = p:(parseLines ls)
-  where
-    p = case (parse line "rt config parse error" l) of
-        Left  e  -> error $ (show e ++ "\nLINE: " ++ l)
-        Right p' -> p'
-
 {- |
 >>> removeComment "abc"
 "abc"
@@ -191,25 +188,56 @@ removeComment (c:cs)
   | c == charComment = []
   | otherwise        = c:(removeComment cs)
 
+--
+-- SCENE
+--
+
+scene :: Parser [(String, Material)]
+scene = do
+  _  <- spaces
+  ms <- materialpart
+  return (ms)
+
+-- MATERIAL
+
 {- |
+>>> let h = "material: \n"
+>>> let m1 = "  - type: solid \n  name: mparal\n  emittance:     [ 0.7958, 0.7958, 0.7958 ]\n  reflectance:   [ 0.0, 0.0, 0.0 ]\n  transmittance: [ 0.0, 0.0, 0.0 ]\n  specularrefl:  [ 0.0, 0.0, 0.0 ]\n  ior:           [ 0.0, 0.0, 0.0 ]\n  diffuseness:   0.0\n  metalness:     0.0\n  smoothness:    0.0\n"
+>>> let m2 = "  - type: solid \n  name: mball\n  emittance:     [ 0.0, 0.0, 0.0 ]\n  reflectance:   [ 1.0, 8.0, 3.0 ]\n  transmittance: [ 0.0, 0.0, 0.0 ]\n  specularrefl:  [ 0.0, 0.0, 0.0 ]\n  ior:           [ 0.0, 0.0, 0.0 ]\n  diffuseness:   0.0\n  metalness:     0.0\n  smoothness:    0.0\n"
+>>> parse materialpart pname (h ++ " \n" ++ m1 ++ "   \n" ++ m2)
+Right [("mparal",Material {emittance = Radiance 0.7958 0.7958 0.7958, reflectance = [0.0,0.0,0.0], transmittance = [0.0,0.0,0.0], specularRefl = [0.0,0.0,0.0], ior = [0.0,0.0,0.0], diffuseness = 0.0, metalness = 0.0, smoothness = 0.0}),("mball",Material {emittance = Radiance 0.0 0.0 0.0, reflectance = [1.0,8.0,3.0], transmittance = [0.0,0.0,0.0], specularRefl = [0.0,0.0,0.0], ior = [0.0,0.0,0.0], diffuseness = 0.0, metalness = 0.0, smoothness = 0.0})]
+-}
+
+materialpart :: Parser [(String, Material)]
+materialpart = do
+  _ <- string "material:"
+--  _ <- separator
+  _ <- eoline
+  ms <- many1 material
+  return ms
+
+{- |
+>>> let m = "  - type: solid \n  name: mparal\n  emittance:     [ 0.7958, 0.7958, 0.7958 ]\n  reflectance:   [ 0.0, 0.0, 0.0 ]\n  transmittance: [ 0.0, 0.0, 0.0 ]\n  specularrefl:  [ 0.0, 0.0, 0.0 ]\n  ior:           [ 0.0, 0.0, 0.0 ]\n  diffuseness:   0.0\n  metalness:     0.0\n  smoothness:    0.0\n"
+>>> parse material pname m
+Right ("mparal",Material {emittance = Radiance 0.7958 0.7958 0.7958, reflectance = [0.0,0.0,0.0], transmittance = [0.0,0.0,0.0], specularRefl = [0.0,0.0,0.0], ior = [0.0,0.0,0.0], diffuseness = 0.0, metalness = 0.0, smoothness = 0.0})
+-}
+
 material :: Parser (String, Material)
 material = do
-  _ <- spaces
+  --_ <- spaces
+  _ <- many1 space
   _ <- char '-'
   t <- mtype
   n <- mname
-  em <- emittance
-  rl <- reflectance
-  tr <- transmittance
-  sp <- speculaRefl
-  ir <- ior
-  df <- diffuseness
-  mt <- metalness
-  sm <- smoothness
-  let
-    mat = 
-  return (n, mat)
--}
+  em <- pemittance
+  rl <- preflectance
+  tr <- ptransmittance
+  sp <- pspecularRefl
+  ir <- pior
+  df <- pdiffuseness
+  mt <- pmetalness
+  sm <- psmoothness
+  return (n, Material em rl tr sp ir df mt sm)
 
 {- |
 >>> parse mtype pname "  type  : solid\n"
@@ -233,7 +261,6 @@ Right "solid"
 >>> parse mtype pname "  type  :solid\n"
 Left "rt parser" (line 1, column 10):
 unexpected "s"
-expecting space
 -}
 
 mtype :: Parser String
@@ -244,38 +271,123 @@ mtype = do
   n <- string "solid"
   _ <- eoline
   return n
-  
 
-{-
-mname
-emittance
-reflectance
-transmittance
-specularRefl
-ior
-diffuseness
-metalness
-smoothness
--}
-
+mname :: Parser String
+mname = nameparam "name"
 
 {- |
->>> parse line pname "xresolution : 256"
+>>> parse pemittance pname "    emittance: [ 1.0, 0.5, 1.4 ]\n"
+Right (Radiance 1.0 0.5 1.4)
+>>> parse pemittance pname "    emittance: [ 1.0, 0.5, 1.4 ] "
+Left "rt parser" (line 1, column 34):
+unexpected end of input
+expecting lf new-line
+>>> parse pemittance pname "emittance: [1.0, 0.5, 1.4]\n"
+Left "rt parser" (line 1, column 1):
+unexpected "e"
+expecting space
+-}
+
+pemittance :: Parser Radiance
+pemittance = do
+  _ <- many1 space
+  _ <- string "emittance"
+  _ <- separator
+  e <- radiance
+  _ <- eoline
+  return e
+
+preflectance :: Parser Color
+preflectance = colorparam "reflectance"
+
+ptransmittance :: Parser Color
+ptransmittance = colorparam "transmittance"
+
+pspecularRefl :: Parser Color
+pspecularRefl = colorparam "specularrefl"
+
+pior :: Parser Color
+pior = colorparam "ior"
+
+pdiffuseness :: Parser Double
+pdiffuseness = doubleparam "diffuseness"
+
+pmetalness :: Parser Double
+pmetalness = doubleparam "metalness"
+
+psmoothness :: Parser Double
+psmoothness = doubleparam "smoothness"
+
+{- |
+>>> parse (nameparam "name") pname "    name: abc\n"
+Right "abc"
+>>> parse (nameparam "name") pname "name: abc\n"
+Left "rt parser" (line 1, column 1):
+unexpected "n"
+expecting space
+>>> parse (nameparam "name") pname "    name:abc\n"
+Left "rt parser" (line 1, column 10):
+unexpected "a"
+>>> parse (nameparam "name") pname "    name: abc"
+Left "rt parser" (line 1, column 14):
+unexpected end of input
+expecting letter or digit or lf new-line
+-}
+
+nameparam :: String -> Parser String
+nameparam pn = do
+  _ <- many1 space
+  _ <- string pn
+  _ <- separator
+  n <- name
+  _ <- eoline
+  return n
+
+{- |
+>>> parse (colorparam "cparam") pname "  cparam : [ 0.5, 1.0, 0.5 ]\n"
+Right [0.5,1.0,0.5]
+-}
+
+colorparam :: String -> Parser Color
+colorparam pn = do
+  _ <- many1 space
+  _ <- string pn
+  _ <- separator
+  c <- color
+  _ <- eoline
+  return c
+
+{- |
+>>> parse (doubleparam "dparam") pname "  dparam : 0.5 \n"
+Right 0.5
+-}
+
+doubleparam :: String -> Parser Double
+doubleparam pn = do
+  _ <- many1 space
+  _ <- string pn
+  _ <- separator
+  f <- float
+  _ <- eoline
+  return f
+
+{- |
+>>> parse sline pname "xresolution : 256"
 Right ("xresolution","256")
->>> parse line pname "yresolution : 256"
+>>> parse sline pname "yresolution : 256"
 Right ("yresolution","256")
->>> parse line pname "upperdirection : [ 0.01, 0.02, 0.01 ] "
+>>> parse sline pname "upperdirection : [ 0.01, 0.02, 0.01 ] "
 Right ("upperdirection","Vector3 1.0e-2 2.0e-2 1.0e-2")
->>> parse line pname "ambient : [ 0.01, 0.02, 0.01 ] "
+>>> parse sline pname "ambient : [ 0.01, 0.02, 0.01 ] "
 Right ("ambient","Radiance 1.0e-2 2.0e-2 1.0e-2")
->>> parse line pname "xreso : 256"
+>>> parse sline pname "xreso : 256"
 Left "rt parser" (line 1, column 1):
 unexpected 'x'
 expecting "nphoton", "xresolution", "yresolution", "antialias", "samplephoton", "useclassic", "estimateradius", "ambient", "maxradiance", "eyeposition", "targetposition", "upperdirection", "focus", "photonfilter", space or end of input
 -}
 
-line :: Parser Param
-line = do
+sline :: Parser Param
+sline = do
   p <- (try nphoton)    <|>
        (try xreso)      <|>
        (try yreso)      <|>
@@ -299,7 +411,6 @@ Right ("nphoton","256")
 >>> parse nphoton pname "nphoton :256"           -- YAML error
 Left "rt parser" (line 1, column 10):
 unexpected "2"
-expecting space
 -}
 
 nphoton :: Parser Param
@@ -322,7 +433,6 @@ Right ("xresolution","256")
 >>> parse xreso pname "xresolution :256"         -- YAML error
 Left "rt parser" (line 1, column 14):
 unexpected "2"
-expecting space
 -}
 
 xreso :: Parser Param
@@ -343,7 +453,6 @@ Right ("yresolution","256")
 >>> parse yreso pname "yresolution :256"         -- YAML error
 Left "rt parser" (line 1, column 14):
 unexpected "2"
-expecting space
 >>> parse yreso pname "xresolution: 256"
 Left "rt parser" (line 1, column 1):
 unexpected "x"
@@ -496,18 +605,16 @@ Right ""
 >>> parse separator pname " :"          -- YAML grammer error
 Left "rt parser" (line 1, column 3):
 unexpected end of input
-expecting space
 >>> parse separator pname ":"           -- YAML grammer error
 Left "rt parser" (line 1, column 2):
 unexpected end of input
-expecting space
 -}
 
 separator :: Parser String
 separator = do
   _ <- many space
   _ <- string ":"
-  _ <- many1 space
+  _ <- many1 (oneOf " \t")
   return ""
 
 {- |
@@ -517,18 +624,19 @@ Right (Radiance 1.0 (-2.0) 310.0)
 
 radiance :: Parser Radiance
 radiance = do
-  _ <- string "["
-  _ <- many1 space
-  v1 <- float
-  _ <- string ","
-  _ <- many1 space
-  v2 <- float
-  _ <- string ","
-  _ <- many1 space
-  v3 <- float
-  _ <- many1 space
-  _ <- string "]"
+  (v1, v2, v3) <- double3
   return (Radiance v1 v2 v3)
+
+{- |
+>>> parse color pname "[ 1.0, 0.0, -0.5 ]"
+Right [1.0,0.0,-0.5]
+-}
+
+color :: Parser Color
+color = do
+  (v1, v2, v3) <- double3
+  -- return (initColor v1 v2 v3)
+  return (Color v1 v2 v3)
 
 {- |
 >>> parse vector3 "rt parser" "[ 1.0, -2.0, 3.1e2 ]"
@@ -537,18 +645,23 @@ Right (Vector3 1.0 (-2.0) 310.0)
 
 vector3 :: Parser Vector3
 vector3 = do
+  (v1, v2, v3) <- double3
+  return (Vector3 v1 v2 v3)
+
+double3 :: Parser (Double, Double, Double)
+double3 = do
   _ <- string "["
   _ <- many1 space
-  v1 <- float
+  d1 <- float
   _ <- string ","
   _ <- many1 space
-  v2 <- float
+  d2 <- float
   _ <- string ","
   _ <- many1 space
-  v3 <- float
+  d3 <- float
   _ <- many1 space
   _ <- string "]"
-  return (Vector3 v1 v2 v3)
+  return (d1, d2, d3)
 
 {- |
 >>> parse float "rt parser" "1"
@@ -611,28 +724,26 @@ yesno = do
   return $ if s == "yes" then True else False
 
 {- |
->>> parse name pname "  yes  "
+>>> parse name pname "yes"
 Right "yes"
->>> parse name pname "yes  "
-Right "yes"
->>> parse name pname "  yes\n"
+>>> parse name pname "yes\n"
 Right "yes"
 >>> parse name pname "  yes"
-Right "yes"
->>> parse name pname "  001a"
+Left "rt parser" (line 1, column 1):
+unexpected " "
+expecting letter or digit
+>>> parse name pname "001a"
 Right "001a"
->>> parse name pname "  -!%"
-Left "rt parser" (line 1, column 3):
+>>> parse name pname "-!%"
+Left "rt parser" (line 1, column 1):
 unexpected "-"
-expecting space or letter or digit
+expecting letter or digit
 -}
 
 name :: Parser String
 name = do
-  _ <- spaces
   --s <- many1 (noneOf " \t\v\f\r\n")
   s <- many1 alphaNum
-  _ <- spaces
   return s
 
 {- |
