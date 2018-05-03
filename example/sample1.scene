@@ -1,5 +1,30 @@
 #
 
+light:
+#  - type     : point
+#    color    : [ 1.0, 1.0, 1.0 ]
+#    flux     : 1.0
+#    position : [ -1.5, 3.5, 4.5 ]
+#  - type     : point
+#    color    : [ 2.0, 1.0, 0.0 ]
+#    flux     : 1.0
+#    position : [ 1.5, 3.5, 4.5 ]
+  - type     : parallelogram
+    color    : [ 1.0, 1.0, 1.0 ]
+    flux     : 5.0
+    position : [ -0.5, 3.99, 2.5 ]
+    normal   : [ 0.0, -1.0, 0.0 ]
+    dir1     : [ 1.0, 0.0, 0.0 ]
+    dir2     : [ 0.0, 0.0, 1.0 ]
+  - type     : sun
+    color    : [ 1.0, 1.0, 1.0 ]
+    flux     : 20.0
+    position : [ -1.99, 3.99, 3.99 ]
+    normal   : [ 0.0, -1.0, 0.0 ]
+    dir1     : [ 1.0, 0.0, 0.0 ]
+    dir2     : [ 0.0, 0.0, 1.0 ]
+    ldir     : [ 1.0, -1.0, 1.0 ]
+
 material:
   - type         : solid
     name         : mball0
@@ -14,15 +39,15 @@ material:
   - type         : solid
     name         : mwall
     emittance    : [ 0.0, 0.0, 0.0 ]
-    reflectance  : [ 0.1, 0.1, 0.1 ]
-#    reflectance  : [ 0.5, 0.5, 0.5 ]
+#    reflectance  : [ 0.1, 0.1, 0.1 ]
+    reflectance  : [ 0.5, 0.5, 0.5 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
     specularrefl : [ 0.8, 0.8, 0.8 ]
     ior          : [ 0.0, 0.0, 0.0 ]
-#    diffuseness  : 1.0
-    diffuseness  : 0.5
-#    metalness    : 0.0
-    metalness    : 1.0
+    diffuseness  : 1.0
+#    diffuseness  : 0.5
+    metalness    : 0.0
+#    metalness    : 1.0
     smoothness   : 0.0
   - type         : solid
     name         : mwallr

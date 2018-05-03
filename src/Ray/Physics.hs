@@ -8,6 +8,7 @@ module Ray.Physics (
 , white
 , Wavelength (Red, Green, Blue)
 , initColor
+, normalizeColor
 , decideWavelength
 , selectWavelength
 , negateColor
@@ -42,6 +43,16 @@ instance Eq Color where
 
 initColor :: Double -> Double -> Double -> Color
 initColor r g b
+  | mag == 0  = Color (1/3) (1/3) (1/3)
+  | otherwise = Color (r'/mag) (g'/mag) (b'/mag)
+  where
+    r' = clipColor r
+    g' = clipColor g
+    b' = clipColor b
+    mag = r' + g' + b'
+
+normalizeColor :: Color -> Color
+normalizeColor (Color r g b)
   | mag == 0  = Color (1/3) (1/3) (1/3)
   | otherwise = Color (r'/mag) (g'/mag) (b'/mag)
   where

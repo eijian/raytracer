@@ -55,9 +55,9 @@ readConfig file = do
 parseConfig :: String -> IO ([Light], [Object])
 parseConfig conf = do
   let
-    (ms) = case (parse scene "rt scene file parse error" conf) of
+    (ls, ms) = case (parse scene "rt scene file parse error" conf) of
       Left e -> error (show e)
-      Right (m') -> (m')
+      Right (l', m') -> (l', m')
     mmap = M.fromList ms
     shps = [
         (Plain ey3 0, "mwall") -- bottom
@@ -85,9 +85,10 @@ parseConfig conf = do
       ]
     (shapes, mapnames) = unzip shps
     os = zipWith initObject shapes $ map ((M.!) mmap) mapnames
-  --return (lgts, objs)
-  return (lgts, os)
+  --return (lgts, os)
+  return (ls, os)
 
+{-
 --pl1 :: Light
 --pl2 :: Light
 lgts :: [Light]
@@ -99,6 +100,7 @@ lgts = [pl1]
     --pl1 = SunLight (initColor 1 1 1) 20.0 (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3 (fromJust $ normalize $ Vector3 1 (-1) 1)  -- 10W Sun
     --pl1 = PointLight (initColor 1 1 1) 1.0 (initPos (-1.5) 3.5 4.5) -- 1W
     --pl2 = PointLight (initColor 2 1 0) 1.0 (initPos 1.5 3.5 4.5) -- 1W
+-}
 
 bp1, bp2, bp3, bp4, bp5, bp6, bp7, bp8 :: Position3
 bp1 = Vector3 (-1.2) 1.8 2.6
