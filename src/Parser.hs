@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 --
 -- Parser
 --
@@ -25,11 +27,14 @@ module Parser (
 ) where
 
 --import qualified Data.Map.Strict                      as M
+import           Data.Maybe
 import           Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Char   as PC
 import qualified Text.ParserCombinators.Parsec.Number as PN
+import           NumericPrelude
 
 import Ray.Algebra
+import Ray.Light
 import Ray.Material
 import Ray.Optics
 import Ray.Physics
@@ -53,6 +58,12 @@ rColor = "color"
 rDiffuseness :: String
 rDiffuseness = "diffuseness"
 
+rDir1 :: String
+rDir1 = "dir1"
+
+rDir2 :: String
+rDir2 = "dir2"
+
 rEmittance :: String
 rEmittance = "emittance"
 
@@ -62,11 +73,17 @@ rEstimateRadius = "estimateradius"
 rEyePosition :: String
 rEyePosition = "eyeposition"
 
+rFlux :: String
+rFlux = "flux"
+
 rFocus :: String
 rFocus = "focus"
 
 rIor :: String
 rIor = "ior"
+
+rLdir :: String
+rLdir = "ldir"
 
 rLight :: String
 rLight = "light"
@@ -98,6 +115,9 @@ rPhotonFilter = "photonfilter"
 rPlain :: String
 rPlain = "plain"
 
+rPoint :: String
+rPoint = "point"
+
 rPolygon :: String
 rPolygon = "polygon"
 
@@ -124,6 +144,9 @@ rSpecularRefl = "specularrefl"
 
 rSphere :: String
 rSphere = "sphere"
+
+rSun :: String
+rSun = "sun"
 
 rTargetPosition :: String
 rTargetPosition = "targetposition"
@@ -192,11 +215,117 @@ removeComment (c:cs)
 -- SCENE
 --
 
-scene :: Parser [(String, Material)]
+scene :: Parser ([Light], [(String, Material)])
 scene = do
   _  <- spaces
+  ls <- lightpart
+  _  <- spaces
   ms <- materialpart
-  return (ms)
+  return (ls, ms)
+--  return (ls, [])
+
+-- LIGHT
+
+{- |
+>>> parse lightpart "rt parser" "light: \n  - type: point \n    color : [ 1.0, 1.0, 0.0 ]\n    flux: 1.0 \n    position: [ -1.0, 2.0, 1.0 ]\n"
+Right [[[0.5,0.5,0.0],1.0,Vector3 (-1.0) 2.0 1.0]]
+-}
+
+lightpart :: Parser [Light]
+lightpart = do
+  _ <- string "light:"
+  _ <- eoline
+  ls <- many1 light
+  return ls
+
+{- |
+>>> parse light "rt parser" "  - type: point \n    color : [ 1.0, 1.0, 0.0 ]\n    flux: 1.0 \n    position: [ -1.0, 2.0, 1.0 ]\n"
+Right [[0.5,0.5,0.0],1.0,Vector3 (-1.0) 2.0 1.0]
+>>> parse light "rt parser" "  - type: parallelogram \n    color : [ 1.0, 1.0, 0.0 ]\n    flux: 1.0 \n    position: [ -1.0, 2.0, 1.0 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 0.0, 0.0, 1.0 ]\n"
+Right [[0.5,0.5,0.0],1.0,Vector3 (-1.0) 2.0 1.0,Vector3 0.0 (-1.0) 0.0,Vector3 1.0 0.0 0.0,Vector3 0.0 0.0 1.0]
+>>> parse light "rt parser" ""
+Left "rt parser" (line 1, column 1):
+unexpected end of input
+expecting space
+-}
+
+light :: Parser Light
+light = do
+  l <- (try pointlight)         <|>
+       (try parallelogramlight) <|>
+       (try sunlight)
+  return l
+
+{- |
+>>> parse pointlight "rt parser" "  - type: point\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n"
+Right [[0.5,0.5,0.0],5.0,Vector3 1.0 0.5 9.4]
+-}
+
+pointlight :: Parser Light
+pointlight = do
+  _ <- many1 space
+  _ <- char '-'
+  _ <- many1 space
+  _ <- string rType
+  _ <- separator
+  _ <- string rPoint
+  _ <- eoline
+  c <- colorparam rColor
+  f <- doubleparam rFlux
+  p <- vector3param rPosition
+  return $ PointLight (normalizeColor c) f p
+
+{- |
+>>> parse parallelogramlight "rt parser" "  - type: parallelogram\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 0.0, 0.0, 1.0 ]\n"
+Right [[0.5,0.5,0.0],5.0,Vector3 1.0 0.5 9.4,Vector3 0.0 (-1.0) 0.0,Vector3 1.0 0.0 0.0,Vector3 0.0 0.0 1.0]
+>>> parse parallelogramlight "rt parser" "  - type: parallelogram\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 1.0, 0.0, 0.0 ]\n"
+*** Exception: Normal vector is zero.
+-}
+
+parallelogramlight :: Parser Light
+parallelogramlight = do
+  _ <- many1 space
+  _ <- char '-'
+  _ <- many1 space
+  _ <- string rType
+  _ <- separator
+  _ <- string rParallelogram
+  _ <- eoline
+  c <- colorparam rColor
+  f <- doubleparam rFlux
+  p <- vector3param rPosition
+  --n <- vector3param rNormal
+  d1 <- vector3param rDir1
+  d2 <- vector3param rDir2
+  let n' = normalize $ d1 <*> d2
+  if n' == Nothing
+    then error "Normal vector is zero."
+    else return $ ParallelogramLight (normalizeColor c) f p (fromJust n') d1 d2
+
+{- |
+>>> parse sunlight "rt parser" "  - type: sun\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 0.0, 0.0, 1.0 ]\n    ldir: [ 0.0, -1.0, 0.0 ]\n"
+Right [[0.5,0.5,0.0],5.0,Vector3 1.0 0.5 9.4,Vector3 0.0 (-1.0) 0.0,Vector3 1.0 0.0 0.0,Vector3 0.0 0.0 1.0,Vector3 0.0 (-1.0) 0.0]
+-}
+
+sunlight :: Parser Light
+sunlight = do
+  _ <- many1 space
+  _ <- char '-'
+  _ <- many1 space
+  _ <- string rType
+  _ <- separator
+  _ <- string rSun
+  _ <- eoline
+  c <- colorparam rColor
+  f <- doubleparam rFlux
+  p <- vector3param rPosition
+  d1 <- vector3param rDir1
+  d2 <- vector3param rDir2
+  ld <- vector3param rLdir
+  let n' = normalize $ d1 <*> d2
+  if n' == Nothing
+    then error "Normal vector is zero."
+    else return $ SunLight (normalizeColor c) f p (fromJust n') d1 d2 ld
 
 -- MATERIAL
 
@@ -356,6 +485,20 @@ colorparam pn = do
   c <- color
   _ <- eoline
   return c
+
+{- |
+>>> parse (vector3param "vparam") pname "  vparam : [ 0.5, 1.0, 0.5 ]\n"
+Right (Vector3 0.5 1.0 0.5)
+-}
+
+vector3param :: String -> Parser Vector3
+vector3param pn = do
+  _ <- many1 space
+  _ <- string pn
+  _ <- separator
+  v <- vector3
+  _ <- eoline
+  return v
 
 {- |
 >>> parse (doubleparam "dparam") pname "  dparam : 0.5 \n"
@@ -566,10 +709,10 @@ pfilt = do
   _ <- blanc
   let
     f = case s of
-        "none"    -> Nonfilter
-        "cone"    -> Conefilter
-        "gauss"   -> Gaussfilter
-        othereise -> Nonfilter
+        "none"  -> Nonfilter
+        "cone"  -> Conefilter
+        "gauss" -> Gaussfilter
+        _       -> Nonfilter
   return (rPhotonFilter, show f)
 
 {- |
@@ -684,8 +827,8 @@ float = do
   --f <- PN.floating <|> PN.int
   v <- PN.decimalFloat
   let f = case v of
-          Left  i -> fromIntegral i
-          Right f -> f
+          Left  i  -> fromIntegral (i::Int)
+          Right f' -> f'
   return $ s f
 
 {- |

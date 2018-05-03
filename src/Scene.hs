@@ -80,8 +80,8 @@ parseConfig conf = do
 --      , (initPolygon (tetra!!0) (tetra!!2) (tetra!!3), "mball")
 --      , (initPolygon (tetra!!0) (tetra!!1) (tetra!!2), "mball")
 --      , (initPolygon (tetra!!3) (tetra!!2) (tetra!!1), "m_ball")
-      , (Parallelogram (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3, "mparal")
---      , (Parallelogram (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3, "msunl")
+--      , (Parallelogram (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3, "mparal")
+      , (Parallelogram (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3, "msunl")
       ]
     (shapes, mapnames) = unzip shps
     os = zipWith initObject shapes $ map ((M.!) mmap) mapnames
@@ -117,6 +117,7 @@ tetra :: [Position3]
 --tetra = [Vector3 0.0 0.2 1.933, Vector3 0.92376 0.2 3.533333, Vector3 (-0.92376) 0.2 3.5333333, Vector3 0 1.7 3]
 tetra = [Vector3 (-1) 0.2 2, Vector3 1 2.2 2, Vector3 (-1) 2.2 4, Vector3 1 0.2 4]
 
+{-
 objs :: [Object]
 --objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball1, paralgt]
 --objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, box_u, box_b, box_f, box_r, box_i, box_l, paralgt]
@@ -170,3 +171,4 @@ objs = [wall_bt, wall_tp, wall_rt, wall_lt, wall_bk, wall_ft, ball2, ball3, para
 
     paralgt = initObject (Parallelogram (initPos (-0.5) 3.99 2.5) (negate ey3) ex3 ez3) m_paral
     --paralgt = initObject (Parallelogram (initPos (-1.99) 3.99 3.99) (negate ey3) ez3 ex3) m_sunl
+-}
