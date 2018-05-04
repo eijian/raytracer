@@ -26,7 +26,7 @@ module Parser (
 , parse
 ) where
 
---import qualified Data.Map.Strict                      as M
+import qualified Data.Map.Strict                      as M
 import           Data.Maybe
 import           Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Char   as PC
@@ -34,8 +34,10 @@ import qualified Text.ParserCombinators.Parsec.Number as PN
 import           NumericPrelude
 
 import Ray.Algebra
+import Ray.Geometry
 import Ray.Light
 import Ray.Material
+import Ray.Object
 import Ray.Optics
 import Ray.Physics
 
@@ -120,6 +122,15 @@ rPoint = "point"
 
 rPolygon :: String
 rPolygon = "polygon"
+
+rPos1 :: String
+rPos1 = "pos1"
+
+rPos2 :: String
+rPos2 = "pos2"
+
+rPos3 :: String
+rPos3 = "pos3"
 
 rPosition :: String
 rPosition = "position"
@@ -215,13 +226,20 @@ removeComment (c:cs)
 -- SCENE
 --
 
-scene :: Parser ([Light], [(String, Material)])
+scene :: Parser ([Light], [(String, Object)])
 scene = do
   _  <- spaces
   ls <- lightpart
   _  <- spaces
   ms <- materialpart
-  return (ls, ms)
+  _  <- spaces
+  vs <- vertexpart
+  _  <- spaces
+  let
+    mmap = M.fromList ms
+    vmap = M.fromList vs
+  os <- objectpart mmap vmap
+  return (ls, os)
 --  return (ls, [])
 
 -- LIGHT
@@ -342,7 +360,7 @@ materialpart = do
   _ <- string "material:"
 --  _ <- separator
   _ <- eoline
-  ms <- many1 material
+  ms <- many1 (try material)
   return ms
 
 {- |
@@ -447,6 +465,175 @@ pmetalness = doubleparam "metalness"
 psmoothness :: Parser Double
 psmoothness = doubleparam "smoothness"
 
+-- VERTEX
+
+{- |
+>>> parse vertexpart pname "vertex:\n  - p11: [ 0.1, 0.2, 0.3 ]\n  - p12: [ -0.4, -0.5, -0.6 ]\n"
+Right [("p11",Vector3 0.1 0.2 0.3),("p12",Vector3 (-0.4) (-0.5) (-0.6))]
+-}
+
+vertexpart :: Parser [(String, Position3)]
+vertexpart = do
+  _ <- string "vertex:"
+  _ <- eoline
+  vs <- many1 (try vertex)
+  return vs
+
+{- |
+>>> parse vertex pname "  - p01: [ 1.0, 2.0, 3.0 ]\n"
+Right ("p01",Vector3 1.0 2.0 3.0)
+>>> parse vertex pname "  - p02 : [ 1.0, 2.0, 3.0 ]\n"
+Right ("p02",Vector3 1.0 2.0 3.0)
+>>> parse vertex pname "  -p03: [ 1.0, 2.0, 3.0 ]\n"
+Left "rt parser" (line 1, column 4):
+unexpected "p"
+expecting space
+>>> parse vertex pname "  - p04: [ -1.0, -2.0, -3.0 ]  \n"
+Right ("p04",Vector3 (-1.0) (-2.0) (-3.0))
+-}
+
+vertex :: Parser (String, Position3)
+vertex = do
+  _ <- many1 space
+  _ <- char '-'
+  _ <- many1 space
+  n <- name
+  _ <- separator
+  p <- vector3
+  _ <- eoline
+  return (n, p)
+
+
+-- OBJECT
+
+{- |
+
+-}
+
+objectpart :: M.Map String Material -> M.Map String Position3
+           -> Parser [(String, Object)]
+objectpart mmap vmap = do
+  _ <- string "object:"
+  _ <- eoline
+  os <- many1 (try $ object mmap vmap)
+  return os
+
+{- |
+-}
+
+object :: M.Map String Material -> M.Map String Position3
+       -> Parser (String, Object)
+object mmap vmap = do
+  o <- (try $ plain  mmap)             <|>
+       (try $ sphere mmap)             <|>
+       (try $ parallelogram mmap vmap) <|>
+       (try $ polygon mmap vmap)
+  return o
+
+{- |
+>>> let mmap = M.fromList [("mball", Material radiance0 (Color 0.5 0.2 0.2) black black black 1.0 0.0 0.0)]
+>>> parse (plain mmap) pname "  - type: plain\n    name: flooring\n    normal: [ 0.0, 1.0, 0.0 ]\n    position: [ 0.0, 1.0, 0.0 ]\n    material: mball\n"
+Right ("flooring",Object (Plain {nvec = Vector3 0.0 1.0 0.0, dist = -1.0}) (Material {emittance = Radiance 0.0 0.0 0.0, reflectance = [0.5,0.2,0.2], transmittance = [0.0,0.0,0.0], specularRefl = [0.0,0.0,0.0], ior = [0.0,0.0,0.0], diffuseness = 1.0, metalness = 0.0, smoothness = 0.0}))
+>>> parse (plain mmap) pname "  - type: plain\n    name: ceiling\n    normal: [ 0.0, -1.0, 0.0 ]\n    position: [ 0.0, 4.0, 0.0 ]\n    material: mball\n"
+Right ("ceiling",Object (Plain {nvec = Vector3 0.0 (-1.0) 0.0, dist = 4.0}) (Material {emittance = Radiance 0.0 0.0 0.0, reflectance = [0.5,0.2,0.2], transmittance = [0.0,0.0,0.0], specularRefl = [0.0,0.0,0.0], ior = [0.0,0.0,0.0], diffuseness = 1.0, metalness = 0.0, smoothness = 0.0}))
+-}
+
+plain :: M.Map String Material -> Parser (String, Object)
+plain mmap = do
+  _ <- many1 space
+  _ <- char '-'
+  _ <- ptype rPlain
+  nm <- mname
+  n  <- vector3param rNormal
+  p  <- vector3param rPosition
+  mt <- nameparam "material"
+  let
+    d = n <.> p
+  return (nm, initObject (Plain n (-d)) (mmap M.! mt))
+
+{- |
+>>> let mmap = M.fromList [("mball", Material radiance0 (Color 0.5 0.2 0.2) black black black 1.0 0.0 0.0)]
+>>> parse (sphere mmap) pname "  - type: sphere\n    name: flooring\n    center: [ 0.0, 1.0, 0.0 ]\n    radius: 0.8\n    material: mball\n"
+Right ("flooring",Object (Sphere {center = Vector3 0.0 1.0 0.0, radius = 0.8}) (Material {emittance = Radiance 0.0 0.0 0.0, reflectance = [0.5,0.2,0.2], transmittance = [0.0,0.0,0.0], specularRefl = [0.0,0.0,0.0], ior = [0.0,0.0,0.0], diffuseness = 1.0, metalness = 0.0, smoothness = 0.0}))
+-}
+
+sphere :: M.Map String Material -> Parser (String, Object)
+sphere mmap = do
+  _ <- many1 space
+  _ <- char '-'
+  _ <- ptype rSphere
+  nm <- mname
+  c  <- vector3param rCenter
+  r  <- doubleparam rRadius
+  mt <- nameparam "material"
+  return (nm, initObject (Sphere c r) (mmap M.! mt))
+
+{- |
+>>> let mmap = M.fromList [("mball", Material radiance0 (Color 0.5 0.2 0.2) black black black 1.0 0.0 0.0)]
+>>> let vmap = M.fromList [("p1", Vector3 (-0.5) 3.99 2.5), ("p2", Vector3 0.5 3.99 2.5), ("p3", Vector3 (-0.5) 3.99 3.5)]
+>>> parse (parallelogram mmap vmap) pname "  - type: parallelogram\n    name: cl\n    pos1: p1\n    pos2: p2\n    pos3: p3\n    material: mball\n"
+Right ("cl",Object (Parallelogram {position = Vector3 (-0.5) 3.99 2.5, nvec = Vector3 0.0 (-1.0) 0.0, dir1 = Vector3 1.0 0.0 0.0, dir2 = Vector3 0.0 0.0 1.0}) (Material {emittance = Radiance 0.0 0.0 0.0, reflectance = [0.5,0.2,0.2], transmittance = [0.0,0.0,0.0], specularRefl = [0.0,0.0,0.0], ior = [0.0,0.0,0.0], diffuseness = 1.0, metalness = 0.0, smoothness = 0.0}))
+-}
+
+parallelogram :: M.Map String Material -> M.Map String Position3
+              -> Parser (String, Object)
+parallelogram mmap vmap = do
+  _ <- many1 space
+  _ <- char '-'
+  _ <- ptype rParallelogram
+  nm <- mname
+  p1 <- nameOrPos3 vmap rPos1
+  p2 <- nameOrPos3 vmap rPos2
+  p3 <- nameOrPos3 vmap rPos3
+  mt <- nameparam "material"
+  return (nm, initObject (initParallelogram p1 p2 p3) (mmap M.! mt))
+
+{- |
+>>> let mmap = M.fromList [("mball", Material radiance0 (Color 0.5 0.2 0.2) black black black 1.0 0.0 0.0)]
+>>> let vmap = M.fromList [("p1", Vector3 (-0.5) 3.99 2.5), ("p2", Vector3 0.5 3.99 2.5), ("p3", Vector3 (-0.5) 3.99 3.5), ("p4", Vector3 1.0 2.0 3.0)]
+>>> parse (polygon mmap vmap) pname "  - type: polygon\n    name: tetra\n    pos1: p1\n    pos2: p2\n    pos3: p3\n    material: mball\n"
+Right ("tetra",Object (Polygon {position = Vector3 (-0.5) 3.99 2.5, nvec = Vector3 0.0 (-1.0) 0.0, dir1 = Vector3 1.0 0.0 0.0, dir2 = Vector3 0.0 0.0 1.0}) (Material {emittance = Radiance 0.0 0.0 0.0, reflectance = [0.5,0.2,0.2], transmittance = [0.0,0.0,0.0], specularRefl = [0.0,0.0,0.0], ior = [0.0,0.0,0.0], diffuseness = 1.0, metalness = 0.0, smoothness = 0.0}))
+-}
+
+polygon :: M.Map String Material -> M.Map String Position3
+        -> Parser (String, Object)
+polygon mmap vmap = do
+  _ <- many1 space
+  _ <- char '-'
+  _ <- ptype rPolygon
+  nm <- mname
+  p1 <- nameOrPos3 vmap rPos1
+  p2 <- nameOrPos3 vmap rPos2
+  p3 <- nameOrPos3 vmap rPos3
+  mt <- nameparam "material"
+  return (nm, initObject (initPolygon p1 p2 p3) (mmap M.! mt))
+
+{- |
+>>> let vmap = M.fromList [("p1", Vector3 (-0.5) 3.99 2.5), ("p2", Vector3 0.5 3.99 2.5), ("p3", Vector3 (-0.5) 3.99 3.5)]
+>>> parse (nameOrPos3 vmap "dir1") pname "  dir1: p1\n"
+Right (Vector3 (-0.5) 3.99 2.5)
+>>> parse (nameOrPos3 vmap "dir1") pname "  dir1: [ 1.0, 2.0, 3.0 ]\n"
+Right (Vector3 1.0 2.0 3.0)
+-}
+
+nameOrPos3 :: M.Map String Position3 -> String -> Parser Vector3
+nameOrPos3 vmap pn = do
+  _ <- many1 space
+  _ <- string pn
+  _ <- separator
+  p <- (try $ name2pos vmap) <|> (try vector3)
+  _ <- eoline
+  return p
+
+name2pos :: M.Map String Position3 -> Parser Vector3
+name2pos vmap = do
+  n <- name
+  return $ vmap M.! n
+
+--
+-- COMMON PARSER
+--
+
 {- |
 >>> parse (nameparam "name") pname "    name: abc\n"
 Right "abc"
@@ -471,6 +658,20 @@ nameparam pn = do
   n <- name
   _ <- eoline
   return n
+
+{- |
+>>> parse (ptype "plain") pname " type: plain\n"
+Right "plain"
+-}
+
+ptype :: String -> Parser String
+ptype t = do
+  _ <- many1 space
+  _ <- string rType
+  _ <- separator
+  t' <- string t
+  _ <- eoline
+  return t'
 
 {- |
 >>> parse (colorparam "cparam") pname "  cparam : [ 0.5, 1.0, 0.5 ]\n"
@@ -541,7 +742,7 @@ sline = do
        (try ambient)    <|>
        (try maxrad)     <|>
        (try eyepos)     <|>
-       (try target)     <|>
+       (try targetp)    <|>
        (try upperd)     <|>
        (try focus)      <|>
        (try pfilt)      <|>
@@ -676,8 +877,8 @@ eyepos = do
   _ <- blanc
   return (rEyePosition, show v)
 
-target :: Parser Param
-target = do
+targetp :: Parser Param
+targetp = do
   _ <- string rTargetPosition
   _ <- separator
   v <- vector3
@@ -881,12 +1082,16 @@ Right "001a"
 Left "rt parser" (line 1, column 1):
 unexpected "-"
 expecting letter or digit
+>>> parse name pname "a_0"
+Right "a_0"
+>>> parse name pname "_abc"
+Right "_abc"
 -}
 
 name :: Parser String
 name = do
   --s <- many1 (noneOf " \t\v\f\r\n")
-  s <- many1 alphaNum
+  s <- many1 (alphaNum <|> oneOf "_")
   return s
 
 {- |

@@ -10,7 +10,7 @@ module Ray.Object (
 import Ray.Geometry
 import Ray.Material
 
-data Object = Object Shape Material deriving Eq
+data Object = Object Shape Material deriving (Eq, Show)
 
 initObject :: Shape -> Material -> Object
 initObject s m = Object s m

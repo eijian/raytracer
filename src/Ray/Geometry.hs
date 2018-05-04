@@ -81,7 +81,7 @@ data Shape =
   , dir1     :: !Direction3
   , dir2     :: !Direction3
   }
-  deriving Eq
+  deriving (Eq, Show)
 
 initPolygon :: Position3 -> Position3 -> Position3 -> Shape
 initPolygon p0 p1 p2 = Polygon p0 n d1 d2
