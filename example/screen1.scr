@@ -6,7 +6,7 @@ yresolution   : 256
 antialias     : yes                # yes or no
 samplephoton  : 100
 useclassic    : yes                # yes or no
-estimateradius: 0.2
+estimateradius: 0.3
 ambient       : [ 0.001, 0.001, 0.001 ]
 maxradiance   : 0.01
 eyeposition   : [ 0.0, 2.0, -4.5 ]
