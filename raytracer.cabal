@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                raytracer
-version:             2.4.1.0
+version:             2.5.0.0
 synopsis:            Ray Tracing by Haskell
 description:         Ray tracing program supported 'photon mapping'
 license:             BSD3
