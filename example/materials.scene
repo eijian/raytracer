@@ -1,0 +1,96 @@
+#
+
+material:
+  - type         : solid
+    name         : mball0
+    emittance    : [ 0.0, 0.0, 0.0 ]
+    reflectance  : [ 0.5, 0.5, 0.5 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl : [ 0.0, 0.0, 0.0 ]
+    ior          : [ 0.0, 0.0, 0.0 ]
+    diffuseness  : 1.0
+    metalness    : 0.0
+    smoothness   : 0.0
+  - type         : solid
+    name         : mwall
+    emittance    : [ 0.0, 0.0, 0.0 ]
+    reflectance  : [ 0.1, 0.1, 0.1 ]
+#    reflectance  : [ 0.5, 0.5, 0.5 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl : [ 0.8, 0.8, 0.8 ]
+    ior          : [ 0.0, 0.0, 0.0 ]
+#    diffuseness  : 1.0
+    diffuseness  : 0.5
+#    metalness    : 0.0
+    metalness    : 1.0
+    smoothness   : 0.0
+  - type         : solid
+    name         : mwallr
+    emittance:     [ 0.0, 0.0, 0.0 ]
+    reflectance:   [ 0.4, 0.0, 0.0 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl:  [ 0.0, 0.0, 0.0 ]
+    ior:           [ 0.0, 0.0, 0.0 ]
+    diffuseness:   1.0
+    metalness:     0.0
+    smoothness:    0.0
+  - type         : solid
+    name: mwallb
+    emittance:     [ 0.0, 0.0, 0.0 ]
+    reflectance:   [ 0.0, 0.0, 0.4 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl:  [ 0.0, 0.0, 0.0 ]
+    ior:           [ 0.0, 0.0, 0.0 ]
+    diffuseness:   1.0
+    metalness:     0.0
+    smoothness:    0.0
+  - type         : solid
+    name: mparal
+    emittance:     [ 0.7958, 0.7958, 0.7958 ]
+    reflectance:   [ 0.0, 0.0, 0.0 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl:  [ 0.0, 0.0, 0.0 ]
+    ior:           [ 0.0, 0.0, 0.0 ]
+    diffuseness:   0.0
+    metalness:     0.0
+    smoothness:    0.0
+  - type         : solid
+    name         : mball
+    emittance:     [ 0.0, 0.0, 0.0 ]
+    reflectance:   [ 0.0, 0.0, 0.0 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl:  [ 0.08, 0.08, 0.08 ]
+    ior:           [ 1.5, 1.5, 1.5 ]
+    diffuseness:   0.0
+    metalness:     0.0
+    smoothness:    0.0
+#  - type         : solid
+#    name         : mball2
+#    emittance:     [ 0.0, 0.0, 0.0 ]
+#    reflectance:   [ 0.0, 0.0, 0.0 ]
+#    transmittance: [ 0.0, 0.0, 0.0 ]
+#    specularrefl:  [ 0.78, 0.78, 0.78 ]
+#    ior:           [ 0.0, 0.0, 0.0 ]
+#    diffuseness:   0.0
+#    metalness:     1.0
+#    smoothness:    0.0
+  - type         : solid
+    name         : mball2
+    emittance:     [ 0.0, 0.0, 0.0 ]
+    reflectance:   [ 0.0, 0.0, 0.0 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl:  [ 0.78, 0.78, 0.78 ]
+    ior:           [ 0.0, 0.0, 0.0 ]
+    diffuseness:   0.0
+    metalness:     1.0
+    smoothness:    0.0
+  - type         : solid
+    name         : mball3
+    emittance:     [ 0.0, 0.0, 0.0 ]
+    reflectance:   [ 0.0, 0.0, 0.0 ]
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    specularrefl:  [ 0.78, 0.78, 0.78 ]
+    ior:           [ 0.0, 0.0, 0.0 ]
+    diffuseness:   0.0
+    metalness:     1.0
+    smoothness:    0.0

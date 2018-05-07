@@ -4,13 +4,14 @@ module Main where
 import Control.Monad (forM_)
 import System.Posix.Time
 import System.IO
-import VectorTest2
+import VectorTest3
 
 ntry  = 10 :: Int
 nloop = 2000000 :: Int
 
 main :: IO ()
 main = do
+  hPutStrLn stderr "List Type"
   let v1 = initVec 2.1 4.5 8.2
   let v2 = initVec 1.1 2.5 7.2
   let s  = 4.7

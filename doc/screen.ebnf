@@ -1,0 +1,37 @@
+EBNF for Screen configuration of raytracer
+
+{
+  config = line , { line } ;
+  line = { space } , param , { space } , linefeed ;
+
+  param = xreso | yreso | antialias | samphoton | useclassic | radius | anbient | maxrad | eyepos | target | upper | focus | pfilter ;
+
+  xreso      = "xresolution"    , separator , number ;
+  yreso      = "yresolution"    , separator , number ;
+  antialias  = "antialias"      , separator , yesno  ;
+  samphoton  = "samplephoton"   , separator , number ; 
+  useclassic = "useclassic"     , separator , yesno  ;
+  radius     = "estimateradius" , separator , float  ;
+  anbient    = "ambient"        , separator , float3 ;
+  maxrad     = "maxradiance"    , separator , float  ;
+  eyepos     = "eyeposition"    , separator , float3 ;
+  target     = "targetposition" , separator , float3 ;
+  upper      = "upperdirection" , separator , float3 ;
+  focus      = "focus"          , separator , float  ;
+  pfilter    = "photonfilter"   , separator , filter ;
+
+  separator = { space } , ":" , space ;
+
+  yesno  = "yes" | "no" ;
+  filter = "none" | "cone" | "gauss" ;
+  float3 = "[" , { space } , float , {space} , "," , space , float , {space} , "," , space , float , {space} , "]"
+  float  = [ "-" ] , number , [ "." , { digit } ] ; 
+  number = [ digit1 ] , { digit } , digit ;
+  digit  = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+  digit1 = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+  space = whitespace , { whitespace } ;
+  whitespace = '\x20' | '\x09' ;
+  linefeed = '\0xa' | ( '\x0d' , '\0xa' ) ;
+
+}

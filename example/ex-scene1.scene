@@ -1,0 +1,66 @@
+light:
+  - type: point
+    color: [1.0, 1.0, 1.0]
+    power: 1.0
+    position: [-1.5, 3.5, 4.5]
+  - type: point
+    color: [2.0, 1.0, 1.0]
+    power: 1.0
+    position: [1.5, 3.5, 4.5]
+
+vertex:
+  bp1: [-1.2, 1.8, 2.6]
+  bp2: [-0.4, 1.8, 4.2]
+  bp3: [ 1.2, 1.8, 4.2]
+  bp4: [ 0.4, 1.8, 1.8]
+  bp5: [-1.2, 0.2, 2.6]
+  bp6: [-0.4, 0.2, 4.2]
+  bp7: [ 1.2, 0.2, 3.4]
+  bp8: [ 0.4, 0.2, 1.8]
+
+material:
+  - name         : m_ball
+    emittance    :
+    reflectance  :
+    transmittance:
+    specularrefl :
+    ior          :
+    diffuseness  :
+    metalness    :
+    smoothness   :
+
+
+  - name: m_wall
+
+  - name: m_wallr
+
+
+  - name: m_wallb
+
+  - name: m_paral
+
+
+object:
+  - plain: wall_bt
+    position: [0.0, 0.0, 0.0]
+    normal: [0.0, 1.0, 0.0]
+    material: m_wall
+  - sphere: ball1
+    center: [0.0, 0.8, 3.0]
+    radius: 0.8
+    material: m_ball
+  - polygon: tetra1
+    vertex1: bp1
+    vertex2: bp2
+    vertex3: bp3
+    material: m_ball
+  - parallelogram: paralgt
+    vertex1: bp1
+    vertex2: bp2
+    vertex3: bp3
+    naterial: m_paral
+  - csg: halfball
+    object1: ball1
+    object2: tetra1
+    operation: and    # and, or, xor, sub
+
