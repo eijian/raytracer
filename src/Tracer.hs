@@ -119,7 +119,7 @@ traceRay _    _   10 _     _     _     _  = return radiance0
 traceRay !scr !m0 !l !pmap !objs !lgts !r
   | is == Nothing = return radiance0
   | otherwise     = do
-    si <- if f' == black
+    si <- if d == 1.0 || f == black
       then return radiance0
       else traceRay scr m0 (l+1) pmap objs lgts (initRay p rdir)
     ti <- if fi == black || ior1 == 0.0
@@ -130,11 +130,9 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
           (tdir, ior') = specularRefraction ior0 ior1 cos0 (getDir r) n
           m0' = if tdir <.> n < 0.0 then m else m_air
         traceRay scr m0' (l+1) pmap objs lgts (initRay p tdir)
-    return (sr_half *> emittance m
-          -- + d' <**> (brdf m (di + ii))
-          + brdf m (di + ii)
-          + f' <**> si
-          + fi <**> ti)
+    return (sr_half   *> emittance m +
+            d         *> brdf m (di + ii) +
+            (1.0 - d) *> (f <**> si + fi <**> ti))
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
@@ -145,12 +143,9 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
     (rdir, cos0) = specularReflection n (getDir r)
     d = diffuseness m
     mn = 1.0 - metalness m
-    --f = scaleColor (1.0 - d) (reflectionIndex (specularRefl m) cos0)
     f = reflectionIndex (specularRefl m) cos0
     --d' = addColor (scaleColor d white) (scaleColor (mn*(1.0-d)) $ negateColor f)
-    d' = scaleColor d white
-    f' = scaleColor (1.0 - d) f
-    fi = scaleColor (mn * (1.0 - d)) $ negateColor f
+    fi = scaleColor mn $ negateColor f
     ior1 = averageIor m
 
 estimateRadiance :: Screen -> PhotonMap -> Intersection -> Radiance
