@@ -46,12 +46,6 @@ one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
 sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 
---pfilters :: Map.Map PhotonFilter
---  (Direction3 -> Double -> Double -> [Double] -> [PhotonInfo] -> Radiance)
---pfilters = Map.fromList [(Nonfilter, sumRadiance1)
---                        ,(Conefilter, sumRadiance2)
---                        ,(Gaussfilter, sumRadiance3)]
-
 --
 
 tracePhoton :: Bool -> Material -> [Object] -> Int -> Photon
@@ -119,10 +113,10 @@ traceRay _    _   10 _     _     _     _  = return radiance0
 traceRay !scr !m0 !l !pmap !objs !lgts !r
   | is == Nothing = return radiance0
   | otherwise     = do
-    si <- if d == 1.0 || f == black
+    si <- if df == 1.0 || f == black
       then return radiance0
       else traceRay scr m0 (l+1) pmap objs lgts (initRay p rdir)
-    ti <- if fi == black || ior1 == 0.0
+    ti <- if f' == black || ior1 == 0.0
       then return radiance0
       else do
         let
@@ -130,9 +124,9 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
           (tdir, ior') = specularRefraction ior0 ior1 cos0 (getDir r) n
           m0' = if tdir <.> n < 0.0 then m else m_air
         traceRay scr m0' (l+1) pmap objs lgts (initRay p tdir)
-    return (sr_half   *> emittance m +
-            d         *> brdf m (di + ii) +
-            (1.0 - d) *> (f <**> si + fi <**> ti))
+    return (sr_half    *> emittance m +
+            df         *> brdf m (di + ii) +
+            (1.0 - df) *> (f <**> si + (1.0 - mt) *> f' <**> ti))
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
@@ -141,11 +135,10 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
       else radiance0
     ii = estimateRadiance scr pmap (p, n, m)
     (rdir, cos0) = specularReflection n (getDir r)
-    d = diffuseness m
-    mn = 1.0 - metalness m
+    df = diffuseness m
+    mt = metalness m
     f = reflectionIndex (specularRefl m) cos0
-    --d' = addColor (scaleColor d white) (scaleColor (mn*(1.0-d)) $ negateColor f)
-    fi = scaleColor mn $ negateColor f
+    f' = negateColor f                         -- this means '1 - f'
     ior1 = averageIor m
 
 estimateRadiance :: Screen -> PhotonMap -> Intersection -> Radiance

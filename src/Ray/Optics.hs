@@ -107,7 +107,8 @@ rabs' (Radiance r g b) = Radiance (rabs r) (rabs g) (rabs b)
 (<**>) :: Color -> Radiance -> Radiance
 (Color cr cg cb) <**> (Radiance r g b)
   = Radiance (cr * r) (cg * g) (cb * b)
-infix 7 <**>
+--infix 7 <**>
+infix 8 <**>
 
 elemRad :: Wavelength -> Radiance -> Double
 elemRad Red   (Radiance r _ _) = r
