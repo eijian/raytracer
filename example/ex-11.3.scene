@@ -35,7 +35,7 @@ material:
   - type         : solid
     name         : mwallr
     emittance:     [ 0.0, 0.0, 0.0 ]
-    reflectance:   [ 0.4, 0.0, 0.0 ]
+    reflectance:   [ 0.4, 0.1, 0.1 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
     specularrefl:  [ 0.0, 0.0, 0.0 ]
     ior:           [ 0.0, 0.0, 0.0 ]
@@ -45,7 +45,7 @@ material:
   - type         : solid
     name: mwallb
     emittance:     [ 0.0, 0.0, 0.0 ]
-    reflectance:   [ 0.0, 0.0, 0.4 ]
+    reflectance:   [ 0.1, 0.1, 0.4 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
     specularrefl:  [ 0.0, 0.0, 0.0 ]
     ior:           [ 0.0, 0.0, 0.0 ]
@@ -196,7 +196,7 @@ object:
     name    : ball_marble
     center  : [ 0.0, 0.8, 3.0 ]
     radius  : 0.8
-    material: gray_marble
+    material: coral
   - type    : parallelogram
     name    : ceiling_light
     pos1    : cl01

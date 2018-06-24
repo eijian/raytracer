@@ -11,6 +11,7 @@ module Main where
 import Control.Monad
 import Data.Maybe
 import NumericPrelude
+import System.Environment
 
 import Ray.Algebra
 import Ray.Geometry
@@ -27,9 +28,16 @@ yr = 2048
 
 ----
 
+usage :: String
+usage = "Usage: pm2img [screen info file] < [photon map file]"
+
 main :: IO ()
 main = do
-  scr <- readScreen ""
+  as <- getArgs
+  fn <- if length as == 1
+    then return (as !! 0)
+    else error usage
+  scr <- readScreen fn
   np <- getLine
   pw <- getLine
   let nphoton = read np :: Int

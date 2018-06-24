@@ -193,10 +193,10 @@ object:
     position: [ 0.0, 0.0, 5.0 ]
     material: mwall
   - type    : sphere
-    name    : ball_marble
+    name    : ball_glass
     center  : [ 0.0, 0.8, 3.0 ]
     radius  : 0.8
-    material: gray_marble
+    material: glass
   - type    : parallelogram
     name    : ceiling_light
     pos1    : cl01

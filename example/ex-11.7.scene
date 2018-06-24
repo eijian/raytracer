@@ -1,12 +1,14 @@
 #
 
 light:
-  - type     : parallelogram
+#  - type     : parallelogram
+  - type     : sun
     color    : [ 1.0, 1.0, 1.0 ]
-    flux     : 5.0
+    flux     : 10.0
     position : [ -0.5, 3.99, 2.5 ]
     dir1     : [ 1.0, 0.0, 0.0 ]
     dir2     : [ 0.0, 0.0, 1.0 ]
+    ldir     : [ 0.0, -1.0, 0.0 ]
 
 material:
   - type         : solid
@@ -68,8 +70,8 @@ material:
     reflectance:   [ 0.0, 0.0, 0.0 ]
     transmittance: [ 0.0, 0.0, 0.0 ]
     specularrefl:  [ 0.08, 0.08, 0.08 ]
-    ior:           [ 1.5, 1.5, 1.5 ]
-#    ior:           [ 1.3, 1.5, 1.7 ]      # prism
+#    ior:           [ 1.5, 1.5, 1.5 ]
+    ior:           [ 1.3, 1.5, 1.7 ]      # prism
     diffuseness:   0.0
     metalness:     0.0
     smoothness:    0.0
@@ -145,18 +147,12 @@ material:
     smoothness:    0.0
 
 vertex:
-  - bp1: [ -1.2, 1.8, 2.6 ]
-  - bp2: [ -0.4, 1.8, 4.2 ]
-  - bp3: [ 1.2, 1.8, 3.4 ]
-  - bp4: [ 0.4, 1.8, 1.8 ]
-  - bp5: [ -1.2, 0.2, 2.6 ]
-  - bp6: [ -0.4, 0.2, 4.2 ]
-  - bp7: [ 1.2, 0.2, 3.4 ]
-  - bp8: [ 0.4, 0.2, 1.8 ]
-  - t01: [ -1.0, 0.2, 2.0 ]
-  - t02: [ 1.0, 2.2, 2.0 ]
-  - t03: [ -1.0, 2.2, 4.0 ]
-  - t04: [ 1.0, 0.2, 4.0 ]
+  - bp1: [ -0.3, 0.6, 2.7 ]
+  - bp2: [ -0.3, 0.6, 4.2 ]
+  - bp3: [  0.7, 0.6, 2.7 ]
+  - bp4: [  0.7, 0.6, 4.2 ]
+  - bp5: [  0.7, 1.3, 2.7 ]
+  - bp6: [  0.7, 1.3, 4.2 ]
   - cl01 : [ -0.5, 3.99, 2.5 ]
   - cl02 : [ 0.5, 3.99, 2.5 ]
   - cl03 : [ -0.5, 3.99, 3.5 ]
@@ -192,11 +188,41 @@ object:
     normal  : [ 0.0, 0.0, -1.0 ]
     position: [ 0.0, 0.0, 5.0 ]
     material: mwall
-  - type    : sphere
-    name    : ball_marble
-    center  : [ 0.0, 0.8, 3.0 ]
-    radius  : 0.8
-    material: gray_marble
+#  - type    : sphere
+#    name    : ball_mirror
+#    center  : [ 0.0, 0.8, 3.0 ]
+#    radius  : 0.8
+#    material: silver
+  - type    : parallelogram
+    name    : col3_1
+    pos1    : bp3
+    pos2    : bp4
+    pos3    : bp5
+    material: silver
+  - type    : parallelogram
+    name    : col3_2
+    pos1    : bp1
+    pos2    : bp2
+    pos3    : bp3
+    material: silver
+  - type    : parallelogram
+    name    : col3_3
+    pos1    : bp1
+    pos2    : bp5
+    pos3    : bp2
+    material: silver
+  - type    : polygon
+    name    : col3_4
+    pos1    : bp1
+    pos2    : bp3
+    pos3    : bp5
+    material: silver
+  - type    : polygon
+    name    : col3_5
+    pos1    : bp2
+    pos2    : bp6
+    pos3    : bp4
+    material: silver
   - type    : parallelogram
     name    : ceiling_light
     pos1    : cl01
