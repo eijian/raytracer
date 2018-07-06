@@ -166,12 +166,14 @@ specularReflection n e
 specularRefraction :: Double -> Double -> Double -> Direction3 -> Direction3
                    -> (Direction3, Double)
 specularRefraction ior0 ior1 c0 ed n
+  | r <  0.0     = (o3, 0.0)
   | t == Nothing = (o3, 0.0)
   | otherwise    = (fromJust t, ior')
   where
-    n' = if ed <.> n > 0.0 then negate n else n
     ior' = ior0 / ior1
-    a = c0 - sqrt (1.0 / (ior' * ior') + c0 * c0 - 1.0)
+    r = 1.0 / (ior' * ior') + c0 * c0 - 1.0
+    a = c0 - sqrt r
+    n' = if ed <.> n > 0.0 then negate n else n
     t = normalize (ior' *> (ed + a *> n'))
 
 --
