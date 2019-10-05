@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BangPatterns #-}
+
 --
 -- Material
 --
@@ -16,6 +19,10 @@ module Ray.Material (
 , averageIor
 ) where
 
+import           Control.DeepSeq
+import           Control.DeepSeq.Generics (genericRnf)
+import           GHC.Generics
+  
 import Ray.Physics
 import Ray.Optics
 
@@ -34,7 +41,10 @@ data Material = Material
   , diffuseness   :: Double     -- diffuse reflection
   , metalness     :: Double
   , smoothness    :: Double
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
+
+instance NFData Material where
+  rnf = genericRnf
 
 diffSpec :: Material -> Color
 diffSpec (Material _ r _ _ _ _ _ _) = r

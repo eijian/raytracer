@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BangPatterns #-}
+
 --
 -- Physics
 --
@@ -18,17 +21,26 @@ module Ray.Physics (
 , reflectionIndex
 ) where
 
-import System.Random.Mersenne as MT
+import           Control.DeepSeq
+import           Control.DeepSeq.Generics (genericRnf)
+import           GHC.Generics
+import           System.Random.Mersenne as MT
 
 --
 -- Wavelength
 
-data Wavelength = Red | Green | Blue deriving (Show, Read, Enum, Eq)
+data Wavelength = Red | Green | Blue deriving (Show, Read, Enum, Eq, Generic)
+
+instance NFData Wavelength where
+  rnf = genericRnf
 
 --
 -- Color
 
-data Color = Color !Double !Double !Double
+data Color = Color !Double !Double !Double deriving (Generic)
+
+instance NFData Color where
+  rnf = genericRnf
 
 black :: Color
 black = Color 0.0 0.0 0.0

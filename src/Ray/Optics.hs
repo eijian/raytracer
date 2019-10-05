@@ -1,6 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BangPatterns #-}
 
 --
 -- Optics
@@ -33,18 +35,21 @@ module Ray.Optics (
 , readMap
 ) where
 
-import NumericPrelude
+import qualified Algebra.Additive as Additive
+import qualified Algebra.Module as Module
+import           Control.DeepSeq
+import           Control.DeepSeq.Generics (genericRnf)
 --import Debug.Trace
 import qualified Data.KdTree.Static as KT
 --import qualified Data.KdTree.Dynamic as KT
+import           GHC.Generics
+import           NumericPrelude
 
-import qualified Algebra.Additive as Additive
-import qualified Algebra.Module as Module
-import Test.QuickCheck
+import           Test.QuickCheck
 
-import Ray.Algebra
-import Ray.Geometry
-import Ray.Physics
+import           Ray.Algebra
+import           Ray.Geometry
+import           Ray.Physics
 
 --
 -- Photon Filter
@@ -53,14 +58,20 @@ import Ray.Physics
 data PhotonFilter = Nonfilter
                   | Conefilter
                   | Gaussfilter
-                  deriving (Eq, Ord, Show, Read)
+                  deriving (Eq, Ord, Show, Read, Generic)
+
+instance NFData PhotonFilter where
+  rnf = genericRnf                  
 
 --
 -- Radiance
 
 data Radiance = Radiance !Double !Double !Double
-                deriving (Read, Show)
+                deriving (Read, Show, Generic)
 
+instance NFData Radiance where
+  rnf = genericRnf
+                
 instance Eq Radiance where
   (Radiance r1 g1 b1) == (Radiance r2 g2 b2)
     = r1 == r2 && g1 == g2 && b1 == b2
@@ -144,7 +155,10 @@ initPhoton l r = (l, r)
 type PhotonCache = Photon
 
 data PhotonInfo = PhotonInfo !Wavelength !Position3 !Direction3
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance NFData PhotonInfo where
+  rnf = genericRnf
 
 data PhotonMap = PhotonMap
   { power :: Double
@@ -190,15 +204,16 @@ photonInfoToRadiance _ _ (PhotonInfo _ _ _) = radiance0
 readMap :: Int -> IO (Int, PhotonMap)
 readMap nsample = do
   --np' <- getLine
-  _ <-getLine           -- discard infomation about the number of photon 
-  pw' <- getLine
-  ps <- getContents
+  _   <- getLine           -- discard infomation about the number of photon 
+  pw0 <- getLine
+  ps  <- getContents
   let
     --np = read np' :: Int
-    pw = read pw' :: Double
+    pw = read pw0 :: Double
     pcs = map convertToInfo (map (\x -> read x :: PhotonCache) (lines ps))
-    pmap = KT.buildWithDist infoToPointList squaredDistance pcs
-  return (KT.size pmap, PhotonMap pw (KT.kNearest pmap nsample))
+    pmap = pcs `deepseq` KT.buildWithDist infoToPointList squaredDistance pcs
+    msize = pmap `deepseq` KT.size pmap
+  return (msize, PhotonMap pw (KT.kNearest pmap nsample))
 
 infoToPointList :: PhotonInfo -> [Double]
 infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]

@@ -33,6 +33,8 @@ executable pm
                      , vector
                      , parsec
                      , parsec-numbers
+                     , deepseq >=1.3
+                     , deepseq-generics >=0.1.1.1
 
 -- Ray Tracer
 executable rt
@@ -52,6 +54,8 @@ executable rt
                      , vector
                      , parsec
                      , parsec-numbers
+                     , deepseq >=1.3
+                     , deepseq-generics >=0.1.1.1
 
 -- Ray Tracer Classical
 executable rtc
@@ -71,6 +75,8 @@ executable rtc
                      , vector
                      , parsec
                      , parsec-numbers
+                     , deepseq >=1.3
+                     , deepseq-generics >=0.1.1.1
 
 -- Photon Map Converter
 executable pm2img
@@ -90,6 +96,8 @@ executable pm2img
                      , vector
                      , parsec
                      , parsec-numbers
+                     , deepseq >=1.3
+                     , deepseq-generics >=0.1.1.1
 
 
 --
@@ -111,6 +119,8 @@ Test-Suite doctest
                      , kdt
                      , parsec
                      , parsec-numbers
+                     , deepseq >=1.3
+                     , deepseq-generics >=0.1.1.1
 
 Source-Repository head
   Type:                git

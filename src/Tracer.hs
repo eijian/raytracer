@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
 
 --
@@ -12,6 +13,8 @@ module Tracer (
 , traceRay'
 ) where
 
+import           Control.DeepSeq
+import           Control.DeepSeq.Generics (genericRnf)
 import           Control.Monad
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
@@ -48,6 +51,17 @@ sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 
 --
 
+{-
+  tracePhoton:
+    In:
+      uc = flag of the use classic ray-tracing for direct illumination
+      m0 = the initial Material (air)
+      os = the list of Ojbect
+      l  = depth level (max is 10)
+      wl = wavelength of the photon
+      r  = ray
+-}
+
 tracePhoton :: Bool -> Material -> [Object] -> Int -> Photon
             -> IO [PhotonCache]
 tracePhoton _   _   _   10 _        = return []
@@ -55,7 +69,7 @@ tracePhoton !uc !m0 !os !l !(wl, r)
   | is == Nothing = return []
   | otherwise     = do
     let
-      is' = fromJust is
+      is' = is `deepseq` fromJust is
       (p, _, m) = is'
       d = diffuseness m
     i <- russianRoulette [d]
@@ -147,7 +161,7 @@ estimateRadiance scr pmap (p, n, m)
   | otherwise = (1.0 / (pi * rmax * rmax)) *> rad
   where
     ps = filter adopt $ (nearest pmap) $ photonDummy p
-    rs = map (\x -> norm ((photonPos x) - p)) ps
+    rs = ps `deepseq` map (\x -> norm ((photonPos x) - p)) ps
     rmax = maximum rs
     sumfunc = case (pfilter scr) of
                 Nonfilter   -> sumRadiance1
@@ -167,7 +181,7 @@ estimateRadiance scr pmap (p, n, m)
 -- Normal (non filter)
 sumRadiance1 :: Direction3 -> Double -> Double -> [Double] -> [PhotonInfo]
              -> Radiance
-sumRadiance1 n pw _ _ ps = foldl (+) radiance0 rads
+sumRadiance1 n pw _ _ ps = rads `deepseq` foldl (+) radiance0 rads
   where
     rads = map (photonInfoToRadiance n pw) ps
 
@@ -180,7 +194,7 @@ fac_k = 1.0 - 2.0 / (3.0 * k_cone)
 
 sumRadiance2 :: Direction3 -> Double -> Double -> [Double] -> [PhotonInfo]
              -> Radiance
-sumRadiance2 n pw rmax rs ps = foldl (+) radiance0 rads
+sumRadiance2 n pw rmax rs ps = rads `deepseq` foldl (+) radiance0 rads
   where
     wt = map (waitCone (pw / fac_k) rmax) rs
     rads = zipWith (photonInfoToRadiance n) wt ps
@@ -201,7 +215,7 @@ e_beta = 1.0 - exp (-beta)
 
 sumRadiance3 :: Direction3 -> Double -> Double -> [Double] -> [PhotonInfo]
              -> Radiance
-sumRadiance3 n pw rmax rs ps = foldl (+) radiance0 rads
+sumRadiance3 n pw rmax rs ps = rads `deepseq` foldl (+) radiance0 rads
   where
     wt = map (waitGauss pw rmax) rs
     rads = zipWith (photonInfoToRadiance n) wt ps

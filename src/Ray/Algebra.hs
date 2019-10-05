@@ -1,6 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BangPatterns #-}
 
 --
 -- Ray.Algebra
@@ -39,15 +41,17 @@ module Ray.Algebra
   , elemZ
   ) where
 
-import Data.Maybe
-import System.Random
-import System.Random.Mersenne as MT
-
-import NumericPrelude
 import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
 --import qualified Algebra.NormedSpace.Euclidean as Euclidean
-import Test.QuickCheck
+import           Control.DeepSeq
+import           Control.DeepSeq.Generics (genericRnf)
+import           Data.Maybe
+import           GHC.Generics
+import           NumericPrelude
+import           System.Random
+import           System.Random.Mersenne as MT
+import           Test.QuickCheck
 
 nearly0 :: Double
 --nearly0 = 0.00001  -- 10 micro meter
@@ -72,7 +76,10 @@ class (BasicMatrix a) => Vector a where
   square :: a -> Double
   square v = v <.> v
 
-data Vector3 = Vector3 !Double !Double !Double deriving (Read, Show)
+data Vector3 = Vector3 !Double !Double !Double deriving (Read, Show, Generic)
+
+instance NFData Vector3 where
+  rnf = genericRnf
 
 {-
 instance Show Vector3 where
