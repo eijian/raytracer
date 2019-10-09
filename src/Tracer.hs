@@ -71,8 +71,8 @@ tracePhoton !uc !m0 !os !l !(wl, r)
     let
       is' = is `deepseq` fromJust is
       (p, _, m) = is'
-      d = diffuseness m
-    i <- russianRoulette [d]
+      d = m `deepseq` diffuseness m
+    i <- d `deepseq` russianRoulette [d]
     ref <- if i > 0
       then reflectDiff uc m0 os l wl is'
       else reflectSpec uc m0 os l (wl, r) is'
@@ -138,7 +138,8 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
           (tdir, ior') = specularRefraction ior0 ior1 cos0 (getDir r) n
           m0' = if tdir <.> n < 0.0 then m else m_air
         traceRay scr m0' (l+1) pmap objs lgts (initRay p tdir)
-    return (sr_half    *> emittance m +
+    si `deepseq` ti `deepseq` return 
+           (sr_half    *> emittance m +
             df         *> brdf m (di + ii) +
             (1.0 - df) *> (f <**> si + (1.0 - mt) *> f' <**> ti))
   where
