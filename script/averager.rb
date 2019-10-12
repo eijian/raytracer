@@ -5,6 +5,9 @@
 
 RADIUS = 1.0
 ALPHA  = 0.5
+GAMMA  = 1.0 / 2.2
+RGBMAX = 255
+RADMAX = 1.0
 
 def init
   $BASENAME = ARGV.shift
@@ -28,9 +31,14 @@ def add_pixel(pos, px, idx)
   @colors[pos] = [0, 0, 0] if @colors[pos] == nil
   @count[pos]  = 0 if @count[pos] == nil
 
-  r = px[0].to_f * @area[idx]
-  g = px[1].to_f * @area[idx]
-  b = px[2].to_f * @area[idx]
+  r = px[0].to_f
+  g = px[1].to_f
+  b = px[2].to_f
+  if r > RADMAX || g > RADMAX || b > RADMAX
+    y = pos / 256
+    x = pos % 256
+    STDERR.puts "(#{x},#{y}): #{r}/#{g}/#{b}"
+  end
   if r > 0 || g > 0 || b > 0
       @colors[pos] = [@colors[pos][0] + r, @colors[pos][1] + g, @colors[pos][2] + b]
       @count[pos] += 1
@@ -42,7 +50,8 @@ def add_ppm(fn, idx)
   STDERR.puts "(#{idx}): #{fn}"
   File.open(fn) do |fp|
     @hd1 = fp.readline.chomp
-    @hd2 = fp.readline.chomp
+    fp.readline.chomp =~ /radiance = (.+)$/
+    @hd2 = $1.to_f
     @hd3 = fp.readline.chomp.split
     @hd4 = fp.readline.chomp.to_i
     (@hd3[0].to_i * @hd3[1].to_i).times do |pos|
@@ -52,12 +61,15 @@ def add_ppm(fn, idx)
 end
 
 def clip(c)
-  c2 = if c > 255.0 then 255 else c.to_i end
+  #c2 = if c > 255.0 then 255 else c.to_i end
+  c2 = c / @nfile / @hd2
+  r = ((if c2 > 1.0 then 1.0 else c2 end) ** GAMMA) * RGBMAX
+  r.to_i
 end
 
 def output_ppm
   puts @hd1
-  puts @hd2
+  puts "## max radiance = #{@hd2}"
   puts "#{@hd3[0]} #{@hd3[1]}"
   puts @hd4
   @colors.each_with_index do |c, i|
@@ -74,7 +86,7 @@ end
 def main
   init
 
-  Dir.glob($BASENAME + "*.ppm").sort.each_with_index do |f, i|
+  Dir.glob($BASENAME + "*.ppmf").sort.each_with_index do |f, i|
     add_ppm(f, i)
   end
 

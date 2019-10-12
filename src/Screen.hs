@@ -9,6 +9,8 @@ module Screen (
 , Screen(..)
 , readScreen
 , rgbToString
+, radianceToString
+, rgbToRadiance
 ) where
 
 --import          Control.Monad
@@ -39,6 +41,7 @@ data Screen = Screen
   , radius2             :: Double
   , pfilter             :: PhotonFilter
   , ambient             :: Radiance
+  , maxradiance         :: Double
   , eyePos              :: Position3
   , eyeDir              :: Direction3
   , focus               :: Double
@@ -103,7 +106,7 @@ readScreen file = do
     pfilt      = read (conf M.! rPhotonFilter  ) :: PhotonFilter
 
     fmaxrad = radianceToRgb0 maxrad
-    fheader = pnmHeader0 xres yres
+    fheader = pnmHeader0 xres yres maxrad
     smap = V.fromList [(fromIntegral y, fromIntegral x) |
       y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
     eyedir = fromJust $ normalize (targetpos - eyepos)
@@ -119,6 +122,7 @@ readScreen file = do
       r2           -- radius for estimation of radiance
       pfilt        -- filter for photon gathering
       amb          -- ambient radiance
+      maxrad
       eyepos
       eyedir
       focus
@@ -131,6 +135,16 @@ readScreen file = do
 rgbToString :: Rgb -> String
 rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b
 
+radianceToString :: Radiance -> String
+radianceToString (Radiance r g b) = show r ++ " " ++ show g ++ " " ++ show b
+
+rgbToRadiance :: Screen -> Rgb -> Radiance
+rgbToRadiance scr (r, g, b) =
+  Radiance (fromIntegral r * mag)
+           (fromIntegral g * mag)
+           (fromIntegral b * mag)
+  where
+    mag = maxradiance scr / rgbmax
 --
 -- PRIVATE FUNCTIONS
 --
@@ -180,10 +194,10 @@ generateRay0 e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
     edir  = tgt - e 
     edir' = fromJust $ normalize edir
 
-pnmHeader0 :: Int -> Int -> [String]
-pnmHeader0 xr yr =
+pnmHeader0 :: Int -> Int -> Double -> [String]
+pnmHeader0 xr yr maxrad =
   ["P3"
-  ,"## test"
+  ,"## max radiance = " ++ show maxrad
   ,show xr ++ " " ++ show yr
   ,"255"
   ]

@@ -51,7 +51,7 @@ def mk_tmpscreen(r)
 end
 
 def mk_image(i, tscrf)
-  ppmf = @tmpdir + IMGF + "#{sprintf("%04d", i)}.ppm"
+  ppmf = @tmpdir + IMGF + "#{sprintf("%04d", i)}.ppmf"
   cmd = "#{PM} #{tscrf} #{@scene} | #{RT} #{tscrf} #{@scene} > #{ppmf}"
   system cmd
 end

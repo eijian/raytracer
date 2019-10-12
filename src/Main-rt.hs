@@ -35,7 +35,7 @@ main = do
   mapM_ putStrLn $ pnmHeader scr
   let tracer = traceRay scr m_air 0 photonmap objs lgts
   image <- V.mapM tracer $ V.map (generateRay scr) $ screenMap scr
-  let pixels = V.map (radianceToRgb scr) image
-  forM_ [0..(V.length pixels - 1)] $ \i -> do
-    rgb <- smooth tracer scr pixels i
-    putStrLn $ rgbToString rgb
+  forM_ [0..(V.length image - 1)] $ \i -> do
+    rad <- smooth2 tracer scr image i
+    putStrLn $ radianceToString rad
+  
