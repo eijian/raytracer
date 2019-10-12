@@ -34,11 +34,13 @@ def add_pixel(pos, px, idx)
   r = px[0].to_f
   g = px[1].to_f
   b = px[2].to_f
+=begin
   if r > RADMAX || g > RADMAX || b > RADMAX
     y = pos / 256
     x = pos % 256
     STDERR.puts "(#{x},#{y}): #{r}/#{g}/#{b}"
   end
+=end
   if r > 0 || g > 0 || b > 0
       @colors[pos] = [@colors[pos][0] + r, @colors[pos][1] + g, @colors[pos][2] + b]
       @count[pos] += 1

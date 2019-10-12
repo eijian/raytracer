@@ -224,7 +224,8 @@ object:
     name    : ball_glass
     center  : [ 0.0, 0.8, 3.0 ]
     radius  : 0.8
-    material: glass
+    material: white_stone
+#    material: glass
 #  - type    : sphere
 #    name    : ball_glass
 #    center  : [ -1.0, 2.8, 2.5 ]
