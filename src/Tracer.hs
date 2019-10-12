@@ -207,7 +207,11 @@ sumRadiance2 _ n pw rmax rs ps = rads `deepseq` foldl (+) radiance0 rads
     rads = zipWith (photonInfoToRadiance n) wt ps
 
 waitCone :: Double -> Double -> Double -> Double
-waitCone pw rmax dp = pw * (1.0 - dp / (k_cone * rmax))
+waitCone pw radius dp
+  | d > 1.0   = 0.0
+  | otherwise = pw * (1.0 - d)
+  where
+    d = dp / (k_cone * radius)
 
 -- Gauss filter
 
