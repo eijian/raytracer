@@ -139,9 +139,9 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
           m0' = if tdir <.> n < 0.0 then m else m_air
         traceRay scr m0' (l+1) pmap objs lgts (initRay p tdir)
     si `deepseq` ti `deepseq` return 
-           (sr_half    *> emittance m +
-            df         *> brdf m (di + ii) +
-            (1.0 - df) *> (f <**> si + (1.0 - mt) *> f' <**> ti))
+      (sr_half    *> emittance m +
+       df         *> brdf m (di + ii) +
+       (1.0 - df) *> (f <**> si + (1.0 - mt) *> f' <**> ti))
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
@@ -231,9 +231,12 @@ sumRadiance3 _ n pw rmax rs ps = rads `deepseq` foldl (+) radiance0 rads
     wt = map (waitGauss pw rmax) rs
     rads = zipWith (photonInfoToRadiance n) wt ps
     waitGauss :: Double -> Double -> Double -> Double
-    waitGauss p r dp = p * alpha * (1.0 - e_r / e_beta)
+    waitGauss p r dp
+      | wp < 0.0 = 0.0
+      | otherwise = wp
       where
         e_r = 1.0 - exp (-beta * dp * dp / (2.0 * r * r))
+        wp  = p * alpha * (1.0 - e_r / e_beta)
 
 ------
 -- CLASICAL RAY TRACING
