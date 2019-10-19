@@ -3,6 +3,8 @@
 # iterator
 #
 
+require 'logger'
+
 USAGE = 'iterator.rb <#iteration> <#photon> <initial radius(m)> <screen(.scr)> <scene(.scene)>'
 PM = "./dist/build/pm/pm"
 RT = "./dist/build/rt/rt"
@@ -24,10 +26,26 @@ def init
 
   @tmpdir = TMPDIR + "#{Time.now.strftime("%Y%m%d%H%M%S")}/"
   Dir.mkdir(@tmpdir)
+  STDERR.puts "TMPDIR=#{@tmpdir}"
+  @tstart = Time.now
+
+  @logger = Logger.new(@tmpdir + 'iterator.log')
+  @logger.datetime_format = '%Y%m%d-%H%M%S'
+  @logger.formatter = proc do |severity, datetime, progname, msg|
+    "#{datetime} (#{severity}): #{msg}\n"
+  end
+  @logger.info('Iteration start')
+  @logger.info("DIR:#{@tmpdir}")
+  @logger.info("PARAM: #iteration=#{@niterate}/#photon=#{@nphoton}/radius=#{@radius0}")
+  @logger.info("SCENE: #{@scene} (#{@screen})")
 end
 
 def postscript
-
+  elapsed = Time.now - @tstart
+  msg = "ELAPSED TIME: #{sprintf("%.2f sec", elapsed.to_f)}"
+  STDERR.puts msg
+  @logger.info(msg)
+  @logger.close
 end
 
 def mk_tmpscreen(r)
@@ -59,12 +77,14 @@ end
 def main
   init
 
-  r = @radius0 * @radius0
+  r = @radius0
   @niterate.times do |i|
-    STDERR.puts "IT: #{i}/#{Time.now.strftime("%Y%m%d-%H%M%S")}"
+    msg = "(#{i}) R=#{sprintf("%.4f", r)}"
+    STDERR.puts "#{Time.now.strftime("%Y%m%d-%H%M%S")}: #{msg}"
+    @logger.info(msg)
     tscrf = mk_tmpscreen(r)
     mk_image(i, tscrf)
-    r = (i + ALPHA) / (i + 1.0) * r
+    r = Math.sqrt(((i+1) + ALPHA) / ((i+1) + 1.0)) * r
   end
 
   postscript

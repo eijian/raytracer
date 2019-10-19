@@ -38,7 +38,7 @@ data Screen = Screen
   , antialias           :: Bool
   , nSamplePhoton       :: Int
   , useClassicForDirect :: Bool
-  , radius2             :: Double
+  , radius              :: Double
   , pfilter             :: PhotonFilter
   , ambient             :: Radiance
   , maxradiance         :: Double
@@ -111,7 +111,7 @@ readScreen file = do
       y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
     eyedir = fromJust $ normalize (targetpos - eyepos)
     fgenray = makeGenerateRay eyepos eyedir xres yres upper focus
-    r2 = radius * radius
+    --r2 = radius * radius
     scr = Screen
       nphoton
       xres
@@ -119,7 +119,8 @@ readScreen file = do
       antialias    -- anti aliasing on/off
       samphoton    -- nSamplePhoton
       useclassic   -- useClassicForDirect
-      r2           -- radius for estimation of radiance
+      --r2           -- radius for radiance estimate
+      radius       -- radius for radiance estimate
       pfilt        -- filter for photon gathering
       amb          -- ambient radiance
       maxrad

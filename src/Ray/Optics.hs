@@ -24,6 +24,7 @@ module Ray.Optics (
 , squaredDistance
 , initPhoton
 , nearest
+, inradius
 , norm
 , photonDir
 , photonDummy
@@ -161,8 +162,9 @@ instance NFData PhotonInfo where
   rnf = genericRnf
 
 data PhotonMap = PhotonMap
-  { power :: Double
-  , nearest :: PhotonInfo -> [PhotonInfo]
+  { power    :: Double
+  , nearest  :: PhotonInfo -> [PhotonInfo]
+  , inradius :: PhotonInfo -> [PhotonInfo]
   }
 
 {-
@@ -201,8 +203,8 @@ photonInfoToRadiance n pw (PhotonInfo wl _ d)
     pw'  = if cos0 > 0.0 then pw * cos0 else 0.0
 photonInfoToRadiance _ _ (PhotonInfo _ _ _) = radiance0
 
-readMap :: Int -> IO (Int, PhotonMap)
-readMap nsample = do
+readMap :: Int -> Double -> IO (Int, PhotonMap)
+readMap nsample radius = do
   --np' <- getLine
   _   <- getLine           -- discard infomation about the number of photon 
   pw0 <- getLine
@@ -213,7 +215,7 @@ readMap nsample = do
     pcs = map convertToInfo (map (\x -> read x :: PhotonCache) (lines ps))
     pmap = pcs `deepseq` KT.buildWithDist infoToPointList squaredDistance pcs
     msize = pmap `deepseq` KT.size pmap
-  return (msize, PhotonMap pw (KT.kNearest pmap nsample))
+  return (msize, PhotonMap pw (KT.kNearest pmap nsample) (KT.inRadius pmap (radius * 2)))
 
 infoToPointList :: PhotonInfo -> [Double]
 infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]

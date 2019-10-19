@@ -159,23 +159,25 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
 estimateRadiance :: Screen -> PhotonMap -> Intersection -> Radiance
 estimateRadiance scr pmap (p, n, m)
   | ps == []  = radiance0
---  | otherwise = (1.0 / (pi * rmax * rmax)) *> rad # 半径は指定したものを使う
-  | otherwise = (1.0 / (pi * (radius2 scr))) *> rad
+  | otherwise = (1.0 / (pi * rmax * rmax)) *> rad -- 半径は指定したものを使う
+--  | otherwise = rad
   where
-    --ps = filter adopt $ (nearest pmap) $ photonDummy p
-    ps = (nearest pmap) $ photonDummy p
+    --ps = (nearest pmap) $ photonDummy p
+    ps = (inradius pmap) $ photonDummy p
     rs = ps `deepseq` map (\x -> norm ((photonPos x) - p)) ps
     --rmax = maximum rs
-    rmax = sqrt $ radius2 scr
+    rmax = radius scr
     sumfunc = case (pfilter scr) of
                 Nonfilter   -> sumRadiance1
                 Conefilter  -> sumRadiance2
                 Gaussfilter -> sumRadiance3
     rad = sumfunc p n (power pmap) rmax rs ps
+{-
     adopt :: PhotonInfo -> Bool
     adopt ph
-      | radius2 scr == 0.0 = True
-      | otherwise          = square (p - photonPos ph) < (radius2 scr)
+      | radius scr == 0.0 = True
+      | otherwise         = square (p - photonPos ph) < (radius scr)
+-}
 
 -- filtering:
 --   sumRadiance1  none filter
@@ -185,10 +187,11 @@ estimateRadiance scr pmap (p, n, m)
 -- Normal (none filter)
 sumRadiance1 :: Position3 -> Direction3 -> Double -> Double -> [Double]
              -> [PhotonInfo] -> Radiance
-sumRadiance1 p n pw rmax _ ps = rads `deepseq` foldl (+) radiance0 rads
+sumRadiance1 p n pw rmax _ ps = rds `deepseq` rad
   where
     ps' = filter adopt ps
-    rads = map (photonInfoToRadiance n pw) ps'
+    rds = map (photonInfoToRadiance n pw) ps'
+    rad = foldl (+) radiance0 rds
     adopt :: PhotonInfo -> Bool
     adopt ph = square (p - photonPos ph) < rmax * rmax
 
@@ -201,10 +204,11 @@ fac_k = 1.0 - 2.0 / (3.0 * k_cone)
 
 sumRadiance2 :: Position3 -> Direction3 -> Double -> Double -> [Double]
              -> [PhotonInfo] -> Radiance
-sumRadiance2 _ n pw rmax rs ps = rads `deepseq` foldl (+) radiance0 rads
+sumRadiance2 _ n pw rmax rs ps = rds `deepseq` rad
   where
     wt = map (waitCone (pw / fac_k) rmax) rs
-    rads = zipWith (photonInfoToRadiance n) wt ps
+    rds = zipWith (photonInfoToRadiance n) wt ps
+    rad = foldl (+) radiance0 rds
 
 waitCone :: Double -> Double -> Double -> Double
 waitCone pw radius dp
@@ -226,10 +230,11 @@ e_beta = 1.0 - exp (-beta)
 
 sumRadiance3 :: Position3 -> Direction3 -> Double -> Double -> [Double]
              -> [PhotonInfo] -> Radiance
-sumRadiance3 _ n pw rmax rs ps = rads `deepseq` foldl (+) radiance0 rads
+sumRadiance3 _ n pw rmax rs ps = rds `deepseq` rad
   where
     wt = map (waitGauss pw rmax) rs
-    rads = zipWith (photonInfoToRadiance n) wt ps
+    rds = zipWith (photonInfoToRadiance n) wt ps
+    rad = foldl (+) radiance0 rds
     waitGauss :: Double -> Double -> Double -> Double
     waitGauss p r dp
       | wp < 0.0 = 0.0
