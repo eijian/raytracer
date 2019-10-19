@@ -159,8 +159,7 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
 estimateRadiance :: Screen -> PhotonMap -> Intersection -> Radiance
 estimateRadiance scr pmap (p, n, m)
   | ps == []  = radiance0
-  | otherwise = (1.0 / (pi * rmax * rmax)) *> rad -- 半径は指定したものを使う
---  | otherwise = rad
+  | otherwise = (one_pi / (rmax * rmax)) *> rad -- 半径は指定したものを使う
   where
     --ps = (nearest pmap) $ photonDummy p
     ps = (inradius pmap) $ photonDummy p
@@ -172,12 +171,6 @@ estimateRadiance scr pmap (p, n, m)
                 Conefilter  -> sumRadiance2
                 Gaussfilter -> sumRadiance3
     rad = sumfunc p n (power pmap) rmax rs ps
-{-
-    adopt :: PhotonInfo -> Bool
-    adopt ph
-      | radius scr == 0.0 = True
-      | otherwise         = square (p - photonPos ph) < (radius scr)
--}
 
 -- filtering:
 --   sumRadiance1  none filter
