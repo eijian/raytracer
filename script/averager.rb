@@ -66,7 +66,12 @@ def clip(c)
   #c2 = if c > 255.0 then 255 else c.to_i end
   c2 = c / @nfile / @hd2
   r = ((if c2 > 1.0 then 1.0 else c2 end) ** GAMMA) * RGBMAX
-  r.to_i
+  begin
+    r.to_i
+  rescue StandardError => e
+    STDERR.puts "C2:#{c2}/R:{r}"
+    STDERR.puts e
+  end
 end
 
 def output_ppm
