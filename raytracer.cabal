@@ -30,6 +30,7 @@ executable pm
                      , mersenne-random >= 1.0
                      , QuickCheck
                      , kdt
+                     , text
                      , vector
                      , parsec
                      , parsec-numbers
@@ -51,6 +52,7 @@ executable rt
                      , mersenne-random >= 1.0
                      , QuickCheck
                      , kdt
+                     , text
                      , vector
                      , parsec
                      , parsec-numbers
@@ -72,6 +74,7 @@ executable rtc
                      , mersenne-random >= 1.0
                      , QuickCheck
                      , kdt
+                     , text
                      , vector
                      , parsec
                      , parsec-numbers
@@ -93,6 +96,7 @@ executable pm2img
                      , mersenne-random >= 1.0
                      , QuickCheck
                      , kdt
+                     , text
                      , vector
                      , parsec
                      , parsec-numbers
