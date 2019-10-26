@@ -55,7 +55,8 @@ smooth tracer scr ims i
 
 smooth2 :: (Ray -> IO Radiance) -> Screen -> V.Vector Radiance -> Int
         -> IO Radiance
-smooth2 tracer scr ims i
+smooth2 tracer scr ims i = return (ims V.! i)
+{-
   | antialias scr == False                                 = return (ims V.! i)
   | isDifferent2 (radianceToRgb scr) i ims offset == False = return (ims V.! i)
   | otherwise = do
@@ -64,6 +65,7 @@ smooth2 tracer scr ims i
   where
     xr = xreso scr
     offset = [-xr-1, -xr, -xr+1, -1, 1, xr-1, xr, xr+1]
+-}
 
 avg :: [Rgb] -> Rgb
 avg ls = (r `div` len, g `div` len, b `div` len)
@@ -127,7 +129,8 @@ retrace :: (Ray -> IO Radiance) -> Screen -> Int -> IO [Radiance]
 retrace tracer scr p = do
   let p' = ( fromIntegral (p `div` (xreso scr))
            , fromIntegral (p `mod` (xreso scr)))
-  mapM tracer $ map (generateRay scr) (map (badd p') blur)
+  ray <- mapM (generateRay scr) (map (badd p') blur)
+  mapM tracer ray
 
 badd :: (Double, Double) -> (Double, Double) -> (Double, Double)
 badd (px, py) (bx, by) = (px + bx, py + by)

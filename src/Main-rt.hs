@@ -38,7 +38,8 @@ main = do
 
   -- tracing image
   let tracer = traceRay scr m_air 0 photonmap objs lgts
-  image <- V.mapM tracer $ V.map (generateRay scr) $ screenMap scr
+  rays <- V.mapM (generateRay scr) $ screenMap scr
+  image <- V.mapM tracer rays
 
   -- output image data with/without anti-aliasing
   mapM_ putStrLn $ pnmHeader scr

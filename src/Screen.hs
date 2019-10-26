@@ -18,6 +18,7 @@ import           Data.Maybe
 import qualified Data.Map.Strict as M
 import qualified Data.Vector     as V
 import           NumericPrelude
+import qualified System.Random.Mersenne as MT
 
 import           Ray.Algebra
 import           Ray.Geometry
@@ -48,7 +49,7 @@ data Screen = Screen
   , screenMap           :: V.Vector (Double, Double)
   , pnmHeader           :: [String]
   , radianceToRgb       :: Radiance -> Rgb
-  , generateRay         :: (Double, Double) -> Ray
+  , generateRay         :: (Double, Double) -> IO Ray
   }
 
 --
@@ -105,12 +106,15 @@ readScreen file = do
     focus      = read (conf M.! rFocus         ) :: Double
     pfilt      = read (conf M.! rPhotonFilter  ) :: PhotonFilter
 
+    focallen = 50.0 / 1000 :: Double  -- 焦点距離 50mm
+    fnumber  = 5.0 :: Double          -- F/5.0
+
     fmaxrad = radianceToRgb0 maxrad
     fheader = pnmHeader0 xres yres maxrad
     smap = V.fromList [(fromIntegral y, fromIntegral x) |
       y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
     eyedir = fromJust $ normalize (targetpos - eyepos)
-    fgenray = makeGenerateRay eyepos eyedir xres yres upper focus
+    fgenray = makeGenerateRay antialias eyepos targetpos xres yres upper focus focallen fnumber
     scr = Screen
       nphoton
       xres
@@ -171,28 +175,53 @@ parseLines (l:ls) = p:(parseLines ls)
         Left  e  -> error $ (show e ++ "\nLINE: " ++ l)
         Right p' -> p'
 
-makeGenerateRay :: Position3 -> Direction3 -> Int -> Int -> Direction3
-                -> Double -> ((Double, Double) -> Ray)
-makeGenerateRay epos edir xr yr udir fc = generateRay0 epos origin step evec
-  where
-    stepx  = 2.0 / fromIntegral xr
-    stepy  = 2.0 / fromIntegral yr
-    step   = (stepx, stepy)
-    eex    = fromJust $ normalize (udir <*> edir)
-    eey    = fromJust $ normalize (eex  <*> edir)
-    evec   = (eex, eey)
-    origin = (target fc (initRay epos edir))
-      + ((-1.0 + 0.5 * stepx) *> eex)
-      - (( 1.0 - 0.5 * stepy) *> eey)
+makeGenerateRay :: Bool -> Position3 -> Direction3 -> Int -> Int -> Direction3
+                -> Double -> Double -> Double
+                -> ((Double, Double) -> IO Ray)
+makeGenerateRay aaflag epos target xr yr udir fd fl = do
+--makeGenerateRay aaflag epos target xr yr udir fd fl fnum = do
+  let
+    ez = fromJust $ normalize (target - epos)
+    ex = fromJust $ normalize (udir <*> ez)
+    ey = fromJust $ normalize (ex   <*> ez)
+    --step = 2.0 * (fd / fl) / fromIntegral xr
+    step = (fd * 0.035 / fl)/ fromIntegral xr
+    esx  = step *> ex
+    esy  = step *> ey
+    fnum = 4.0 :: Double
+    ea   = fl / fnum
+    eex  = ea *> ex
+    eey  = ea *> ey
+    lx = fromIntegral (xr `div` 2) :: Double
+    ly = fromIntegral (yr `div` 2) :: Double
+    orig = fd *> ez - (lx - 0.5) *> esx - (ly - 0.5) *> esy
+    blurflag = fnum < 1000
+  
+  return (generateRay0 aaflag blurflag epos orig esx esy eex eey)
 
-generateRay0 :: Position3 -> Position3 -> (Double, Double)
-             -> (Direction3, Direction3) -> (Double, Double) -> Ray
-generateRay0 e o (sx, sy) (ex, ey) (y, x) = initRay e edir'
-  where
-    tgt   = o + ((sx * x) *> ex) + ((sy * y) *> ey)
-    edir  = tgt - e 
-    edir' = fromJust $ normalize edir
-
+generateRay0 :: Bool -> Bool -> Position3 -> Position3
+             -> Direction3 -> Direction3 -> Direction3 -> Direction3
+             -> (Double, Double) -> IO Ray
+generateRay0 aaflag blurflag e o esx esy eex eey (y, x) = do
+  blur <- if blurflag == True
+    then do
+      r1 <- MT.randomIO :: IO Double
+      r2 <- MT.randomIO :: IO Double
+      return ((r1 - 0.5) *> eex + (r2 - 0.5) *> eey)
+    else
+      return o3
+  (r3, r4) <- if aaflag == True
+    then do
+      r3' <- MT.randomIO :: IO Double
+      r4' <- MT.randomIO :: IO Double
+      return (r3' - 0.5, r4' - 0.5)
+    else
+      return (0.0, 0.0)
+  let
+    eyepos = e + blur
+    eyedir = o + (x + r3) *> esx + (y + r4) *> esy - blur
+  return (initRay eyepos (fromJust $ normalize eyedir))
+  
 pnmHeader0 :: Int -> Int -> Double -> [String]
 pnmHeader0 xr yr maxrad =
   ["P3"

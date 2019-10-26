@@ -20,7 +20,8 @@ main = do
   scr <- readScreen ""
   mapM_ putStrLn $ pnmHeader scr
   let tracer = traceRay' scr 0 lgts objs
-  image <- V.mapM tracer $ V.map (generateRay scr) $ screenMap scr
+  rays <- V.mapM (generateRay scr) $ screenMap scr
+  image <- V.mapM tracer rays
   let cells = V.map (radianceToRgb scr) image
   forM_ [0..(V.length cells - 1)] $ \i -> do
     rgb <- smooth tracer scr cells i

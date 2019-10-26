@@ -48,7 +48,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Vector as V
 import           GHC.Generics
 import           NumericPrelude
-import           System.IO
+--import           System.IO
 
 import           Test.QuickCheck
 
