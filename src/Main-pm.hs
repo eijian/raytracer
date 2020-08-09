@@ -16,7 +16,7 @@ import Screen
 import Scene
 
 usage :: String
-usage = "Usage: pm [screen info file] > [photon map file]"
+usage = "Usage: pm <screen file> <scene file>  (output photon map to stdout)"
 
 main :: IO ()
 main = do

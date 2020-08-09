@@ -5,7 +5,7 @@
 
 require 'logger'
 
-USAGE = 'iterator.rb <#iteration> <#photon> <initial radius(m)> <screen(.scr)> <scene(.scene)>'
+USAGE = 'iterator.rb <#iteration> <#photon> <final radius(m)> <screen(.scr)> <scene(.scene)>'
 #PM = "./dist/build/pm/pm"
 PM = "cabal run pm"
 #RT = "./dist/build/rt/rt"
@@ -80,13 +80,14 @@ def main
   init
 
   r = @radius0
-  @niterate.times do |i|
+  (@niterate - 1).downto(0) do |i|
     msg = "(#{i}) R=#{sprintf("%.4f", r)}"
     STDERR.puts "#{Time.now.strftime("%Y%m%d-%H%M%S")}: #{msg}"
     @logger.info(msg)
     tscrf = mk_tmpscreen(r)
     mk_image(i, tscrf)
-    r = Math.sqrt(((i+1) + ALPHA) / ((i+1) + 1.0)) * r
+    #r = Math.sqrt(((i+1) + ALPHA) / ((i+1) + 1.0)) * r
+    r = Math.sqrt((i + ALPHA) / (i + 1.0)) * r
   end
 
   postscript
