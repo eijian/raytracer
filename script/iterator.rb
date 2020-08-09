@@ -6,8 +6,10 @@
 require 'logger'
 
 USAGE = 'iterator.rb <#iteration> <#photon> <initial radius(m)> <screen(.scr)> <scene(.scene)>'
-PM = "./dist/build/pm/pm"
-RT = "./dist/build/rt/rt"
+#PM = "./dist/build/pm/pm"
+PM = "cabal run pm"
+#RT = "./dist/build/rt/rt"
+RT = "cabal run rt"
 TMPDIR = "/tmp/"
 IMGF   = "tmpimage-"
 ALPHA  = 0.5
