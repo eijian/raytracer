@@ -12,7 +12,9 @@ end
 
 puts "reverse---"
 
-(iteration).downto(0) do |i|
+r = Math.sqrt((1000 + 1.0) / (1000 + alpha)) * r
+
+(iteration - 1).downto(0) do |i|
   puts "#{i} #{r}"
   r = Math.sqrt(((i - 1) + 1.0) / ((i - 1) + alpha)) * r
 end

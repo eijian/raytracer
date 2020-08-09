@@ -87,7 +87,7 @@ def main
     tscrf = mk_tmpscreen(r)
     mk_image(i, tscrf)
     #r = Math.sqrt(((i+1) + ALPHA) / ((i+1) + 1.0)) * r
-    r = Math.sqrt((i + ALPHA) / (i + 1.0)) * r
+    r = Math.sqrt(((i - 1) + ALPHA) / ((i - 1) + 1.0)) * r
   end
 
   postscript
