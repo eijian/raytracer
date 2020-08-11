@@ -8,7 +8,9 @@ module Main where
 
 --import Data.List
 import           Control.Monad
-import qualified Data.Vector as V
+import qualified Data.Text    as T
+import qualified Data.Text.IO as TIO
+import qualified Data.Vector  as V
 import           System.Environment
 import           System.IO
 
@@ -43,7 +45,13 @@ main = do
 
   -- output image data with/without anti-aliasing
   mapM_ putStrLn $ pnmHeader scr
-  forM_ [0..(V.length image - 1)] $ \i -> do
-    rad <- smooth2 tracer scr image i
-    putStrLn $ radianceToString rad
-  
+  if (progressive scr) == True
+    then
+      forM_ [0..(V.length image - 1)] $ \i -> do
+        --TIO.putStrLn $ radianceToText (image V.! i)
+        putStrLn $ radianceToString (image V.! i)
+    else do
+      let pixels = V.map (radianceToRgb scr) image
+      forM_ [0..(V.length pixels - 1)] $ \i -> do
+        rgb <- smooth tracer scr pixels i
+        TIO.putStrLn $ rgbToText rgb

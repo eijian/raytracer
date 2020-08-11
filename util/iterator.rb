@@ -5,14 +5,14 @@
 
 require 'logger'
 
-USAGE = 'iterator.rb <#iteration> <#photon> <final radius(m)> <screen(.scr)> <scene(.scene)>'
-#PM = "./dist/build/pm/pm"
-PM = "cabal run pm"
-#RT = "./dist/build/rt/rt"
-RT = "cabal run rt"
+USAGE = 'iterator.rb <#photon> <#iteration> <radius(m)> <screen(.scr)> <scene(.scene)>'
+PM = "cabal exec pm"
+RT = "cabal exec rt"
+
 TMPDIR = "/tmp/"
 IMGF   = "tmpimage-"
 ALPHA  = 0.5
+NPARA  = 2            # 並列度
 
 def init
   if ARGV.size != 5
@@ -20,15 +20,22 @@ def init
     exit 1
   end
 
-  @niterate = ARGV[0].to_i
-  @nphoton  = ARGV[1].to_i
+  @nphoton  = ARGV[0].to_i
+  @niterate = ARGV[1].to_i
   @radius0  = ARGV[2].to_f
   @screen   = ARGV[3]
   @scene    = ARGV[4]
+  @nimage   = @niterate / NPARA   # 1スレッドで生成する画像数
+  @radius   = Array.new
+  r = @radius0
+  @niterate.times do |i|
+    @radius[i] = r
+    r = Math.sqrt(((i+1) + ALPHA) / ((i+1) + 1.0)) * r
+  end
 
   @tmpdir = TMPDIR + "#{Time.now.strftime("%Y%m%d%H%M%S")}/"
   Dir.mkdir(@tmpdir)
-  STDERR.puts "TMPDIR=#{@tmpdir}"
+  puts "TMPDIR=#{@tmpdir}"
   @tstart = Time.now
 
   @logger = Logger.new(@tmpdir + 'iterator.log')
@@ -38,7 +45,7 @@ def init
   end
   @logger.info('Iteration start')
   @logger.info("DIR:#{@tmpdir}")
-  @logger.info("PARAM: #iteration=#{@niterate}/#photon=#{@nphoton}/radius=#{@radius0}")
+  @logger.info("PARAM: #photon=#{@nphoton}/#iteration=#{@niterate}/radius=#{@radius0}")
   @logger.info("SCENE: #{@scene} (#{@screen})")
 end
 
@@ -50,17 +57,20 @@ def postscript
   @logger.close
 end
 
-def mk_tmpscreen(r)
-  tscrf = @tmpdir + "tmp.screen"
+def mk_tmpscreen(r, n)
+  tscrf = @tmpdir + "tmp-#{n}.screen"
   File.open(tscrf, 'w') do |ofp|
     body = ""
     File.open(@screen) do |ifp|
       body = ifp.readlines
     end
     body.each do |l|
-      if l =~ /^nphoton/
+      case l
+      when /^nphoton/
         ofp.puts "nphoton       : #{@nphoton}"
-      elsif l =~ /^estimateradius/
+      when /^progressive/
+        ofp.puts "progressive   : yes"
+      when /^estimateradius/
         ofp.puts "estimateradius: #{r}"
       else
         ofp.puts l
@@ -76,20 +86,27 @@ def mk_image(i, tscrf)
   system cmd
 end
 
+def iterate(n)
+  @nimage.times do |i|
+    r = i * NPARA + n
+    msg = "(#{r}) R=#{sprintf("%.4f", @radius[r])}"
+    STDERR.puts "#{Time.now.strftime("%Y%m%d-%H%M%S")}: #{msg}"
+    @logger.info(msg)
+    tscrf = mk_tmpscreen(@radius[r], n)
+    mk_image(r, tscrf)
+  end
+end
+
 def main
   init
 
-  r = @radius0
-  (@niterate - 1).downto(0) do |i|
-    msg = "(#{i}) R=#{sprintf("%.4f", r)}"
-    STDERR.puts "#{Time.now.strftime("%Y%m%d-%H%M%S")}: #{msg}"
-    @logger.info(msg)
-    tscrf = mk_tmpscreen(r)
-    mk_image(i, tscrf)
-    #r = Math.sqrt(((i+1) + ALPHA) / ((i+1) + 1.0)) * r
-    r = Math.sqrt(((i - 1) + ALPHA) / ((i - 1) + 1.0)) * r
+  threads = []
+  NPARA.times do |p|
+    threads.push(Thread.new {iterate(p)})
   end
-
+  threads.each do |t|
+    t.join
+  end
   postscript
 end
 

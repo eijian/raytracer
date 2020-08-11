@@ -1,6 +1,7 @@
 #
 
 nphoton       : 100000
+progressive   : no
 xresolution   : 256
 yresolution   : 256
 antialias     : yes                # yes or no

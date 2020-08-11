@@ -225,7 +225,7 @@ sumRadiance3 :: Position3 -> Direction3 -> Double -> Double -> [Double]
              -> [PhotonInfo] -> Radiance
 sumRadiance3 _ n pw rmax rs ps = rds `deepseq` rad
   where
-    wt = map (waitGauss pw rmax) rs
+    wt = map (waitGauss pw (rmax * 2)) rs
     rds = zipWith (photonInfoToRadiance n) wt ps
     rad = foldl (+) radiance0 rds
     waitGauss :: Double -> Double -> Double -> Double
@@ -233,7 +233,7 @@ sumRadiance3 _ n pw rmax rs ps = rds `deepseq` rad
       | wp < 0.0 = 0.0
       | otherwise = wp
       where
-        e_r = 1.0 - exp (-beta * dp * dp / (2.0 * r * r))
+        e_r = 1.0 - exp (-beta * dp * dp / (r * r))
         wp  = p * alpha * (1.0 - e_r / e_beta)
 
 ------

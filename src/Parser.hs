@@ -6,6 +6,7 @@
 
 module Parser (
   rNPhoton
+, rProgressive
 , rXresolution
 , rYresolution
 , rAntialias
@@ -137,6 +138,9 @@ rPosition = "position"
 
 rPower :: String
 rPower = "power"
+
+rProgressive :: String
+rProgressive = "progressive"
 
 rRadius :: String
 rRadius = "radius"
@@ -732,20 +736,21 @@ expecting "nphoton", "xresolution", "yresolution", "antialias", "samplephoton", 
 
 sline :: Parser Param
 sline = do
-  p <- (try nphoton)    <|>
-       (try xreso)      <|>
-       (try yreso)      <|>
-       (try antialias)  <|>
-       (try samphoton)  <|>
-       (try useclassic) <|>
-       (try estradius)  <|>
-       (try ambient)    <|>
-       (try maxrad)     <|>
-       (try eyepos)     <|>
-       (try targetp)    <|>
-       (try upperd)     <|>
-       (try focus)      <|>
-       (try pfilt)      <|>
+  p <- (try nphoton)     <|>
+       (try progressive) <|>
+       (try xreso)       <|>
+       (try yreso)       <|>
+       (try antialias)   <|>
+       (try samphoton)   <|>
+       (try useclassic)  <|>
+       (try estradius)   <|>
+       (try ambient)     <|>
+       (try maxrad)      <|>
+       (try eyepos)      <|>
+       (try targetp)     <|>
+       (try upperd)      <|>
+       (try focus)       <|>
+       (try pfilt)       <|>
        (try blanc)
   return p
 
@@ -764,6 +769,14 @@ nphoton = do
   i <- integer
   _ <- blanc
   return (rNPhoton, show i)
+
+progressive :: Parser Param
+progressive = do
+  _ <- string rProgressive
+  _ <- separator
+  b <- yesno
+  _ <- blanc
+  return (rProgressive, show b)
 
 {- |
 >>> parse xreso pname "xresolution : 256"

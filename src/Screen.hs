@@ -9,13 +9,16 @@ module Screen (
 , Screen(..)
 , readScreen
 , rgbToString
+, rgbToText
 , radianceToString
+, radianceToText
 , rgbToRadiance
 ) where
 
 --import          Control.Monad
 import           Data.Maybe
 import qualified Data.Map.Strict as M
+import qualified Data.Text       as T
 import qualified Data.Vector     as V
 import           NumericPrelude
 import qualified System.Random.Mersenne as MT
@@ -34,6 +37,7 @@ type Rgb = (Int, Int, Int)
 
 data Screen = Screen
   { nphoton             :: Int
+  , progressive         :: Bool
   , xreso               :: Int
   , yreso               :: Int
   , antialias           :: Bool
@@ -65,6 +69,7 @@ rgbmax = 255.0
 defconf :: M.Map String String
 defconf = M.fromList [
     (rNPhoton       , "100000")
+  , (rProgressive   , "False")
   , (rXresolution   , "256")
   , (rYresolution   , "256")
   , (rAntialias     , "True")
@@ -91,20 +96,21 @@ readScreen file = do
     -- input params
     conf = parseConfig defconf lines
     --conf = defconf
-    nphoton    = read (conf M.! rNPhoton       ) :: Int
-    xres       = read (conf M.! rXresolution   ) :: Int
-    yres       = read (conf M.! rYresolution   ) :: Int
-    antialias  = read (conf M.! rAntialias     ) :: Bool
-    samphoton  = read (conf M.! rSamplePhoton  ) :: Int
-    useclassic = read (conf M.! rUseClassic    ) :: Bool
-    radius     = read (conf M.! rEstimateRadius) :: Double
-    amb        = read (conf M.! rAmbient       ) :: Radiance
-    maxrad     = read (conf M.! rMaxRadiance   ) :: Double
-    eyepos     = read (conf M.! rEyePosition   ) :: Vector3
-    targetpos  = read (conf M.! rTargetPosition) :: Vector3
-    upper      = read (conf M.! rUpperDirection) :: Vector3
-    focus      = read (conf M.! rFocus         ) :: Double
-    pfilt      = read (conf M.! rPhotonFilter  ) :: PhotonFilter
+    nphoton     = read (conf M.! rNPhoton       ) :: Int
+    progressive = read (conf M.! rProgressive   ) :: Bool
+    xres        = read (conf M.! rXresolution   ) :: Int
+    yres        = read (conf M.! rYresolution   ) :: Int
+    antialias   = read (conf M.! rAntialias     ) :: Bool
+    samphoton   = read (conf M.! rSamplePhoton  ) :: Int
+    useclassic  = read (conf M.! rUseClassic    ) :: Bool
+    radius      = read (conf M.! rEstimateRadius) :: Double
+    amb         = read (conf M.! rAmbient       ) :: Radiance
+    maxrad      = read (conf M.! rMaxRadiance   ) :: Double
+    eyepos      = read (conf M.! rEyePosition   ) :: Vector3
+    targetpos   = read (conf M.! rTargetPosition) :: Vector3
+    upper       = read (conf M.! rUpperDirection) :: Vector3
+    focus       = read (conf M.! rFocus         ) :: Double
+    pfilt       = read (conf M.! rPhotonFilter  ) :: PhotonFilter
 
     focallen = 50.0 / 1000 :: Double  -- 焦点距離 50mm
     fnumber  = 5.0 :: Double          -- F/5.0
@@ -114,9 +120,10 @@ readScreen file = do
     smap = V.fromList [(fromIntegral y, fromIntegral x) |
       y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
     eyedir = fromJust $ normalize (targetpos - eyepos)
-    fgenray = makeGenerateRay antialias eyepos targetpos xres yres upper focus focallen fnumber
+    fgenray = makeGenerateRay antialias progressive eyepos targetpos xres yres upper focus focallen fnumber
     scr = Screen
       nphoton
+      progressive
       xres
       yres
       antialias    -- anti aliasing on/off
@@ -138,8 +145,14 @@ readScreen file = do
 rgbToString :: Rgb -> String
 rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b
 
+rgbToText :: Rgb -> T.Text
+rgbToText (r, g, b) = T.pack (show r ++ " " ++ show g ++ " " ++ show b)
+
 radianceToString :: Radiance -> String
 radianceToString (Radiance r g b) = show r ++ " " ++ show g ++ " " ++ show b
+
+radianceToText :: Radiance -> T.Text
+radianceToText (Radiance r g b) = T.pack (show r ++ " " ++ show g ++ " " ++ show b)
 
 rgbToRadiance :: Screen -> Rgb -> Radiance
 rgbToRadiance scr (r, g, b) =
@@ -175,11 +188,11 @@ parseLines (l:ls) = p:(parseLines ls)
         Left  e  -> error $ (show e ++ "\nLINE: " ++ l)
         Right p' -> p'
 
-makeGenerateRay :: Bool -> Position3 -> Direction3 -> Int -> Int -> Direction3
+makeGenerateRay :: Bool -> Bool
+                -> Position3 -> Direction3 -> Int -> Int -> Direction3
                 -> Double -> Double -> Double
                 -> ((Double, Double) -> IO Ray)
-makeGenerateRay aaflag epos target xr yr udir fd fl = do
---makeGenerateRay aaflag epos target xr yr udir fd fl fnum = do
+makeGenerateRay aaflag prflag epos target xr yr udir fd fl = do
   let
     ez = fromJust $ normalize (target - epos)
     ex = fromJust $ normalize (udir <*> ez)
@@ -195,14 +208,15 @@ makeGenerateRay aaflag epos target xr yr udir fd fl = do
     lx = fromIntegral (xr `div` 2) :: Double
     ly = fromIntegral (yr `div` 2) :: Double
     orig = fd *> ez - (lx - 0.5) *> esx - (ly - 0.5) *> esy
-    blurflag = fnum < 1000
+    --blurflag = fnum < 1000
+    blurflag = False
   
-  return (generateRay0 aaflag blurflag epos orig esx esy eex eey)
+  return (generateRay0 aaflag prflag blurflag epos orig esx esy eex eey)
 
-generateRay0 :: Bool -> Bool -> Position3 -> Position3
+generateRay0 :: Bool -> Bool -> Bool -> Position3 -> Position3
              -> Direction3 -> Direction3 -> Direction3 -> Direction3
              -> (Double, Double) -> IO Ray
-generateRay0 aaflag blurflag e o esx esy eex eey (y, x) = do
+generateRay0 aaflag prflag blurflag e o esx esy eex eey (y, x) = do
   blur <- if blurflag == True
     then do
       r1 <- MT.randomIO :: IO Double
@@ -210,7 +224,7 @@ generateRay0 aaflag blurflag e o esx esy eex eey (y, x) = do
       return ((r1 - 0.5) *> eex + (r2 - 0.5) *> eey)
     else
       return o3
-  (r3, r4) <- if aaflag == True
+  (r3, r4) <- if prflag == True && aaflag == True
     then do
       r3' <- MT.randomIO :: IO Double
       r4' <- MT.randomIO :: IO Double

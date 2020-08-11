@@ -48,6 +48,7 @@ def add_pixel(pos, px, idx)
 end
 
 def add_ppm(fn, idx)
+  return if FileTest.zero?(fn)
   @nfile += 1
   STDERR.puts "(#{idx}): #{fn}"
   File.open(fn) do |fp|
