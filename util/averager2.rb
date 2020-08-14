@@ -64,7 +64,7 @@ end
 def add_image(fn, idx)
   return if FileTest.zero?(fn)
   @nfile += 1
-  STDERR.puts "(#{idx}): #{fn}"
+  STDERR.print "(#{idx}): #{fn}\r"
   File.open(fn) do |fp|
     @hd1 = fp.readline.chomp
     fp.readline.chomp =~ /radiance = (.+)$/
@@ -229,7 +229,7 @@ def main
   init
 
   basename = get_base
-  Dir.glob(basename + "*.ppmf").sort.each_with_index do |f, i|
+  Dir.glob(basename + "*.ppmf").sort.reverse.each_with_index do |f, i|
     add_image(f, i)
   end
 

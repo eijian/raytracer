@@ -1,6 +1,6 @@
 #
 
-nphoton       : 1000000
+nphoton       : 3000000
 progressive   : no
 xresolution   : 256
 yresolution   : 256
@@ -9,7 +9,7 @@ antialias     : yes                # yes or no
 samplephoton  : 500
 useclassic    : yes                # yes or no
 #useclassic    : no                # yes or no
-estimateradius: 0.02
+estimateradius: 0.2
 ambient       : [ 0.001, 0.001, 0.001 ]
 maxradiance   : 0.01
 eyeposition   : [ 0.0, 2.0, -4.5 ]

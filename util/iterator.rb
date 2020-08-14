@@ -10,9 +10,9 @@ PM = "cabal exec pm"
 RT = "cabal exec rt"
 
 TMPDIR = "/tmp/"
-IMGF   = "tmpimage-"
+IMGF   = "tmpimage-" + Time.now.strftime("%Y%m%d%H%M%S-")
 ALPHA  = 0.5
-NPARA  = 2            # 並列度
+NPARA  = 4            # 並列度
 
 def init
   if ARGV.size != 5
@@ -26,6 +26,7 @@ def init
   @screen   = ARGV[3]
   @scene    = ARGV[4]
   @nimage   = @niterate / NPARA   # 1スレッドで生成する画像数
+  @nimage  += 1 if @niterate % NPARA != 0
   @radius   = Array.new
   r = @radius0
   @niterate.times do |i|
@@ -58,6 +59,7 @@ def postscript
 end
 
 def mk_tmpscreen(r, n)
+  return if r == nil
   tscrf = @tmpdir + "tmp-#{n}.screen"
   File.open(tscrf, 'w') do |ofp|
     body = ""
@@ -89,6 +91,7 @@ end
 def iterate(n)
   @nimage.times do |i|
     r = i * NPARA + n
+    next if @radius[r] == nil
     msg = "(#{r}) R=#{sprintf("%.4f", @radius[r])}"
     STDERR.puts "#{Time.now.strftime("%Y%m%d-%H%M%S")}: #{msg}"
     @logger.info(msg)

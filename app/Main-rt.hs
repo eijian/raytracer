@@ -54,4 +54,5 @@ main = do
       let pixels = V.map (radianceToRgb scr) image
       forM_ [0..(V.length pixels - 1)] $ \i -> do
         rgb <- smooth tracer scr pixels i
-        TIO.putStrLn $ rgbToText rgb
+        --TIO.putStrLn $ rgbToText rgb
+        putStrLn $ rgbToString rgb
