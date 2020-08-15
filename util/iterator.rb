@@ -6,8 +6,10 @@
 require 'logger'
 
 USAGE = 'iterator.rb <#photon> <#iteration> <radius(m)> <screen(.scr)> <scene(.scene)>'
-PM = "cabal exec pm"
-RT = "cabal exec rt"
+
+CMD = "cabal new-exec "
+PM = "#{CMD}pm"
+RT = "#{CMD}rt"
 
 TMPDIR = "/tmp/"
 IMGF   = "tmpimage-" + Time.now.strftime("%Y%m%d%H%M%S-")
