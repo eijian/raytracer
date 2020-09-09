@@ -6,7 +6,7 @@
 
 module Ray.Geometry (
   Ray
-, Shape (Point, Plain, Sphere, Parallelogram)
+, Shape (Point, Plain, Sphere, Parallelogram, Csg)
 , initPolygon
 , initParallelogram
 , distance
@@ -53,6 +53,8 @@ getDir = snd
 -- Shape
 -----------------------
 
+data CsgOperator = CsgAnd | CsgOr | CsgSub
+
 data Shape =
   Point
   { position :: !Position3
@@ -81,6 +83,12 @@ data Shape =
   , dir1     :: !Direction3
   , dir2     :: !Direction3
   }
+  |
+  Csg
+  { operator :: !CsgOperator
+  , shape_r  :: !Shape
+  , shape_l  :: !Shape
+  }
   deriving (Eq, Show)
 
 initPolygon :: Position3 -> Position3 -> Position3 -> Shape
@@ -106,41 +114,59 @@ getNormal p (Sphere c _) = normalize (p - c)
 getNormal _ (Polygon _ n _ _) = Just n
 -- Parallelogram
 getNormal _ (Parallelogram _ n _ _) = Just n 
+-- Csg
+getNormal p (Csg o r l)
+| o == CsgAnd =
+| o == CsgOr  =
+| o == CsgSub =
+
 -- Point
 getNormal _ _ = Nothing
 
 
-distance :: Ray -> Shape -> [Double]
+date ShapeSign = ShapePositive | ShapeNegative
+
+type Distance = (Double, Shape, ShapeSign)
+
+distance :: Ray -> Shape -> [Distance]
 -- Plain
-distance (pos, dir) (Plain n d)
+distance (pos, dir) s@(Plain n d)
   | cos0 == 0 = []
-  | otherwise = [(d + n <.> pos) / (-cos0)]
+  | otherwise = [((d + n <.> pos) / (-cos0), s, ShapePositive)]
   where
     cos0 = n <.> dir
 -- Sphere
-distance (pos, dir) (Sphere c r)
+distance (pos, dir) s@(Sphere c r)
   | t1 <= 0.0 = []
-  | t2 == 0.0 = [t0]
-  | t1 >  0.0 = [t0 - t2, t0 + t2]
+  | t2 == 0.0 = [(t0, s, ShapePositive)]
+  | t1 >  0.0 = [(t0 - t2, s, ShapePositive), (t0 + t2, s, ShapePositive)]
   where
     o  = c - pos
     t0 = o <.> dir
     t1 = r * r - (square o - (t0 * t0))
     t2 = sqrt t1
 -- Polygon
-distance (pos, dir) (Polygon p _ d1 d2)
+distance (pos, dir) s@(Polygon p _ d1 d2)
   | res == Nothing = []
-  | otherwise      = [t]
+  | otherwise      = [(t, s, ShapePositive)]
   where
     res = methodMoller 1.0 p d1 d2 pos dir
     (_, _, t) = fromJust res
 -- Parallelogram
-distance (pos, dir) (Parallelogram p _ d1 d2)
+distance (pos, dir) s@(Parallelogram p _ d1 d2)
   | res == Nothing = []
-  | otherwise      = [t]
+  | otherwise      = [(t, s, ShapePositive)]
   where
     res = methodMoller 2.0 p d1 d2 pos dir
     (_, _, t) = fromJust res
+-- Csg
+distance (pos, dir) (Csg o r l)
+  | o == CsgAnd =
+  | o == CsgOr  =
+  | o == CsgSub =
+  where
+    
+
 -- Point
 distance _ _ = []
 

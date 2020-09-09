@@ -294,7 +294,7 @@ calcIntersection r os
     (t, (Object s m)) = head $ sortBy (comparing fst) iss
     nvec = getNormal p s
 
-calcDistance :: Ray -> Object -> [(Double, Object)]
+calcDistance :: Ray -> Object -> [Distance]
 calcDistance r o@(Object s _) = zip ts (replicate (length ts) o)
   where
     ts = distance r s
