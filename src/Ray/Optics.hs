@@ -48,7 +48,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Vector as V
 import           GHC.Generics
 import           NumericPrelude
---import           System.IO
+import           System.IO
 
 import           Test.QuickCheck
 
@@ -243,8 +243,8 @@ readMap nsample radius = do
   let
   --  msize = pmap `deepseq` KT.size pmap
     msize = KT.size pmap
---  hPutStrLn stderr ("after KT size " ++ show msize)
-  return (msize, PhotonMap pw (KT.kNearest pmap nsample) (KT.inRadius pmap (radius * 2)))
+  -- hPutStrLn stderr ("radius= " ++ show radius)
+  return (msize, PhotonMap pw (KT.kNearest pmap nsample) (KT.inRadius pmap $ sqrt radius))
 
 infoToPointList :: PhotonInfo -> [Double]
 infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
