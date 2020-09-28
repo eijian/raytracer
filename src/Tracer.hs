@@ -233,7 +233,7 @@ sumRadiance3 _ n pw rmax rs ps = rds `deepseq` rad
       | wp < 0.0 = 0.0
       | otherwise = wp
       where
-        e_r = 1.0 - exp (-beta * dp * dp / (r * r))
+        e_r = 1.0 - exp (-beta * dp * dp / (2.0 * r * r))
         wp  = p * alpha * (1.0 - e_r / e_beta)
 
 ------
