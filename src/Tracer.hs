@@ -23,6 +23,7 @@ import           Data.Ord
 --import qualified Data.KdTree.Static as KT
 --import qualified Data.KdTree.Dynamic as KT
 --import           Debug.Trace
+import qualified Data.Vector as V
 import           NumericPrelude
 
 import Ray.Algebra
@@ -62,7 +63,7 @@ sr_half = 1.0 / (2.0 * pi)  -- half of steradian
       r  = ray
 -}
 
-tracePhoton :: Bool -> Material -> [Object] -> Int -> Photon
+tracePhoton :: Bool -> Material -> V.Vector Object -> Int -> Photon
             -> IO [PhotonCache]
 tracePhoton _   _   _   10 _        = return []
 tracePhoton !uc !m0 !os !l !(wl, r)
@@ -82,7 +83,7 @@ tracePhoton !uc !m0 !os !l !(wl, r)
   where
     is = calcIntersection r os
 
-reflectDiff :: Bool -> Material -> [Object] -> Int -> Wavelength
+reflectDiff :: Bool -> Material -> V.Vector Object -> Int -> Wavelength
             -> Intersection -> IO [PhotonCache]
 reflectDiff uc m0 os l wl (p, n, m) = do
   i <- russianRoulette [selectWavelength wl $ reflectance m]
@@ -92,7 +93,7 @@ reflectDiff uc m0 os l wl (p, n, m) = do
       tracePhoton uc m0 os (l+1) $ (wl, initRay p dr)
     else return [] -- absorption
 
-reflectSpec :: Bool -> Material -> [Object] -> Int -> Photon -> Intersection
+reflectSpec :: Bool -> Material -> V.Vector Object -> Int -> Photon -> Intersection
             -> IO [PhotonCache]
 reflectSpec uc m0 os l (wl, (_, ed)) (p, n, m) = do
   let
@@ -107,7 +108,7 @@ reflectSpec uc m0 os l (wl, (_, ed)) (p, n, m) = do
         then return []   -- non transparency
         else reflectTrans uc m0 os l wl ed (p, n, m) cos0
 
-reflectTrans :: Bool -> Material -> [Object] -> Int -> Wavelength -> Direction3
+reflectTrans :: Bool -> Material -> V.Vector Object -> Int -> Wavelength -> Direction3
              -> Intersection -> Double -> IO [PhotonCache]
 reflectTrans uc m0 os l wl ed (p, n, m) c0 = do
   let
@@ -121,8 +122,8 @@ reflectTrans uc m0 os l wl ed (p, n, m) c0 = do
 -- RAY TRACING WITH PHOTON MAP
 -----
 
-traceRay :: Screen -> Material -> Int -> PhotonMap -> [Object] -> [Light]
-         -> Ray -> IO Radiance
+traceRay :: Screen -> Material -> Int -> PhotonMap
+         -> V.Vector Object -> V.Vector Light -> Ray -> IO Radiance
 traceRay _    _   10 _     _     _     _  = return radiance0
 traceRay !scr !m0 !l !pmap !objs !lgts !r
   | is == Nothing = return radiance0
@@ -146,7 +147,7 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
     is = calcIntersection r objs
     (p, n, m) = fromJust is
     di = if useClassicForDirect scr
-      then foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
+      then foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n) lgts
       else radiance0
     ii = estimateRadiance scr pmap (p, n, m)
     (rdir, cos0) = specularReflection n (getDir r)
@@ -189,6 +190,7 @@ estimateRadiance scr pmap (p, n, m)
 filter_none :: Double -> Double -> Double
 filter_none _ _ = 1.0
 
+{-
 sumRadiance1 :: Position3 -> Direction3 -> Double -> Double -> [Double]
              -> [PhotonInfo] -> Radiance
 sumRadiance1 p n pw rmax _ ps = rds `deepseq` rad
@@ -198,6 +200,7 @@ sumRadiance1 p n pw rmax _ ps = rds `deepseq` rad
     rad = foldl (+) radiance0 rds
     adopt :: PhotonInfo -> Bool
     adopt ph = square (p - photonPos ph) < rmax * rmax
+-}
 
 -- Cone filter
 k_cone :: Double
@@ -211,6 +214,7 @@ filter_cone rmax d = if d' > 1.0 then 0.0 else (1.0 - d') / fac_k
   where
     d' = sqrt (d / rmax) / k_cone
 
+{-
 sumRadiance2 :: Position3 -> Direction3 -> Double -> Double -> [Double]
              -> [PhotonInfo] -> Radiance
 sumRadiance2 _ n pw rmax rs ps = rds `deepseq` rad
@@ -225,6 +229,7 @@ waitCone pw radius dp
   | otherwise = pw * (1.0 - d)
   where
     d = dp / (k_cone * radius)
+-}
 
 -- Gauss filter
 
@@ -244,7 +249,7 @@ filter_gauss :: Double -> Double -> Double
 filter_gauss rmax d = if e_r > e_beta then 0.0 else alpha * (1.0 - e_r / e_beta) + corr
   where
     e_r = 1.0 - exp (-beta * d / (rmax * 2.0))
-
+{-
 sumRadiance3 :: Position3 -> Direction3 -> Double -> Double -> [Double]
              -> [PhotonInfo] -> Radiance
 sumRadiance3 _ n pw rmax rs ps = rds `deepseq` rad
@@ -259,12 +264,13 @@ sumRadiance3 _ n pw rmax rs ps = rds `deepseq` rad
       where
         e_r = 1.0 - exp (-beta * dp * dp / (2.0 * r))
         wp  = p * alpha * (1.0 - e_r / e_beta)
+-}
 
 ------
 -- CLASICAL RAY TRACING
 ------
 
-traceRay' :: Screen -> Int -> [Light] -> [Object] -> Ray -> IO Radiance
+traceRay' :: Screen -> Int -> V.Vector Light -> V.Vector Object -> Ray -> IO Radiance
 traceRay' !scr l lgts objs r
   | is == Nothing = return radiance0
   | otherwise     = return (
@@ -274,15 +280,15 @@ traceRay' !scr l lgts objs r
   where
     is = calcIntersection r objs
     (p, n, m) = fromJust is
-    radDiff = foldl (+) radiance0 $ map (getRadianceFromLight objs p n) lgts
+    radDiff = foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n) lgts
 
-getRadianceFromLight :: [Object] -> Position3 -> Direction3 -> Light
+getRadianceFromLight :: V.Vector Object -> Position3 -> Direction3 -> Light
                      -> Radiance
 getRadianceFromLight objs p n l = sum $ zipWith (*>) coss $ getRadiance l dists
   where
     (dists, coss) = unzip $ illuminated objs p n $ getDirection l p
 
-illuminated :: [Object] -> Position3 -> Direction3 -> [Direction3]
+illuminated :: V.Vector Object -> Position3 -> Direction3 -> [Direction3]
             -> [(Double, Double)]
 illuminated _ _ _ []          = []
 illuminated os p n (ld:lds)
@@ -307,14 +313,14 @@ illuminated os p n (ld:lds)
 
 type Intersection = (Position3, Direction3, Material)
 
-calcIntersection :: Ray -> [Object] -> Maybe Intersection
+calcIntersection :: Ray -> V.Vector Object -> Maybe Intersection
 calcIntersection r os
   | iss == [] = Nothing
   | nvec == Nothing = Nothing
   | otherwise = Just (p, fromJust nvec, m)
   where
     p = target t r
-    iss = filter (\x -> fst x > nearly0) (concat $ map (calcDistance r) os)
+    iss = filter (\x -> fst x > nearly0) (concat $ V.map (calcDistance r) os)
     (t, (Object s m)) = head $ sortBy (comparing fst) iss
     nvec = getNormal p s
 

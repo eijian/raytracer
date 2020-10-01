@@ -7,6 +7,7 @@
 module Main where
 
 import Control.Monad
+import qualified Data.Vector  as V
 import System.Environment
 
 import Ray.Light
@@ -29,19 +30,19 @@ main = do
   let
     --nPhoton = 100000
     --power = (sum $ map flux lgts) / (fromIntegral nPhoton)
-    power = (sum $ map flux lgts) / (fromIntegral $ nphoton scr)
-    ns    = map (calcN power) lgts
+    power = (V.sum $ V.map flux lgts) / (fromIntegral $ nphoton scr)
+    ns    = V.map (calcN power) lgts
   putStrLn $ show $ nphoton scr
   putStrLn $ show power
-  zipWithM_ (outputPhotonCaches (useClassicForDirect scr) objs) lgts ns
+  V.zipWithM_ (outputPhotonCaches (useClassicForDirect scr) objs) lgts ns
   
 calcN :: Double -> Light -> Int
 calcN power light = round (flux light / power)
 
-outputPhotonCaches :: Bool -> [Object] -> Light -> Int -> IO ()
+outputPhotonCaches :: Bool -> V.Vector Object -> Light -> Int -> IO ()
 outputPhotonCaches uc objs lgt n = mapM_ (outputPhotonCache uc lgt objs) [1..n]
 
-outputPhotonCache :: Bool -> Light -> [Object] -> Int -> IO ()
+outputPhotonCache :: Bool -> Light -> V.Vector Object -> Int -> IO ()
 outputPhotonCache uc lgt objs _ =
   generatePhoton lgt >>= tracePhoton uc m_air objs 0 >>= mapM_ (putStrLn.show)
 
