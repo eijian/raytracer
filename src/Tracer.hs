@@ -159,11 +159,11 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
 
 estimateRadiance :: Screen -> PhotonMap -> Intersection -> Radiance
 estimateRadiance scr pmap (p, n, m)
-  | ps == []  = radiance0
+  | V.null ps = radiance0
   | otherwise = (one_pi / rmax * (power pmap)) *> rad -- 半径は指定したものを使う
   where
     --ps = (nearest pmap) $ photonDummy p
-    ps = (inradius pmap) $ photonDummy p
+    ps = V.fromList $ (inradius pmap) $ photonDummy p
     -- rs = ps `deepseq` map (\x -> norm ((photonPos x) - p)) ps
     --rmax = maximum rs
     rmax = radius scr
@@ -176,9 +176,9 @@ estimateRadiance scr pmap (p, n, m)
       Nonfilter   -> filter_none rmax
       Conefilter  -> filter_cone rmax
       Gaussfilter -> filter_gauss rmax
-    wts = ps `deepseq` map (\x -> f_wait (square (photonPos x - p))) ps
-    rds = zipWith (photonInfoToRadiance n) wts ps
-    rad = foldl (+) radiance0 rds
+    wts = ps `deepseq` V.map (\x -> f_wait (square (photonPos x - p))) ps
+    rds = V.zipWith (photonInfoToRadiance n) wts ps
+    rad = V.foldl (+) radiance0 rds
 
 -- filtering:
 --   sumRadiance1  none filter

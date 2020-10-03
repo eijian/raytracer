@@ -8,6 +8,7 @@ module Main where
 
 --import Data.List
 import           Control.Monad
+import qualified Data.Time    as TM
 import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
 import qualified Data.Vector  as V
@@ -35,8 +36,11 @@ main = do
   (lgts, objs) <- readScene fn2
 
   -- read photon map
+  t0 <- TM.getCurrentTime
   (msize, photonmap) <- readMap (nSamplePhoton scr) (radius scr)
-  hPutStrLn stderr ("finished reading map:" ++ (show msize))
+  hPutStr   stderr ("finished reading map:" ++ (show msize) ++ " photons, ")
+  t1 <- TM.getCurrentTime
+  hPutStrLn stderr (show (TM.diffUTCTime t1 t0))
 
   -- tracing image
   let tracer = traceRay scr m_air 0 photonmap objs lgts
