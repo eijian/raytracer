@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 --
 -- Optics
@@ -40,16 +41,15 @@ import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
 import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
---import Debug.Trace
+import Debug.Trace
+import           Data.List.Split
 import qualified Data.KdTree.Static as KT
 --import qualified Data.KdTree.Dynamic as KT
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Vector as V
-import           GHC.Generics
+import           GHC.Generics 
 import           NumericPrelude
-import           System.IO
-
 import           Test.QuickCheck
 
 import           Ray.Algebra
@@ -230,9 +230,11 @@ readMap nsample radius = do
     --np = read np' :: Int
     pw = read (T.unpack pw0) :: Double
     ls = V.fromList $ T.lines ps
---  hPutStrLn stderr ("after lines " ++ show (V.length ls))
+  --hPutStrLn stderr ("after lines " ++ show (V.length ls))
+  --hPutStrLn stderr ("LN:" ++ (show $ T.unpack (ls V.! 0)))
   let
-    pcs = V.toList $ V.map convertToInfo (V.map (\x -> read (T.unpack x) :: PhotonCache) ls)
+    --pcs = V.toList $ V.map convertToInfo (V.map (\x -> read (T.unpack x) :: PhotonCache) ls)
+    pcs = V.toList $ V.map convertToInfo (V.map (readPhoton) ls)
   
   --pcs `deepseq` hPutStrLn stderr "convert"
 --  hPutStrLn stderr "convert"
@@ -245,6 +247,22 @@ readMap nsample radius = do
     msize = KT.size pmap
   -- hPutStrLn stderr ("radius= " ++ show radius)
   return (msize, PhotonMap pw (KT.kNearest pmap nsample) (KT.inRadius pmap $ sqrt radius))
+
+readPhoton :: T.Text -> PhotonCache
+readPhoton p = (wl, (Vector3 px py pz, Vector3 dx dy dz))
+  where
+    [wl0, px0, py0, pz0, dx0, dy0, dz0] = splitOn " " $ T.unpack $ T.strip p
+    wl = case wl0 of
+      "Red"   -> Red
+      "Green" -> Green
+      "Blue"  -> Blue
+      _       -> Red
+    px = read px0 :: Double
+    py = read py0 :: Double
+    pz = read pz0 :: Double
+    dx = read dx0 :: Double
+    dy = read dy0 :: Double
+    dz = read dz0 :: Double
 
 infoToPointList :: PhotonInfo -> [Double]
 infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]

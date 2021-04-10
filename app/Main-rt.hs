@@ -11,7 +11,7 @@ import           Control.Monad
 import qualified Data.Time    as TM
 import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
-import qualified Data.Vector  as V
+import qualified Data.Vector as V
 import           System.Environment
 import           System.IO
 

@@ -80,6 +80,7 @@ executable pm
     , parsec
     , parsec-numbers
     , random
+    , split
     , text
     , vector
   default-language: Haskell2010
@@ -115,6 +116,7 @@ executable pm2img
     , parsec
     , parsec-numbers
     , random
+    , split
     , text
     , vector
   default-language: Haskell2010
@@ -150,6 +152,7 @@ executable rt
     , parsec
     , parsec-numbers
     , random
+    , split
     , text
     , time
     , vector
@@ -186,6 +189,7 @@ executable rtc
     , parsec
     , parsec-numbers
     , random
+    , split
     , text
     , vector
   default-language: Haskell2010

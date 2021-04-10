@@ -19,7 +19,7 @@ module Screen (
 import           Data.Maybe
 import qualified Data.Map.Strict as M
 import qualified Data.Text       as T
-import qualified Data.Vector     as V
+import qualified Data.Vector as V
 import           NumericPrelude
 import qualified System.Random.Mersenne as MT
 

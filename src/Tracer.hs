@@ -64,10 +64,10 @@ sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 -}
 
 tracePhoton :: Bool -> Material -> V.Vector Object -> Int -> Photon
-            -> IO [PhotonCache]
-tracePhoton _   _   _   10 _        = return []
+            -> IO (V.Vector PhotonCache)
+tracePhoton _   _   _   10 _        = return V.empty
 tracePhoton !uc !m0 !os !l !(wl, r)
-  | is == Nothing = return []
+  | is == Nothing = return V.empty
   | otherwise     = do
     let
       is' = is `deepseq` fromJust is
@@ -78,23 +78,23 @@ tracePhoton !uc !m0 !os !l !(wl, r)
       then reflectDiff uc m0 os l wl is'
       else reflectSpec uc m0 os l (wl, r) is'
     if (uc == False || l > 0) && d > 0.0
-      then return $ ((wl, initRay p $ getDir r) : ref)
+      then return $ V.cons (wl, initRay p $ getDir r) ref
       else return ref
   where
     is = calcIntersection r os
 
 reflectDiff :: Bool -> Material -> V.Vector Object -> Int -> Wavelength
-            -> Intersection -> IO [PhotonCache]
+            -> Intersection -> IO (V.Vector PhotonCache)
 reflectDiff uc m0 os l wl (p, n, m) = do
   i <- russianRoulette [selectWavelength wl $ reflectance m]
   if i > 0
     then do  -- diffuse reflection
       dr <- diffuseReflection n
       tracePhoton uc m0 os (l+1) $ (wl, initRay p dr)
-    else return [] -- absorption
+    else return V.empty -- absorption
 
 reflectSpec :: Bool -> Material -> V.Vector Object -> Int -> Photon -> Intersection
-            -> IO [PhotonCache]
+            -> IO (V.Vector PhotonCache)
 reflectSpec uc m0 os l (wl, (_, ed)) (p, n, m) = do
   let
     f0 = selectWavelength wl $ specularRefl m
@@ -105,11 +105,11 @@ reflectSpec uc m0 os l (wl, (_, ed)) (p, n, m) = do
     then tracePhoton uc m0 os (l+1) (wl, initRay p rdir)
     else do
       if (selectWavelength wl $ ior m) == 0.0
-        then return []   -- non transparency
+        then return V.empty   -- non transparency
         else reflectTrans uc m0 os l wl ed (p, n, m) cos0
 
 reflectTrans :: Bool -> Material -> V.Vector Object -> Int -> Wavelength -> Direction3
-             -> Intersection -> Double -> IO [PhotonCache]
+             -> Intersection -> Double -> IO (V.Vector PhotonCache)
 reflectTrans uc m0 os l wl ed (p, n, m) c0 = do
   let
     ior0 = selectWavelength wl $ ior m0
