@@ -38,7 +38,7 @@ executables:
     - containers
     - numeric-prelude >= 0.4.2
     - random
-    - mersenne-random >= 1.0
+    - mersenne-random >= 1.0.0.1
     - QuickCheck
     - kdt
     - text
@@ -62,7 +62,7 @@ executables:
     - containers
     - numeric-prelude >= 0.4.2
     - random
-    - mersenne-random >= 1.0
+    - mersenne-random >= 1.0.0.1
     - QuickCheck
     - kdt
     - text
@@ -86,7 +86,7 @@ executables:
     - containers
     - numeric-prelude >= 0.4.2
     - random
-    - mersenne-random >= 1.0
+    - mersenne-random >= 1.0.0.1
     - QuickCheck
     - kdt
     - text
@@ -110,7 +110,7 @@ executables:
     - containers
     - numeric-prelude >= 0.4.2
     - random
-    - mersenne-random >= 1.0
+    - mersenne-random >= 1.0.0.1
     - QuickCheck
     - kdt
     - text

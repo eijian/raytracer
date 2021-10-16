@@ -40,8 +40,8 @@ library
       Ray.Physics
       Scene
       Screen
-      TestPhoton
-      TestPhoton2
+      --TestPhoton
+      --TestPhoton2
       Tracer
   hs-source-dirs:
       src
@@ -75,7 +75,7 @@ executable pm
     , deepseq >=1.3
     , deepseq-generics >=0.1.1.1
     , kdt
-    , mersenne-random >=1.0
+    , mersenne-random
     , numeric-prelude >=0.4.2
     , parsec
     , parsec-numbers
@@ -111,7 +111,7 @@ executable pm2img
     , deepseq >=1.3
     , deepseq-generics >=0.1.1.1
     , kdt
-    , mersenne-random >=1.0
+    , mersenne-random 
     , numeric-prelude >=0.4.2
     , parsec
     , parsec-numbers
@@ -147,7 +147,7 @@ executable rt
     , deepseq >=1.3
     , deepseq-generics >=0.1.1.1
     , kdt
-    , mersenne-random >=1.0
+    , mersenne-random
     , numeric-prelude >=0.4.2
     , parsec
     , parsec-numbers
@@ -184,7 +184,7 @@ executable rtc
     , deepseq >=1.3
     , deepseq-generics >=0.1.1.1
     , kdt
-    , mersenne-random >=1.0
+    , mersenne-random
     , numeric-prelude >=0.4.2
     , parsec
     , parsec-numbers
