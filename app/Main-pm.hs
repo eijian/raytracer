@@ -14,6 +14,7 @@ import System.Environment
 
 import Ray.Algebra
 import Ray.Light
+import Ray.Photon
 import Ray.Object
 import Ray.Optics
 import Tracer

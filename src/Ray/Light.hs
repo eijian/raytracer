@@ -19,6 +19,7 @@ import NumericPrelude
 
 import Ray.Algebra
 import Ray.Geometry
+import Ray.Photon
 import Ray.Physics
 import Ray.Optics
 
