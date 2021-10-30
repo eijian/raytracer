@@ -53,11 +53,13 @@ import Data.Foldable
 import Data.Traversable
 #endif
 
-import Prelude hiding (null)
+import           Prelude hiding (null)
 import qualified Data.List as L
-import Data.Maybe
-import Data.Ord
+import           Data.Maybe
+import           Data.Ord
 import qualified Data.Heap as Q
+--import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector as V
 
 import Ray.Photon
 
@@ -93,10 +95,10 @@ import Ray.Photon
 -- with axis values of type @a@. Additionally, each point is
 -- associated with a value of type @v@. Note: users typically will not
 -- need to use this type, but we export it just in case.
-data TreeNode = TreeNode { _treeLeft :: TreeNode
-                         , _treePoint :: (PhotonInfo, ())
-                         , _axisValue :: Double
-                         , _treeRight :: TreeNode
+data TreeNode = TreeNode { _treeLeft  :: !TreeNode
+                         , _treePoint :: !(PhotonInfo, ())
+                         , _axisValue :: !Double
+                         , _treeRight :: !TreeNode
                          } |
                     Empty
   deriving (Generic, Show, Read)
@@ -118,10 +120,10 @@ type SquaredDistanceFn = PhotonInfo -> PhotonInfo -> Double
 -- | A /k/-d tree structure that stores points of type @p@ with axis
 -- values of type @a@. Additionally, each point is associated with a
 -- value of type @v@.
-data KdMap = KdMap { _pointAsList :: PointAsListFn
-                   , _distSqr     :: SquaredDistanceFn
-                   , _rootNode    :: TreeNode
-                   , _size        :: Int
+data KdMap = KdMap { _pointAsList :: !PointAsListFn
+                   , _distSqr     :: !SquaredDistanceFn
+                   , _rootNode    :: !TreeNode
+                   , _size        :: !Int
                    } deriving Generic
 
 instance NFData KdMap where rnf = genericRnf
@@ -361,10 +363,10 @@ nearest (KdMap pointAsList distSqr t@(TreeNode _ root _ _) _) query =
 inRadius :: KdMap
          -> Double -- ^ radius
          -> PhotonInfo -- ^ query point
-         -> [(PhotonInfo, ())] -- ^ list of point-value pairs with
+         -> V.Vector (PhotonInfo, ()) -- ^ list of point-value pairs with
                      -- points within given radius of query
 inRadius (KdMap pointAsList distSqr t _) radius query =
-  go (cycle $ pointAsList query) t []
+  go (cycle $ pointAsList query) t V.empty
   where
     go [] _ _ = error "inRadius.go: no empty lists allowed!"
     go _ Empty acc = acc
@@ -379,7 +381,7 @@ inRadius (KdMap pointAsList distSqr t _) radius query =
                                  else go qvs left accAfterOnside
                             else accAfterOnside
           accAfterCurrent = if distSqr k query <= radius * radius
-                            then (k, v) : accAfterOffside
+                            then V.cons (k, v) accAfterOffside
                             else accAfterOffside
       in  accAfterCurrent
 

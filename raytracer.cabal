@@ -104,7 +104,8 @@ executable pm2img
   hs-source-dirs:
       app
     , src
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -O2
+  --ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -O2
+  ghc-options: -threaded -Wall -O2
   build-depends:
       QuickCheck
     , base >=4.8 && <5
@@ -140,7 +141,10 @@ executable rt
   hs-source-dirs:
       app
     , src
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -O2
+  --ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -O2
+  ghc-options: -threaded -Wall -O2
+  --ghc-options: -threaded -rtsopts -O -fprof-auto
+  --ghc-options: -O -rtsopts -prof -fprof-auto
   build-depends:
       QuickCheck
     , base >=4.8 && <5

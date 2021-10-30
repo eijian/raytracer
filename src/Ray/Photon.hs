@@ -4,6 +4,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 --
 -- Photon
@@ -31,6 +33,9 @@ import           Control.DeepSeq.Generics (genericRnf)
 --import qualified Data.Text as T
 --import qualified Data.Text.IO as T
 --import qualified Data.Vector as V
+import qualified Data.Vector.Generic.Base as VB
+import           Data.Vector.Generic.Mutable hiding (basicLength)
+import qualified Data.Vector.Unboxed as U
 import           GHC.Generics 
 import           NumericPrelude
 --import           Test.QuickCheck
@@ -49,6 +54,10 @@ type PhotonCache = Photon
 
 data PhotonInfo = PhotonInfo !Wavelength !Position3 !Direction3
   deriving (Show, Read, Eq, Generic)
+  --deriving (Show, Read, Eq, Generic, VB.Vector U.Vector, MVector U.MVector, U.Unbox)
+
+--instance VB.Vector U.Vector PhotonInfo where
+--  basicLength (U.Vector (PhotonInfo w p d)) = VB.basicLength w + VB.basicLength p + VB.basicLength d
 
 instance NFData PhotonInfo where
   rnf = genericRnf

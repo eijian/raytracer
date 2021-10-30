@@ -22,8 +22,9 @@ import           Data.List hiding (sum)
 import           Data.Ord
 --import qualified Data.KdTree.Static as KT
 --import qualified Data.KdTree.Dynamic as KT
---import           Debug.Trace
+import           Debug.Trace
 import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as VU
 import           NumericPrelude
 
 import Ray.Algebra
@@ -158,13 +159,17 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
     f' = negateColor f                         -- this means '1 - f'
     ior1 = averageIor m
 
+--ps0 :: V.Vector PhotonInfo
+--ps0 = V.fromList [PhotonInfo Red o3 ex3, PhotonInfo Green ex3 ey3]
+
 estimateRadiance :: Screen -> PhotonMap -> Intersection -> Radiance
 estimateRadiance scr pmap (p, n, m)
   | V.null ps = radiance0
   | otherwise = (one_pi / rmax * (power pmap)) *> rad -- 半径は指定したものを使う
   where
     --ps = (nearest pmap) $ photonDummy p
-    ps = V.fromList $ (inradius pmap) $ photonDummy p
+    --ps = V.fromList $ (inradius pmap) $ photonDummy p
+    ps = inradius pmap $ photonDummy p
     -- rs = ps `deepseq` map (\x -> norm ((photonPos x) - p)) ps
     --rmax = maximum rs
     rmax = radius scr
@@ -177,6 +182,8 @@ estimateRadiance scr pmap (p, n, m)
       Nonfilter   -> filter_none rmax
       Conefilter  -> filter_cone rmax
       Gaussfilter -> filter_gauss rmax
+    --wts = trace ("est " ++ (show $ length ps) ++ " ptns") ps `deepseq` V.map (\x -> f_wait (square (photonPos x - p))) ps
+    --wts = ps `deepseq` V.map (\x -> f_wait (square (photonPos x - p))) ps
     wts = ps `deepseq` V.map (\x -> f_wait (square (photonPos x - p))) ps
     rds = V.zipWith (photonInfoToRadiance n) wts ps
     rad = V.foldl (+) radiance0 rds

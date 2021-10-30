@@ -61,7 +61,9 @@ import Control.DeepSeq.Generics (genericRnf)
 import GHC.Generics
 
 import qualified Data.Foldable as F
-import Prelude hiding (null)
+import           Prelude hiding (null)
+--import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector as V
 
 import qualified Ray.KdMap as KDM
 import           Ray.KdMap (PointAsListFn, SquaredDistanceFn, defaultSqrDist)
@@ -301,9 +303,9 @@ nearest (KdTree t) query
 inRadius :: KdTree
          -> Double -- ^ radius
          -> PhotonInfo -- ^ query point
-         -> [PhotonInfo] -- ^ list of points in tree with given
+         -> V.Vector PhotonInfo -- ^ list of points in tree with given
                           -- radius of query point
-inRadius (KdTree t) radius query = map fst $ KDM.inRadius t radius query
+inRadius (KdTree t) radius query = V.map fst $ KDM.inRadius t radius query
 
 -- | Given a 'KdTree', a query point, and a number @k@, returns the
 -- @k@ nearest points in the 'KdTree' to the query point.

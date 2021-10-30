@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 --
 -- Optics
@@ -38,6 +39,9 @@ import           Data.List.Split
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Vector as V
+import           Data.Vector.Generic.Base
+import           Data.Vector.Generic.Mutable  hiding (read)
+import qualified Data.Vector.Unboxed as VU
 import           GHC.Generics 
 import           NumericPrelude
 import           Test.QuickCheck
@@ -65,6 +69,7 @@ instance NFData PhotonFilter where
 
 data Radiance = Radiance !Double !Double !Double
                 deriving (Read, Show, Generic)
+                --deriving (Read, Show, Generic, Vector VU.Vector, MVector VU.MVector, VU.Unbox)
 
 instance NFData Radiance where
   rnf = genericRnf
@@ -145,7 +150,7 @@ radiance1 = Radiance 1 1 1
 data PhotonMap = PhotonMap
   { power    :: Double
   , nearest  :: PhotonInfo -> [PhotonInfo]
-  , inradius :: PhotonInfo -> [PhotonInfo]
+  , inradius :: PhotonInfo -> V.Vector PhotonInfo
   }
 
 photonInfoToRadiance :: Direction3 -> Double -> PhotonInfo -> Radiance
