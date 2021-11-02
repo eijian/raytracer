@@ -15,10 +15,11 @@ import qualified Data.Vector as V
 import           System.Environment
 import           System.IO
 
+import Antialias
+import PhotonMap
 import Scene
 import Screen
 import Tracer
-import Antialias
 
 usage :: String
 usage = "Usage: rt [screen info file] < [photon map file]"

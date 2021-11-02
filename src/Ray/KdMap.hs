@@ -61,7 +61,7 @@ import qualified Data.Heap as Q
 --import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector as V
 
-import Ray.Photon
+import Ray.Optics
 
 -- $usage
 --
@@ -366,6 +366,32 @@ inRadius :: KdMap
          -> V.Vector (PhotonInfo, ()) -- ^ list of point-value pairs with
                      -- points within given radius of query
 inRadius (KdMap pointAsList distSqr t _) radius query =
+  go (cycle $ pointAsList query) t V.empty
+  where
+    go [] _ _ = error "inRadius.go: no empty lists allowed!"
+    go _ Empty acc = acc
+    go (queryAxisValue : qvs) (TreeNode left (k, v) nodeAxisVal right) acc =
+      let onTheLeft = queryAxisValue <= nodeAxisVal
+          accAfterOnside = if   onTheLeft
+                           then go qvs left acc
+                           else go qvs right acc
+          accAfterOffside = if   abs (queryAxisValue - nodeAxisVal) < radius
+                            then if   onTheLeft
+                                 then go qvs right accAfterOnside
+                                 else go qvs left accAfterOnside
+                            else accAfterOnside
+          accAfterCurrent = if distSqr k query <= radius * radius
+                            then V.cons (k, v) accAfterOffside
+                            else accAfterOffside
+      in  accAfterCurrent
+
+radianceInRadius ::
+     KdMap
+  -> Double -- ^ radius
+  -> PhotonInfo -- ^ query point
+  -> V.Vector (PhotonInfo, ()) -- ^ list of point-value pairs with
+                     -- points within given radius of query
+radianceInRadius (KdMap pointAsList distSqr t _) radius query =
   go (cycle $ pointAsList query) t V.empty
   where
     go [] _ _ = error "inRadius.go: no empty lists allowed!"

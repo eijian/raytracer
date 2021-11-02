@@ -67,7 +67,7 @@ import qualified Data.Vector as V
 
 import qualified Ray.KdMap as KDM
 import           Ray.KdMap (PointAsListFn, SquaredDistanceFn, defaultSqrDist)
-import           Ray.Photon
+import           Ray.Optics
 
 -- $intro
 --

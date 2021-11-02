@@ -32,10 +32,10 @@ import Ray.Geometry
 import Ray.Object
 import Ray.Light
 import Ray.Material
-import Ray.Photon
 import Ray.Physics
 import Ray.Optics
 
+import PhotonMap
 import Screen
 import Scene
 

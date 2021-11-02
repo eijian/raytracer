@@ -11,22 +11,25 @@
 --
 
 module Ray.Optics (
-  PhotonFilter (..)
-, PhotonMap
+  Photon
+, PhotonCache
+, PhotonInfo (..)
+, PhotonFilter (..)
 , Radiance (Radiance)
 , (<**>)
 , rabs'
 , elemR
 , elemG
 , elemB
-, nearest
-, inradius
-, norm
+, convertToInfo
+, squaredDistance
+, initPhoton
+, photonDir
+, photonDummy
+, photonPos
 , photonInfoToRadiance
-, power
 , radiance0
 , radiance1
-, readMap
 ) where
 
 import qualified Algebra.Additive as Additive
@@ -35,7 +38,6 @@ import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
 import           Debug.Trace
 import           Data.List.Split
---import qualified Data.KdTree.Static as KT
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Vector as V
@@ -47,9 +49,7 @@ import           NumericPrelude
 import           Test.QuickCheck
 
 import           Ray.Algebra
---import           Ray.Geometry
-import           Ray.KdTree as KT (buildWithDist, inRadius, kNearest, size)
-import           Ray.Photon
+import           Ray.Geometry
 import           Ray.Physics
 
 --
@@ -147,11 +147,42 @@ radiance1 = Radiance 1 1 1
 -- Radiance 1.5 1.3 2.8
 
 
-data PhotonMap = PhotonMap
-  { power    :: Double
-  , nearest  :: PhotonInfo -> [PhotonInfo]
-  , inradius :: PhotonInfo -> V.Vector PhotonInfo
-  }
+--
+-- Photon
+
+type Photon = (Wavelength, Ray)
+
+initPhoton :: Wavelength -> Ray -> Photon
+initPhoton l r = (l, r)
+
+type PhotonCache = Photon
+
+data PhotonInfo = PhotonInfo !Wavelength !Position3 !Direction3
+  deriving (Show, Read, Eq, Generic)
+  --deriving (Show, Read, Eq, Generic, VB.Vector U.Vector, MVector U.MVector, U.Unbox)
+
+--instance VB.Vector U.Vector PhotonInfo where
+--  basicLength (U.Vector (PhotonInfo w p d)) = VB.basicLength w + VB.basicLength p + VB.basicLength d
+
+instance NFData PhotonInfo where
+  rnf = genericRnf
+
+photonDummy :: Position3 -> PhotonInfo
+photonDummy p = PhotonInfo Red p ex3
+
+photonDir :: PhotonInfo -> Direction3
+photonDir (PhotonInfo _ _ d) = d
+
+photonPos :: PhotonInfo -> Position3
+photonPos (PhotonInfo _ p _) = p
+
+convertToInfo :: PhotonCache -> PhotonInfo
+convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
+
+squaredDistance :: PhotonInfo -> PhotonInfo -> Double
+squaredDistance (PhotonInfo _ v1 _) (PhotonInfo _ v2 _) = d <.> d
+  where
+    d = v1 - v2
 
 photonInfoToRadiance :: Direction3 -> Double -> PhotonInfo -> Radiance
 photonInfoToRadiance n pw (PhotonInfo wl _ d)
@@ -163,65 +194,3 @@ photonInfoToRadiance n pw (PhotonInfo wl _ d)
     pw'  = if cos0 > 0.0 then pw * cos0 else 0.0
 photonInfoToRadiance _ _ (PhotonInfo _ _ _) = radiance0
 
-readMap :: Int -> Double -> IO (Int, PhotonMap)
-readMap nsample radius = do
---  hPutStrLn stderr "start reading"
-{-
-  _   <- getLine           -- discard infomation about the number of photon 
-  pw0 <- getLine
-  ps  <- getContents
-  hPutStrLn stderr "after getContents"
-  let
-    pw = read pw0 :: Double
-    ls = lines ps
-  hPutStrLn stderr ("after lines" ++ show (length ls))
-  let
-    pcs = map convertToInfo (map (\x -> read x :: PhotonCache) ls)
--}
-  _   <- T.getLine           -- discard infomation about the number of photon 
-  pw0 <- T.getLine
-  ps  <- T.getContents
---  hPutStrLn stderr "after getContents"
-  let
-    --np = read np' :: Int
-    pw = read (T.unpack pw0) :: Double
-    ls = V.fromList $ T.lines ps
-  --hPutStrLn stderr ("after lines " ++ show (V.length ls))
-  --hPutStrLn stderr ("LN:" ++ (show $ T.unpack (ls V.! 0)))
-  let
-    --pcs = V.toList $ V.map convertToInfo (V.map (\x -> read (T.unpack x) :: PhotonCache) ls)
-    pcs = V.toList $ V.map convertToInfo (V.map (readPhoton) ls)
-  
-  --pcs `deepseq` hPutStrLn stderr "convert"
---  hPutStrLn stderr "convert"
-  let
-    --pmap = KT.buildWithDist infoToPointList squaredDistance pcs
-    pmap = pcs `deepseq` KT.buildWithDist infoToPointList squaredDistance pcs
-    --pmap = pcs `deepseq` fromList pcs
---  hPutStrLn stderr "after KT build"
-  let
-  --  msize = pmap `deepseq` KT.size pmap
-    msize = KT.size pmap
-    --msize = length pcs
-  --hPutStrLn stderr ("radius= " ++ show radius)
-  return (msize, PhotonMap pw (KT.kNearest pmap nsample) (KT.inRadius pmap $ sqrt radius))
-  --return (msize, PhotonMap pw (kNearestNeighbors pmap nsample) (nearNeighbors pmap $ sqrt radius))
-
-readPhoton :: T.Text -> PhotonCache
-readPhoton p = (wl, (Vector3 px py pz, Vector3 dx dy dz))
-  where
-    [wl0, px0, py0, pz0, dx0, dy0, dz0] = splitOn " " $ T.unpack $ T.strip p
-    wl = case wl0 of
-      "Red"   -> Red
-      "Green" -> Green
-      "Blue"  -> Blue
-      _       -> Red
-    px = read px0 :: Double
-    py = read py0 :: Double
-    pz = read pz0 :: Double
-    dx = read dx0 :: Double
-    dy = read dy0 :: Double
-    dz = read dz0 :: Double
-
-infoToPointList :: PhotonInfo -> [Double]
-infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
