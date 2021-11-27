@@ -34,6 +34,7 @@ import Ray.Light
 import Ray.Material
 import Ray.Physics
 import Ray.Optics
+import Ray.Surface hiding (alpha, diffuseness, metalness, reflectance)
 
 import PhotonMap
 import Screen
@@ -68,26 +69,32 @@ sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 tracePhoton :: Bool -> Material -> V.Vector Object -> Int -> Photon
             -> IO (V.Vector PhotonCache)
 tracePhoton _   _   _   10 _        = return V.empty
-tracePhoton !uc !m0 !os !l !(wl, r)
+tracePhoton !uc !m0 !os !l !ph@(wl, r@(_, rd))
   | is == Nothing = return V.empty
   | otherwise     = do
     let
       is' = is `deepseq` fromJust is
       (p, _, m) = is'
-      d = m `deepseq` diffuseness m
-    i <- d `deepseq` russianRoulette [d]
-    ref <- if i > 0
-      then reflectDiff uc m0 os l wl is'
-      else reflectSpec uc m0 os l (wl, r) is'
-    if (uc == False || l > 0) && d > 0.0
-      then return $ V.cons (wl, initRay p $ getDir r) ref
+      sf = surface m
+    ref <- case sf of
+      (Simple _ _ diff _ _ _) -> do
+        i <- russianRoulette [diff] 
+        if i > 0
+          then reflectDiff uc m0 os l ph is'
+          else reflectSpec uc m0 os l ph is'
+      (TS _ _ _ _ rough _ _)  -> return V.empty
+      _                       -> return V.empty
+    if (uc == False || l > 0) && store_photon sf == True
+      then return $ V.cons (wl, (p, rd)) ref
       else return ref
   where
     is = calcIntersection r os
 
-reflectDiff :: Bool -> Material -> V.Vector Object -> Int -> Wavelength
+
+
+reflectDiff :: Bool -> Material -> V.Vector Object -> Int -> Photon
             -> Intersection -> IO (V.Vector PhotonCache)
-reflectDiff uc m0 os l wl (p, n, m) = do
+reflectDiff uc m0 os l (wl, _) (p, n, m) = do
   i <- russianRoulette [selectWavelength wl $ reflectance m]
   if i > 0
     then do  -- diffuse reflection

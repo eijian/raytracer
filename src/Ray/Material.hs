@@ -14,9 +14,9 @@ module Ray.Material (
 , ior
 , diffuseness
 , metalness
-, smoothness
-, diffSpec
+--, smoothness
 , averageIor
+, surface
 ) where
 
 import           Control.DeepSeq
@@ -25,6 +25,7 @@ import           GHC.Generics
   
 import Ray.Physics
 import Ray.Optics
+import Ray.Surface hiding (diffuseness, metalness, reflectance)
 
 -- CONSTANTS
 
@@ -34,20 +35,39 @@ import Ray.Optics
 
 data Material = Material
   { emittance     :: Radiance
-  , reflectance   :: Color
   , transmittance :: Color
-  , specularRefl  :: Color      -- specular reflectance
   , ior           :: Color      -- index of refraction
-  , diffuseness   :: Double     -- diffuse reflection
-  , metalness     :: Double
-  , smoothness    :: Double
+  , surface       :: Surface
   } deriving (Eq, Show, Generic)
 
 instance NFData Material where
   rnf = genericRnf
 
-diffSpec :: Material -> Color
-diffSpec (Material _ r _ _ _ _ _ _) = r
-
 averageIor :: Material -> Double
-averageIor (Material _ _ _ _ (Color r g b) _ _ _) = (r + g + b) / 3.0
+averageIor (Material _ _ (Color r g b) _) = (r + g + b) / 3.0
+
+diffuseness :: Material -> Double
+diffuseness (Material _ _ _ s) = case s of
+  (Simple _ _ diff _ _ _) -> diff
+  (TS _ _ _ _ rough _ _)  -> rough
+  _                       -> 0.0
+
+metalness :: Material -> Double
+metalness (Material _ _ _ s) = case s of
+  (Simple _ _ _ metal _ _) -> metal
+  (TS _ _ _ metal _ _ _)   -> metal
+  _                        -> 0.0
+
+reflectance :: Material -> Color
+reflectance (Material _ _ _ s) = case s of
+  (Simple refl _ _ _ _ _) -> refl
+  (TS adiff _ _ _ _ _ _)  -> adiff
+  _                       -> black
+
+specularRefl :: Material -> Color
+specularRefl (Material _ _ _ s) = case s of
+  (Simple _ spec _ _ _ _) -> spec
+  (TS _ spec _ _ _ _ _)   -> spec
+  _                       -> black
+
+

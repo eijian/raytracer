@@ -41,6 +41,7 @@ import Ray.Material
 import Ray.Object
 import Ray.Optics
 import Ray.Physics
+import Ray.Surface
 
 --
 -- RESERVED WORD
@@ -388,7 +389,7 @@ material = do
   df <- pdiffuseness
   mt <- pmetalness
   sm <- psmoothness
-  return (n, Material em rl tr sp ir df mt sm)
+  return (n, Material em tr ir (initSurfaceSimple rl sp df mt sm))
 
 {- |
 >>> parse mtype pname "  type  : solid\n"
