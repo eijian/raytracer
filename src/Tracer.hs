@@ -170,20 +170,11 @@ estimateRadiance scr pmap (p, n, m)
     --ps = (nearest pmap) $ photonDummy p
     --ps = V.fromList $ (inradius pmap) $ photonDummy p
     ps = inradius pmap $ photonDummy p
-    -- rs = ps `deepseq` map (\x -> norm ((photonPos x) - p)) ps
-    --rmax = maximum rs
     rmax = radius scr
-    -- sumfunc = case (pfilter scr) of
-    --             Nonfilter   -> sumRadiance1
-    --             Conefilter  -> sumRadiance2
-    --             Gaussfilter -> sumRadiance3
-    -- rad = sumfunc p n (power pmap) rmax rs ps
     f_wait = case (pfilter scr) of
       Nonfilter   -> filter_none rmax
       Conefilter  -> filter_cone rmax
       Gaussfilter -> filter_gauss rmax
-    --wts = trace ("est " ++ (show $ length ps) ++ " ptns") ps `deepseq` V.map (\x -> f_wait (square (photonPos x - p))) ps
-    --wts = ps `deepseq` V.map (\x -> f_wait (square (photonPos x - p))) ps
     wts = ps `deepseq` V.map (\x -> f_wait (square (photonPos x - p))) ps
     rds = V.zipWith (photonInfoToRadiance n) wts ps
     rad = V.foldl (+) radiance0 rds
