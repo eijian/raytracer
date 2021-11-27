@@ -33,24 +33,23 @@ main = do
   (lgts, objs) <- readScene fn2
   let
     --nPhoton = 100000
-    --power = (sum $ map flux lgts) / (fromIntegral nPhoton)
     power = (V.sum $ V.map flux lgts) / (fromIntegral $ nphoton scr)
     ns    = V.map (calcN power) lgts
   putStrLn $ show $ nphoton scr
   putStrLn $ show power
-  V.zipWithM_ (outputPhotonCaches (useClassicForDirect scr) objs) lgts ns
+  V.zipWithM_ (outputPhotons (useClassicForDirect scr) objs) lgts ns
   
 calcN :: Double -> Light -> Int
 calcN power light = round (flux light / power)
 
-outputPhotonCaches :: Bool -> V.Vector Object -> Light -> Int -> IO ()
-outputPhotonCaches uc objs lgt n = V.mapM_ (outputPhotonCache uc lgt objs) $ V.replicate n 1
+outputPhotons :: Bool -> V.Vector Object -> Light -> Int -> IO ()
+outputPhotons uc objs lgt n = V.mapM_ (outputPhoton uc lgt objs) $ V.replicate n 1
 
-outputPhotonCache :: Bool -> Light -> V.Vector Object -> Int -> IO ()
-outputPhotonCache uc lgt objs _ =
-  generatePhoton lgt >>= tracePhoton uc m_air objs 0 >>= V.mapM_ (putStrLn.showPhoton)
+outputPhoton :: Bool -> Light -> V.Vector Object -> Int -> IO ()
+outputPhoton uc lgt objs _ =
+  generatePhoton lgt >>= tracePhoton uc objs 0 m_air >>= V.mapM_ (putStrLn.showPhoton)
 
-showPhoton :: PhotonCache -> String
+showPhoton :: Photon -> String
 showPhoton (wl, (Vector3 px py pz, Vector3 dx dy dz)) = show wl ++ " " 
   ++ show px ++ " " ++ show py ++ " " ++ show pz ++ " "
   ++ show dx ++ " " ++ show dy ++ " " ++ show dz

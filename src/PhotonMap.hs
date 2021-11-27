@@ -95,7 +95,7 @@ readMap nsample radius = do
   return (msize, PhotonMap pw (KT.kNearest pmap nsample) (KT.inRadius pmap $ sqrt radius))
   --return (msize, PhotonMap pw (kNearestNeighbors pmap nsample) (nearNeighbors pmap $ sqrt radius))
 
-readPhoton :: T.Text -> PhotonCache
+readPhoton :: T.Text -> Photon
 readPhoton p = (wl, (Vector3 px py pz, Vector3 dx dy dz))
   where
     [wl0, px0, py0, pz0, dx0, dy0, dz0] = splitOn " " $ T.unpack $ T.strip p

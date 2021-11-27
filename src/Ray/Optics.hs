@@ -176,7 +176,8 @@ photonDir (PhotonInfo _ _ d) = d
 photonPos :: PhotonInfo -> Position3
 photonPos (PhotonInfo _ p _) = p
 
-convertToInfo :: PhotonCache -> PhotonInfo
+--convertToInfo :: PhotonCache -> PhotonInfo
+convertToInfo :: Photon -> PhotonInfo
 convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
 
 squaredDistance :: PhotonInfo -> PhotonInfo -> Double

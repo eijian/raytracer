@@ -190,6 +190,61 @@ reflectionGlossy nvec rvec pw = do
     Just v  -> return v
     Nothing -> return ex3
 
+{-
+pecular_rafraction
+  IN : nvec  = Normal vector (from surface)
+       vvec  = eye direction (to surface)
+       eta   = relative of IoR (eta = n2 / n1)
+  OUT: tvec  = refraction vector (from surface)
+       cos2  = (tvec, -nvec)
+-}
+
+specularRefraction :: Direction3 -> Direction3 -> Double -> (Maybe Direction3, Double)
+specularRefraction nvec vvec eta
+  | cos1 < 0.0 = (Nothing, 0.0)
+  | g0 < 0.0   = (Nothing, 0.0)
+  | otherwise  = (normalize ((1.0 / eta) *> (vvec + (cos1 - g) *> nvec)), g / eta)
+  where
+    cos1 = -vvec <.> nvec -- -(E,N)
+    sq_eta = eta * eta
+    sq_cos = cos1 * cos1
+    g0 = sq_eta + sq_cos - 1.0
+    g = sqrt g0
+
+{- |
+Snell's low
+  IN : r_ior = relative of IoR (n = n2/n1)
+       nvec  = Normal vector (from surface)
+       vvec  = eye direction (to surface)
+  OUT: R  reflection dir
+       T  refraction dir
+       cos1  reflection cosine
+       cos2  refraction cosine
+-}
+
+snell :: Double -> Direction3 -> Direction3
+  -> (Direction3, Direction3, Double, Double)
+snell r_ior nvec vvec
+  | g <= 0.0  = (r, o3, c1, 0.0)   -- 全反射
+  | otherwise = (r, t, c1, c2)
+  where
+    c1 = vvec <.> nvec
+    r = fromJust $ normalize (vvec - (2.0 * c1) *> nvec)
+    n = r_ior * r_ior
+    g = 1.0 / n + c1 * c1 - 1.0
+
+    a = -c1 - sqrt g
+    t = fromJust $ normalize (r_ior *> (vvec + a *> nvec))
+    c2 = sqrt (1.0 - n * (1.0 - c1 * c1))
+
+schlickColor :: Color -> Double -> Color
+schlickColor (Color r g b) cos =
+  Color (schlick r cos) (schlick g cos) (schlick b cos)
+
+schlick :: Double -> Double -> Double
+schlick f0 cos = f0 + (1.0 - f0) * (1.0 - cos) ** 5.0
+
+
 {- |
 russianRoulette
 

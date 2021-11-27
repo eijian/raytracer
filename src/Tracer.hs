@@ -53,79 +53,84 @@ one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
 sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 
+max_trace :: Int
+max_trace = 10
+
 --
 
 {-
   tracePhoton:
     In:
       uc = flag of the use classic ray-tracing for direct illumination
-      m0 = the initial Material (air)
       os = the list of Ojbect
       l  = depth level (max is 10)
+      m0 = Material to travel
       wl = wavelength of the photon
       r  = ray
 -}
 
-tracePhoton :: Bool -> Material -> V.Vector Object -> Int -> Photon
-            -> IO (V.Vector PhotonCache)
-tracePhoton _   _   _   10 _        = return V.empty
-tracePhoton !uc !m0 !os !l !ph@(wl, r@(_, rd))
-  | is == Nothing = return V.empty
-  | otherwise     = do
-    let
-      is' = is `deepseq` fromJust is
-      (p, _, m) = is'
-      sf = surface m
-    ref <- case sf of
-      (Simple _ _ diff _ _ _) -> do
-        i <- russianRoulette [diff] 
-        if i > 0
-          then reflectDiff uc m0 os l ph is'
-          else reflectSpec uc m0 os l ph is'
-      (TS _ _ _ _ rough _ _)  -> return V.empty
-      _                       -> return V.empty
-    if (uc == False || l > 0) && store_photon sf == True
-      then return $ V.cons (wl, (p, rd)) ref
-      else return ref
+tracePhoton :: Bool -> V.Vector Object -> Int -> Material -> Photon
+            -> IO (V.Vector Photon)
+tracePhoton _   _   10 _   _                   = return V.empty
+tracePhoton !uc !os !l !m0 !ph@(wl, r@(_, rd)) =
+  case is of
+    Just is -> do
+      let
+        (p, _, m) = is
+        sf = surface m
+        tracer = tracePhoton uc os (l+1)
+      ref <- case sf of
+        (Simple _ _ diff _ _ _) -> do
+          i <- russianRoulette [diff] 
+          if i > 0
+            then reflectDiff tracer m0 ph is
+            else reflectSpec tracer m0 ph is
+        (TS _ _ _ _ rough _ _)  -> return V.empty
+        _                       -> return V.empty
+      if (uc == False || l > 0) && store_photon sf == True
+        then return $ V.cons (wl, (p, rd)) ref
+        else return ref
+    Nothing -> return V.empty
   where
     is = calcIntersection r os
 
-
-
-reflectDiff :: Bool -> Material -> V.Vector Object -> Int -> Photon
-            -> Intersection -> IO (V.Vector PhotonCache)
-reflectDiff uc m0 os l (wl, _) (p, n, m) = do
+reflectDiff :: (Material -> Photon -> IO (V.Vector Photon))
+  -> Material -> Photon -> Intersection
+  -> IO (V.Vector Photon)
+reflectDiff tracer m0 (wl, _) (p, n, m) = do
   i <- russianRoulette [selectWavelength wl $ reflectance m]
   if i > 0
     then do  -- diffuse reflection
       dr <- diffuseReflection n
-      tracePhoton uc m0 os (l+1) $ (wl, initRay p dr)
+      tracer m0 (wl, initRay p dr)
     else return V.empty -- absorption
 
-reflectSpec :: Bool -> Material -> V.Vector Object -> Int -> Photon -> Intersection
-            -> IO (V.Vector PhotonCache)
-reflectSpec uc m0 os l (wl, (_, ed)) (p, n, m) = do
+reflectSpec :: (Material -> Photon -> IO (V.Vector Photon))
+  -> Material -> Photon -> Intersection
+  -> IO (V.Vector Photon)
+reflectSpec tracer m0 ph@(wl, (_, ed)) is@(p, n, m) = do
   let
     f0 = selectWavelength wl $ specularRefl m
     (rdir, cos0) = specularReflection n ed
     f' = f0 + (1.0 - f0) * (1.0 - cos0) ** 5.0
   j <- russianRoulette [f']
   if j > 0
-    then tracePhoton uc m0 os (l+1) (wl, initRay p rdir)
+    then tracer m0 (wl, initRay p rdir)
     else do
       if (selectWavelength wl $ ior m) == 0.0
         then return V.empty   -- non transparency
-        else reflectTrans uc m0 os l wl ed (p, n, m) cos0
+        else reflectTrans tracer m0 ph is cos0
 
-reflectTrans :: Bool -> Material -> V.Vector Object -> Int -> Wavelength -> Direction3
-             -> Intersection -> Double -> IO (V.Vector PhotonCache)
-reflectTrans uc m0 os l wl ed (p, n, m) c0 = do
+reflectTrans :: (Material -> Photon -> IO (V.Vector Photon))
+  -> Material -> Photon -> Intersection -> Double
+  -> IO (V.Vector Photon)
+reflectTrans tracer m0 (wl, (_, ed)) (p, n, m) c0 = do
   let
     ior0 = selectWavelength wl $ ior m0
     ior1 = selectWavelength wl $ ior m
     (tdir, ior') = specularRefraction ior0 ior1 c0 ed n
     m0' = if tdir <.> n < 0.0 then m else m_air
-  tracePhoton uc m0' os (l+1) (wl, initRay p tdir)
+  tracer m0' (wl, initRay p tdir)
 
 -----
 -- RAY TRACING WITH PHOTON MAP
