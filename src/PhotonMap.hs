@@ -47,8 +47,8 @@ import           Ray.Physics
 
 data PhotonMap = PhotonMap
   { power    :: Double
-  , nearest  :: PhotonInfo -> [PhotonInfo]
-  , inradius :: PhotonInfo -> V.Vector PhotonInfo
+  , nearest  :: Photon -> [Photon]
+  , inradius :: Photon -> V.Vector Photon
   }
 
 readMap :: Int -> Double -> IO (Int, PhotonMap)
@@ -79,12 +79,13 @@ readMap nsample radius = do
   let
     --pcs = V.toList $ V.map convertToInfo (V.map (\x -> read (T.unpack x) :: PhotonCache) ls)
     pcs = V.toList $ V.map convertToInfo (V.map (readPhoton) ls)
+    --pcs = V.toList $ V.map (readPhoton) ls
   
   --pcs `deepseq` hPutStrLn stderr "convert"
 --  hPutStrLn stderr "convert"
   let
     --pmap = KT.buildWithDist infoToPointList squaredDistance pcs
-    pmap = pcs `deepseq` KT.buildWithDist infoToPointList squaredDistance pcs
+    pmap = pcs `deepseq` KT.buildWithDist photonToPointList squaredDistance pcs
     --pmap = pcs `deepseq` fromList pcs
 --  hPutStrLn stderr "after KT build"
   let
@@ -111,5 +112,5 @@ readPhoton p = (wl, (Vector3 px py pz, Vector3 dx dy dz))
     dy = read dy0 :: Double
     dz = read dz0 :: Double
 
-infoToPointList :: PhotonInfo -> [Double]
-infoToPointList (PhotonInfo _ (Vector3 x y z) _) = [x, y, z]
+photonToPointList :: Photon -> [Double]
+photonToPointList (_, ((Vector3 x y z), _)) = [x, y, z]

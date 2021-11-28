@@ -188,7 +188,7 @@ estimateRadiance scr pmap (p, n, m)
       Conefilter  -> filter_cone rmax
       Gaussfilter -> filter_gauss rmax
     wts = ps `deepseq` V.map (\x -> f_wait (square (photonPos x - p))) ps
-    rds = V.zipWith (photonInfoToRadiance n) wts ps
+    rds = V.zipWith (photonToRadiance n) wts ps
     rad = V.foldl (+) radiance0 rds
 
 -- filtering:

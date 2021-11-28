@@ -96,7 +96,7 @@ import Ray.Optics
 -- associated with a value of type @v@. Note: users typically will not
 -- need to use this type, but we export it just in case.
 data TreeNode = TreeNode { _treeLeft  :: !TreeNode
-                         , _treePoint :: !(PhotonInfo, ())
+                         , _treePoint :: !(Photon, ())
                          , _axisValue :: !Double
                          , _treeRight :: !TreeNode
                          } |
@@ -111,11 +111,11 @@ mapTreeNode tn = tn
 
 -- | Converts a point of type @p@ with axis values of type
 -- @a@ into a list of axis values [a].
-type PointAsListFn = PhotonInfo -> [Double]
+type PointAsListFn = Photon -> [Double]
 
 -- | Returns the squared distance between two points of type
 -- @p@ with axis values of type @a@.
-type SquaredDistanceFn = PhotonInfo -> PhotonInfo -> Double
+type SquaredDistanceFn = Photon -> Photon -> Double
 
 -- | A /k/-d tree structure that stores points of type @p@ with axis
 -- values of type @a@. Additionally, each point is associated with a
@@ -182,14 +182,14 @@ null kdm = _size kdm == 0
 -- user-specified squared distance function.
 singletonWithDist :: PointAsListFn
                   -> SquaredDistanceFn
-                  -> (PhotonInfo, ())
+                  -> (Photon, ())
                   -> KdMap
 singletonWithDist p2l d2 (p, v) =
   let singletonTreeNode = TreeNode Empty (p, v) (head $ p2l p) Empty
   in  KdMap p2l d2 singletonTreeNode 1
 
 -- | Builds a 'KdMap' with a single point-value pair.
-singleton :: PointAsListFn -> (PhotonInfo, ()) -> KdMap
+singleton :: PointAsListFn -> (Photon, ()) -> KdMap
 singleton p2l (p, v) = singletonWithDist p2l (defaultSqrDist p2l) (p, v)
 
 quickselect :: (b -> b -> Ordering) -> Int -> [b] -> b
@@ -212,7 +212,7 @@ quickselect cmp = go
 -- Worst case space complexity: /O(n)/ for /n/ data points.
 buildWithDist :: PointAsListFn
               -> SquaredDistanceFn
-              -> [(PhotonInfo, ())]
+              -> [(Photon, ())]
               -> KdMap
 buildWithDist p2l d2 [] = emptyWithDist p2l d2
 buildWithDist pointAsList distSqr dataPoints =
@@ -258,7 +258,7 @@ defaultSqrDist pointAsList k1 k2 =
 -- Worst case time complexity: /O(n^2)/ for /n/ data points.
 --
 -- Worst case space complexity: /O(n)/ for /n/ data points.
-build :: PointAsListFn -> [(PhotonInfo, ())] -> KdMap
+build :: PointAsListFn -> [(Photon, ())] -> KdMap
 build pointAsList =
   buildWithDist pointAsList $ defaultSqrDist pointAsList
 
@@ -272,7 +272,7 @@ build pointAsList =
 -- Average complexity: /O(log(n))/ for /n/ data points.
 --
 -- Worst case time complexity: /O(n)/ for /n/ data points.
-insertUnbalanced :: KdMap -> PhotonInfo-> () -> KdMap
+insertUnbalanced :: KdMap -> Photon-> () -> KdMap
 insertUnbalanced kdm@(KdMap pointAsList _ rootNode n) p' v' =
   kdm { _rootNode = go rootNode (cycle $ pointAsList p'), _size = n + 1 }
   where
@@ -289,10 +289,10 @@ insertUnbalanced kdm@(KdMap pointAsList _ rootNode n) p' v' =
 -- Average complexity: /O(n * log(n))/ for /n/ data points.
 --
 -- Worst case time complexity: /O(n^2)/ for /n/ data points.
-batchInsertUnbalanced :: KdMap -> [(PhotonInfo, ())] -> KdMap
+batchInsertUnbalanced :: KdMap -> [(Photon, ())] -> KdMap
 batchInsertUnbalanced = foldl' $ \kdm (p, v) -> insertUnbalanced kdm p v
 
-assocsInternal :: TreeNode -> [(PhotonInfo, ())]
+assocsInternal :: TreeNode -> [(Photon, ())]
 assocsInternal t = go t []
   where go Empty = id
         go (TreeNode l p _ r) = go l . (p :) . go r
@@ -300,13 +300,13 @@ assocsInternal t = go t []
 -- | Returns a list of all the point-value pairs in the 'KdMap'.
 --
 -- Time complexity: /O(n)/ for /n/ data points.
-assocs :: KdMap -> [(PhotonInfo, ())]
+assocs :: KdMap -> [(Photon, ())]
 assocs (KdMap _ _ t _) = assocsInternal t
 
 -- | Returns all points in the 'KdMap'.
 --
 -- Time complexity: /O(n)/ for /n/ data points.
-keys :: KdMap -> [PhotonInfo]
+keys :: KdMap -> [Photon]
 keys = map fst . assocs
 
 -- | Returns all values in the 'KdMap'.
@@ -323,7 +323,7 @@ elems = map snd . assocs
 -- Worst case time complexity: /O(n)/ for /n/ data points.
 --
 -- Throws error if called on an empty 'KdMap'.
-nearest :: KdMap -> PhotonInfo -> (PhotonInfo, ())
+nearest :: KdMap -> Photon -> (Photon, ())
 nearest (KdMap _ _ Empty _) _ =
   error "Attempted to call nearest on an empty KdMap."
 nearest (KdMap pointAsList distSqr t@(TreeNode _ root _ _) _) query =
@@ -362,8 +362,8 @@ nearest (KdMap pointAsList distSqr t@(TreeNode _ root _ _) _) query =
 -- that spans all points in the structure.
 inRadius :: KdMap
          -> Double -- ^ radius
-         -> PhotonInfo -- ^ query point
-         -> V.Vector (PhotonInfo, ()) -- ^ list of point-value pairs with
+         -> Photon -- ^ query point
+         -> V.Vector (Photon, ()) -- ^ list of point-value pairs with
                      -- points within given radius of query
 inRadius (KdMap pointAsList distSqr t _) radius query =
   go (cycle $ pointAsList query) t V.empty
@@ -388,8 +388,8 @@ inRadius (KdMap pointAsList distSqr t _) radius query =
 radianceInRadius ::
      KdMap
   -> Double -- ^ radius
-  -> PhotonInfo -- ^ query point
-  -> V.Vector (PhotonInfo, ()) -- ^ list of point-value pairs with
+  -> Photon -- ^ query point
+  -> V.Vector (Photon, ()) -- ^ list of point-value pairs with
                      -- points within given radius of query
 radianceInRadius (KdMap pointAsList distSqr t _) radius query =
   go (cycle $ pointAsList query) t V.empty
@@ -422,7 +422,7 @@ radianceInRadius (KdMap pointAsList distSqr t _) radius query =
 --
 -- Worst case time complexity: /n * log(k)/ for /k/ nearest
 -- neighbors on a structure with /n/ data points.
-kNearest :: KdMap -> Int -> PhotonInfo-> [(PhotonInfo, ())]
+kNearest :: KdMap -> Int -> Photon-> [(Photon, ())]
 kNearest (KdMap pointAsList distSqr t _) numNeighbors query =
   reverse $ map snd $ Q.toAscList $ go (cycle $ pointAsList query)
     (Q.empty :: Q.MaxPrioHeap a (p,v)) t
@@ -464,9 +464,9 @@ kNearest (KdMap pointAsList distSqr t _) numNeighbors query =
 -- automatically count whole portions of tree as being within given
 -- range.
 inRange :: KdMap
-        -> PhotonInfo -- ^ lower bounds of range
-        -> PhotonInfo -- ^ upper bounds of range
-        -> [(PhotonInfo, ())] -- ^ point-value pairs within given
+        -> Photon -- ^ lower bounds of range
+        -> Photon -- ^ upper bounds of range
+        -> [(Photon, ())] -- ^ point-value pairs within given
                               -- range
 inRange (KdMap pointAsList _ t _) lowers uppers =
   go (cycle (pointAsList lowers) `zip` cycle (pointAsList uppers)) t []

@@ -212,14 +212,14 @@ emptyWithDist :: PointAsListFn
 emptyWithDist p2l d2 = KdTree $ KDM.emptyWithDist p2l d2
 
 -- | Builds a 'KdTree' with a single point.
-singleton :: PointAsListFn -> PhotonInfo -> KdTree
+singleton :: PointAsListFn -> Photon -> KdTree
 singleton p2l p = KdTree $ KDM.singleton p2l (p, ())
 
 -- | Builds a 'KdTree' with a single point using a user-specified
 -- squared distance function.
 singletonWithDist :: PointAsListFn
                   -> SquaredDistanceFn
-                  -> PhotonInfo
+                  -> Photon
                   -> KdTree
 singletonWithDist p2l d2 p = KdTree $ KDM.singletonWithDist p2l d2 (p, ())
 
@@ -235,7 +235,7 @@ null (KdTree kdm) = KDM.null kdm
 --
 -- Worst case space complexity: /O(n)/ for /n/ data points.
 build :: PointAsListFn
-      -> [PhotonInfo] -- ^ non-empty list of data points to be stored in the /k/-d tree
+      -> [Photon] -- ^ non-empty list of data points to be stored in the /k/-d tree
       -> KdTree
 build pointAsList ps =
   KdTree $ KDM.build pointAsList $ zip ps $ repeat ()
@@ -250,7 +250,7 @@ build pointAsList ps =
 -- Worst case space complexity: /O(n)/ for /n/ data points.
 buildWithDist :: PointAsListFn
               -> SquaredDistanceFn
-              -> [PhotonInfo]
+              -> [Photon]
               -> KdTree
 buildWithDist pointAsList distSqr ps =
   KdTree $ KDM.buildWithDist pointAsList distSqr $ zip ps $ repeat ()
@@ -265,7 +265,7 @@ buildWithDist pointAsList distSqr ps =
 -- Average complexity: /O(log(n))/ for /n/ data points.
 --
 -- Worse case time complexity: /O(n)/ for /n/ data points.
-insertUnbalanced :: KdTree -> PhotonInfo -> KdTree
+insertUnbalanced :: KdTree -> Photon -> KdTree
 insertUnbalanced (KdTree kdm) p = KdTree $ KDM.insertUnbalanced kdm p ()
 
 -- | Inserts a list of points into a 'KdTree'. This can potentially
@@ -275,7 +275,7 @@ insertUnbalanced (KdTree kdm) p = KdTree $ KDM.insertUnbalanced kdm p ()
 -- Average complexity: /O(n * log(n))/ for /n/ data points.
 --
 -- Worst case time complexity: /O(n^2)/ for /n/ data points.
-batchInsertUnbalanced :: KdTree -> [PhotonInfo] -> KdTree
+batchInsertUnbalanced :: KdTree -> [Photon] -> KdTree
 batchInsertUnbalanced (KdTree kdm) ps =
   KdTree $ KDM.batchInsertUnbalanced kdm $ zip ps $ repeat ()
 
@@ -287,7 +287,7 @@ batchInsertUnbalanced (KdTree kdm) ps =
 -- Worst case time complexity: /O(n)/ for /n/ data points.
 --
 -- Throws an error if called on an empty 'KdTree'.
-nearest :: KdTree -> PhotonInfo -> PhotonInfo
+nearest :: KdTree -> Photon -> Photon
 nearest (KdTree t) query
   | KDM.null t = error "Attempted to call nearest on an empty KdTree."
   | otherwise = fst $ KDM.nearest t query
@@ -302,8 +302,8 @@ nearest (KdTree t) query
 -- a radius that subsumes all points in the structure.
 inRadius :: KdTree
          -> Double -- ^ radius
-         -> PhotonInfo -- ^ query point
-         -> V.Vector PhotonInfo -- ^ list of points in tree with given
+         -> Photon -- ^ query point
+         -> V.Vector Photon -- ^ list of points in tree with given
                           -- radius of query point
 inRadius (KdTree t) radius query = V.map fst $ KDM.inRadius t radius query
 
@@ -318,7 +318,7 @@ inRadius (KdTree t) radius query = V.map fst $ KDM.inRadius t radius query
 --
 -- Worst case time complexity: /n * log(k)/ for /k/ nearest
 -- neighbors on a structure with /n/ data points.
-kNearest :: KdTree -> Int -> PhotonInfo -> [PhotonInfo]
+kNearest :: KdTree -> Int -> Photon -> [Photon]
 kNearest (KdTree t) k query = map fst $ KDM.kNearest t k query
 
 -- | Finds all points in a 'KdTree' with points within a given range,
@@ -329,15 +329,15 @@ kNearest (KdTree t) k query = map fst $ KDM.kNearest t k query
 -- Worst case time complexity: /O(n)/ for n data points and a range
 -- that spans all the points.
 inRange :: KdTree
-        -> PhotonInfo -- ^ lower bounds of range
-        -> PhotonInfo -- ^ upper bounds of range
-        -> [PhotonInfo] -- ^ all points within given range
+        -> Photon -- ^ lower bounds of range
+        -> Photon -- ^ upper bounds of range
+        -> [Photon] -- ^ all points within given range
 inRange (KdTree t) lower upper = map fst $ KDM.inRange t lower upper
 
 -- | Returns a list of all the points in the 'KdTree'.
 --
 -- Time complexity: /O(n)/ for /n/ data points.
-toList :: KdTree -> [PhotonInfo]
+toList :: KdTree -> [Photon]
 toList (KdTree t) = KDM.keys t
 
 -- | Returns the number of elements in the 'KdTree'.

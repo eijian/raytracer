@@ -13,7 +13,7 @@
 module Ray.Optics (
   Photon
 , PhotonCache
-, PhotonInfo (..)
+--, PhotonInfo (..)
 , PhotonFilter (..)
 , Radiance (Radiance)
 , (<**>)
@@ -27,7 +27,7 @@ module Ray.Optics (
 , photonDir
 , photonDummy
 , photonPos
-, photonInfoToRadiance
+, photonToRadiance
 , radiance0
 , radiance1
 ) where
@@ -157,41 +157,42 @@ initPhoton l r = (l, r)
 
 type PhotonCache = Photon
 
-data PhotonInfo = PhotonInfo !Wavelength !Position3 !Direction3
-  deriving (Show, Read, Eq, Generic)
+--data PhotonInfo = PhotonInfo !Wavelength !Position3 !Direction3
+--  deriving (Show, Read, Eq, Generic)
   --deriving (Show, Read, Eq, Generic, VB.Vector U.Vector, MVector U.MVector, U.Unbox)
 
 --instance VB.Vector U.Vector PhotonInfo where
 --  basicLength (U.Vector (PhotonInfo w p d)) = VB.basicLength w + VB.basicLength p + VB.basicLength d
 
-instance NFData PhotonInfo where
-  rnf = genericRnf
+--instance NFData PhotonInfo where
+--  rnf = genericRnf
 
-photonDummy :: Position3 -> PhotonInfo
-photonDummy p = PhotonInfo Red p ex3
+photonDummy :: Position3 -> Photon
+photonDummy p = (Red, (p, ex3))
 
-photonDir :: PhotonInfo -> Direction3
-photonDir (PhotonInfo _ _ d) = d
+photonDir :: Photon -> Direction3
+photonDir (_, (_, d)) = d
 
-photonPos :: PhotonInfo -> Position3
-photonPos (PhotonInfo _ p _) = p
+photonPos :: Photon -> Position3
+photonPos (_, (p, _)) = p
 
 --convertToInfo :: PhotonCache -> PhotonInfo
-convertToInfo :: Photon -> PhotonInfo
-convertToInfo (wl, (rp, rd)) = PhotonInfo wl rp (negate rd)
+convertToInfo :: Photon -> Photon
+convertToInfo (wl, (rp, rd)) = (wl, (rp, (negate rd)))
 
-squaredDistance :: PhotonInfo -> PhotonInfo -> Double
-squaredDistance (PhotonInfo _ v1 _) (PhotonInfo _ v2 _) = d <.> d
+squaredDistance :: Photon -> Photon -> Double
+squaredDistance (_, (v1, _)) (_, (v2, _)) = d <.> d
   where
     d = v1 - v2
 
-photonInfoToRadiance :: Direction3 -> Double -> PhotonInfo -> Radiance
-photonInfoToRadiance n pw (PhotonInfo wl _ d)
-  | wl == Red   = Radiance pw' 0 0
-  | wl == Green = Radiance 0 pw' 0
-  | wl == Blue  = Radiance 0 0 pw'
+photonToRadiance :: Direction3 -> Double -> Photon -> Radiance
+photonToRadiance n pw (wl, (_, d)) =
+  case wl of
+    Red   -> Radiance pw' 0 0
+    Green -> Radiance 0 pw' 0
+    Blue  -> Radiance 0 0 pw'
+    _     -> radiance0
   where
     cos0 = n <.> d
     pw'  = if cos0 > 0.0 then pw * cos0 else 0.0
-photonInfoToRadiance _ _ (PhotonInfo _ _ _) = radiance0
 
