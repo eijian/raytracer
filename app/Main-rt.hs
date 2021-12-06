@@ -34,17 +34,20 @@ main = do
     then return (as !! 0, as !! 1)
     else error usage
   scr <- readScreen fn1
-  (lgts, objs) <- readScene fn2
+  (m_air, lgts, objs) <- readScene fn2
 
   -- read photon map
   t0 <- TM.getCurrentTime
   (msize, photonmap) <- readMap (nSamplePhoton scr) (radius scr)
-  hPutStr   stderr ("finished reading map:" ++ (show msize) ++ " photons, ")
+  --hPutStr   stderr ("finished reading map:" ++ (show msize) ++ " photons, ")
   t1 <- TM.getCurrentTime
-  hPutStrLn stderr (show (TM.diffUTCTime t1 t0))
+  --hPutStrLn stderr (show (TM.diffUTCTime t1 t0))
 
   -- tracing image
-  let tracer = traceRay scr m_air 0 photonmap objs lgts
+  let
+    uc = useClassicForDirect scr
+    rad = radius scr
+    tracer = traceRay scr uc objs lgts 0 photonmap rad m_air
   rays <- V.mapM (generateRay scr) $ screenMap scr
   image <- V.mapM tracer rays
 

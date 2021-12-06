@@ -44,15 +44,6 @@ import Scene
 -- CONSTANTS
 --
 
---sqpi2 :: Double
---sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
-
-one_pi :: Double
-one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
-
-sr_half :: Double
-sr_half = 1.0 / (2.0 * pi)  -- half of steradian
-
 max_trace :: Int
 max_trace = 10
 
@@ -71,34 +62,42 @@ max_trace = 10
 
 tracePhoton :: Bool -> V.Vector Object -> Int -> Material -> Photon
             -> IO (V.Vector Photon)
-tracePhoton _   _   10 _   _                   = return V.empty
-tracePhoton !uc !os !l !m0 !ph@(wl, r@(_, rd)) =
-  case is of
-    Just is -> do
-      let
-        (p, _, m) = is
-        sf = surface m
-        tracer = tracePhoton uc os (l+1)
-      ref <- case sf of
-        (Simple _ _ diff _ _ _) -> do
-          i <- russianRoulette [diff] 
-          if i > 0
-            then reflectDiff tracer m0 ph is
-            else reflectSpec tracer m0 ph is
-        (TS _ _ _ _ rough _ _)  -> return V.empty
-        _                       -> return V.empty
-      if (uc == False || l > 0) && store_photon sf == True
-        then return $ V.cons (wl, (p, rd)) ref
-        else return ref
-    Nothing -> return V.empty
-  where
-    is = calcIntersection r os
+tracePhoton !uc !os !l !m0 !ph@(wl, r@(_, rd))
+  | l >= max_trace = return V.empty
+  | otherwise = do
+    case (calcIntersection r os) of
+      Just is -> do
+        let
+          (p, n, m, io) = is
+          sf = surface m
+          tracer = tracePhoton uc os (l+1)
+        ref <- case sf of
+          (Simple _ _ diff _ _ _) -> do
+            i <- russianRoulette [diff] 
+            if i > 0
+              then reflectDiff tracer m0 ph is
+              else reflectSpec tracer m0 ph is
+          (TS _ _ _ _ rough _ _)  -> do
+            let eta = relativeIorWavelength (ior m0) (ior m) wl
+            --putStrLn ("sf=" ++ show sf)
+            nextdir <- nextDirection sf eta n ph
+            case nextdir of
+              Just (dir, mf) -> do
+                let mate = if mf == True then m0 else m
+                tracer mate (wl, initRay p dir)
+              Nothing -> return V.empty
+          _ -> return V.empty
+        --_                      -> return V.empty
+        if (uc == False || l > 0) && storePhoton sf == True
+          then return $ V.cons (wl, (p, rd)) ref
+          else return ref
+      Nothing -> return V.empty
 
 reflectDiff :: (Material -> Photon -> IO (V.Vector Photon))
   -> Material -> Photon -> Intersection
   -> IO (V.Vector Photon)
-reflectDiff tracer m0 (wl, _) (p, n, m) = do
-  i <- russianRoulette [selectWavelength wl $ reflectance m]
+reflectDiff tracer m0 (wl, _) (p, n, m, _) = do
+  i <- russianRoulette [albedoDiff (surface m) wl]
   if i > 0
     then do  -- diffuse reflection
       dr <- diffuseReflection n
@@ -108,49 +107,134 @@ reflectDiff tracer m0 (wl, _) (p, n, m) = do
 reflectSpec :: (Material -> Photon -> IO (V.Vector Photon))
   -> Material -> Photon -> Intersection
   -> IO (V.Vector Photon)
-reflectSpec tracer m0 ph@(wl, (_, ed)) is@(p, n, m) = do
+reflectSpec tracer m0 ph@(wl, (_, ed)) is@(p, n, m, _) = do
+  nvec' <- if rough (surface m) == 0.0
+    then return n
+    else distributedNormal n (powerGlossy $ surface m)
   let
-    f0 = selectWavelength wl $ specularRefl m
-    (rdir, cos0) = specularReflection n ed
-    f' = f0 + (1.0 - f0) * (1.0 - cos0) ** 5.0
-  j <- russianRoulette [f']
+    (rdir, cos1) = specularReflection nvec' ed
+    f = schlick (albedoSpec (surface m) wl) cos1
+  j <- russianRoulette [f]
   if j > 0
     then tracer m0 (wl, initRay p rdir)
     else do
       if (selectWavelength wl $ ior m) == 0.0
         then return V.empty   -- non transparency
-        else reflectTrans tracer m0 ph is cos0
+        else reflectTrans tracer m0 ph (p, nvec', m, In) cos1
 
 reflectTrans :: (Material -> Photon -> IO (V.Vector Photon))
   -> Material -> Photon -> Intersection -> Double
   -> IO (V.Vector Photon)
-reflectTrans tracer m0 (wl, (_, ed)) (p, n, m) c0 = do
+reflectTrans tracer m0 (wl, (_, ed)) (pos, nvec, m, _) c0 = do
   let
-    ior0 = selectWavelength wl $ ior m0
-    ior1 = selectWavelength wl $ ior m
-    (tdir, ior') = specularRefraction ior0 ior1 c0 ed n
-    m0' = if tdir <.> n < 0.0 then m else m_air
-  tracer m0' (wl, initRay p tdir)
+    eta = relativeIorWavelength (ior m0) (ior m) wl
+    (tdir, cos2) = specularRefraction nvec ed eta c0
+  case tdir of
+    Just tdir ->  do
+      let m0' = if tdir <.> nvec < 0.0 then m else m_air
+      tracer m0' (wl, initRay pos tdir)
+    Nothing -> return V.empty
+
+{- |
+nextDirection
+
+-- OUT: dir  next ray direction. if dir is None, the photon is absorbed.
+--      T/F  true = reflection, false = rafraction
+-}
+
+nextDirection :: Surface -> Double -> Direction3 -> Photon
+  -> IO (Maybe (Direction3, Bool))
+nextDirection sf@(TS aldiff alspec scat _ _ _ pow) eta nvec (wl, (_, vvec)) = do
+  nvec' <- if rough sf == 0.0
+    then return nvec
+    else distributedNormal nvec pow
+  let (rdir, cos1) = specularReflection nvec' vvec
+  --rdir <- reflectionGlossy nvec rdir0 (powerGlossy sf)
+  let
+    --hvec = fromJust $ normalize (rdir - vvec)
+    --(tdir, cos2) = specularRefraction hvec vvec eta cos1
+    (tdir, cos2) = specularRefraction nvec' vvec eta cos1
+    cos = if cos1 < cos2 then cos1 else cos2
+  pb <- photonBehavior sf cos wl
+  --putStrLn ("ph=" ++ show pb)
+  case pb of
+    SpecularReflection -> return $ Just (rdir, True)   -- 鏡面反射
+    Absorption         -> return Nothing               -- 吸収
+    DiffuseReflection  -> do
+      df <- diffuseReflection nvec
+      return $ Just (df, True)                         -- 拡散反射
+    SpecularTransmission ->                            -- 鏡面透過
+      case tdir of
+        Just tdir -> return $ Just (tdir, False)
+        Nothing   -> return Nothing
+    _                  -> return Nothing
+nextDirection (Simple _ _ _ _ _ _) _ _ _ = return Nothing
+nextDirection _ _ _ _ = return Nothing
+
 
 -----
 -- RAY TRACING WITH PHOTON MAP
 -----
 
-traceRay :: Screen -> Material -> Int -> PhotonMap
-         -> V.Vector Object -> V.Vector Light -> Ray -> IO Radiance
-traceRay _    _   10 _     _     _     _  = return radiance0
-traceRay !scr !m0 !l !pmap !objs !lgts !r
-  | is == Nothing = return radiance0
+traceRay :: Screen -> Bool -> V.Vector Object -> V.Vector Light -> Int
+  -> PhotonMap -> Double -> Material -> Ray -> IO Radiance
+traceRay !scr !uc !objs !lgts !l !pmap !radius !m0 !r@(_, vvec) 
+  | l >= max_trace = return radiance0
   | otherwise     = do
-    si <- if df == 1.0 || f == black
-      then return radiance0
-      else traceRay scr m0 (l+1) pmap objs lgts (initRay p rdir)
+    case (calcIntersection r objs) of
+      Nothing            -> return radiance0
+      Just (p, n, m, io) -> do
+        let
+          tracer = traceRay scr uc objs lgts (l+1) pmap radius
+
+        -- L_diffuse
+        let
+          di' = if uc 
+            then foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n) lgts
+            else radiance0
+          di = di' + estimateRadiance radius scr pmap (p, n, m, io)
+
+        -- L_spec
+        let
+          sf = surface m
+
+        nvec' <- if rough sf == 0.0
+          then return n
+          else distributedNormal n (powerGlossy sf)
+        let
+          (rdir, cos1) = specularReflection nvec' vvec
+          --(rdir0, cos1) = specularReflection n vvec
+        --rdir <- reflectionGlossy n rdir0 (powerGlossy sf)
+        si <- if (reflect sf cos1) == True
+          then tracer m0 (p, rdir)
+          else return radiance0
+
+        -- L_trans
+        let
+          eta = relativeIorAverage (ior m0) (ior m)
+          --hvec = fromJust $ normalize (rdir - vvec)
+          --(tdir, cos2) = specularRefraction hvec (getDir r) eta cos1
+          (tdir, cos2) = specularRefraction nvec' (getDir r) eta cos1
+          cos = if cos1 < cos2 then cos1 else cos2
+        ti <- case tdir of
+          Nothing   -> return radiance0
+          Just tdir ->
+            if refract sf cos1 == True
+              then do
+                let m0' = if io == In then m else m_air
+                tracer m0' (p, tdir)
+              else return radiance0
+
+        return (sr_half *> emittance m + bsdf sf n vvec rdir tdir cos eta di si ti)
+
+{-
+
     ti <- if f' == black || ior1 == 0.0
       then return radiance0
       else do
         let
           ior0 = averageIor m0
-          (tdir, ior') = specularRefraction ior0 ior1 cos0 (getDir r) n
+          (tdir, cos2) = specularRefraction ior0 ior1 cos0 (getDir r) n
           m0' = if tdir <.> n < 0.0 then m else m_air
         traceRay scr m0' (l+1) pmap objs lgts (initRay p tdir)
     si `deepseq` ti `deepseq` return 
@@ -158,31 +242,24 @@ traceRay !scr !m0 !l !pmap !objs !lgts !r
        df         *> brdf m (di + ii) +
        (1.0 - df) *> (f <**> si + (1.0 - mt) *> f' <**> ti))
   where
-    is = calcIntersection r objs
-    (p, n, m) = fromJust is
-    di = if useClassicForDirect scr
-      then foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n) lgts
-      else radiance0
-    ii = estimateRadiance scr pmap (p, n, m)
-    (rdir, cos0) = specularReflection n (getDir r)
     df = diffuseness m
     mt = metalness m
     f = reflectionIndex (specularRefl m) cos0
     f' = negateColor f                         -- this means '1 - f'
     ior1 = averageIor m
+-}
 
 --ps0 :: V.Vector PhotonInfo
 --ps0 = V.fromList [PhotonInfo Red o3 ex3, PhotonInfo Green ex3 ey3]
 
-estimateRadiance :: Screen -> PhotonMap -> Intersection -> Radiance
-estimateRadiance scr pmap (p, n, m)
+estimateRadiance :: Double -> Screen -> PhotonMap -> Intersection -> Radiance
+estimateRadiance rmax scr pmap (p, n, m, _)
   | V.null ps = radiance0
   | otherwise = (one_pi / rmax * (power pmap)) *> rad -- 半径は指定したものを使う
   where
     --ps = (nearest pmap) $ photonDummy p
     --ps = V.fromList $ (inradius pmap) $ photonDummy p
     ps = inradius pmap $ photonDummy p
-    rmax = radius scr
     f_wait = case (pfilter scr) of
       Nonfilter   -> filter_none rmax
       Conefilter  -> filter_cone rmax
@@ -290,7 +367,7 @@ traceRay' !scr l lgts objs r
                   )
   where
     is = calcIntersection r objs
-    (p, n, m) = fromJust is
+    (p, n, m, io) = fromJust is
     radDiff = foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n) lgts
 
 getRadianceFromLight :: V.Vector Object -> Position3 -> Direction3 -> Light
@@ -314,7 +391,7 @@ illuminated os p n (ld:lds)
     cos0 = n <.> ld''
     lray = initRay p ld''
     is = calcIntersection lray os
-    (p', _, _) = fromJust is
+    (p', _, _, _) = fromJust is
     sqLdist = square ld
     sqOdist = square (p' - p)
 
@@ -322,13 +399,18 @@ illuminated os p n (ld:lds)
 -- COMMON FUNCTIONS
 ---------------------------------
 
-type Intersection = (Position3, Direction3, Material)
+data InOut = In | Out deriving Eq
+type Intersection = (Position3, Direction3, Material, InOut)
 
 calcIntersection :: Ray -> V.Vector Object -> Maybe Intersection
-calcIntersection r os
+calcIntersection r@(_, rd) os
   | iss == [] = Nothing
-  | nvec == Nothing = Nothing
-  | otherwise = Just (p, fromJust nvec, m)
+  | otherwise =
+    case nvec of
+      Just n -> if n <.> rd > 0.0
+        then Just (p, negate n, m, Out)
+        else Just (p, n, m, In)
+      Nothing -> Nothing
   where
     p = target t r
     iss = filter (\x -> fst x > nearly0) (concat $ V.map (calcDistance r) os)

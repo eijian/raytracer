@@ -38,10 +38,11 @@ m_air = Material radiance0 white (Color 1.0 1.0 1.0)
 -- PUBLIC
 --
 
-readScene :: String -> IO (V.Vector Light, V.Vector Object)
+readScene :: String -> IO (Material, V.Vector Light, V.Vector Object)
 readScene file = do
   lines <- readConfig file
-  parseConfig ((intercalate "\n" lines) ++ "\n")
+  (lgts, objs) <- parseConfig ((intercalate "\n" lines) ++ "\n")
+  return (m_air, lgts, objs)
 
 --
 -- PRIVATE
@@ -72,12 +73,21 @@ parseConfig conf = do
       (initSurfaceSimple (Color 0.4 0.1 0.1) (Color 0.0 0.0 0.0) 1.0 0.0 0.0)
     mwallb = Material radiance0 (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
       (initSurfaceSimple (Color 0.1 0.1 0.4) (Color 0.0 0.0 0.0) 1.0 0.0 0.0)
-    mparal = Material (Radiance 0.7958 0.7958 0.7958) (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
+    --mparal = Material (Radiance 0.15 0.15 0.15) (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
+    --  (initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0) 0.0 0.0 0.0)
+
+    -- 0.79578はflux 5.0 を半球（2πステラジアン）で割った値。<- 間違い
+    --mparal = Material (Radiance 0.7958 0.7958 0.7958) (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
+    -- emittanceは flux 5.0 / 半球 2π / ライト面積 1.34^2 = 0.4421。
+    --   三原色それぞれがこの輝度を持つとした。
+    mparal = Material (Radiance 0.4421 0.4421 0.4421) (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
       (initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0) 0.0 0.0 0.0)
     glass = Material radiance0 (Color 0.0 0.0 0.0) (Color 2.0 2.0 2.0)
-      (initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.0)
+      --(initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.55)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.05)
     silver = Material radiance0 (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
-      (initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.78 0.78 0.78) 0.0 1.0 0.0)
+      --(initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.78 0.78 0.78) 0.0 1.0 0.55)
+      (initSurfaceTS (Color 0.0 0.0 0.0) (Color 0.78 0.78 0.78) 0.0 1.0 0.05)
     
     flooring = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) mwall
     ceiling  = Object (Plain (Vector3 0.0 (-1.0) 0.0) 4.0) mwall

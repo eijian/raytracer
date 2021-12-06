@@ -16,9 +16,6 @@ module Ray.Geometry (
 , initRay
 , initRayFromElem
 , target
-, diffuseReflection
-, specularReflection
-, specularRefraction
 , methodMoller
 ) where
 
@@ -143,38 +140,6 @@ distance (pos, dir) (Parallelogram p _ d1 d2)
     (_, _, t) = fromJust res
 -- Point
 distance _ _ = []
-
---
--- REFLECTION AND REFRACTION
---
-
-diffuseReflection :: Direction3 -> IO Direction3
-diffuseReflection n = do
-  dir <- generateRandomDir4
-  let c = n <.> dir
-  return $ if c > 0.0 then dir else negate dir
-
-specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
-specularReflection n e
-  | v == Nothing = (n, 0.0)
-  | c < 0.0      = (fromJust v, -c)
-  | otherwise    = (fromJust v,  c)
-  where
-    c = e <.> n
-    v = normalize (e - (2.0 * c) *> n)
-
-specularRefraction :: Double -> Double -> Double -> Direction3 -> Direction3
-                   -> (Direction3, Double)
-specularRefraction ior0 ior1 c0 ed n
-  | r <  0.0     = (o3, 0.0)
-  | t == Nothing = (o3, 0.0)
-  | otherwise    = (fromJust t, ior')
-  where
-    ior' = ior0 / ior1
-    r = 1.0 / (ior' * ior') + c0 * c0 - 1.0
-    a = c0 - sqrt r
-    n' = if ed <.> n > 0.0 then negate n else n
-    t = normalize (ior' *> (ed + a *> n'))
 
 --
 -- UTILS

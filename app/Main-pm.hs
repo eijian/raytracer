@@ -30,7 +30,7 @@ main = do
     then return (as !! 0, as !! 1)
     else error usage
   scr <- readScreen fn1
-  (lgts, objs) <- readScene fn2
+  (m_air, lgts, objs) <- readScene fn2
   let
     --nPhoton = 100000
     power = (V.sum $ V.map flux lgts) / (fromIntegral $ nphoton scr)

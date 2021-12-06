@@ -8,9 +8,9 @@
 
 module Ray.Physics (
   Color (Color)
-, black
-, white
 , Wavelength (Red, Green, Blue)
+, black
+, distributedNormal
 , initColor
 , normalizeColor
 , decideWavelength
@@ -18,8 +18,12 @@ module Ray.Physics (
 , negateColor
 , scaleColor
 , addColor
+, mulColor
+, relativeIorAverage
+, relativeIorWavelength
+, reflectionGlossy
 , russianRoulette
-, reflectionIndex
+, white
 ) where
 
 import           Control.DeepSeq
@@ -103,6 +107,8 @@ scaleColor s (Color r g b) = Color (s * r) (s * g) (s * b)
 addColor :: Color -> Color -> Color
 addColor (Color r1 g1 b1) (Color r2 g2 b2) = Color (r1+r2) (g1+g2) (b1+b2)
 
+mulColor :: Color -> Color -> Color
+mulColor (Color r1 g1 b1) (Color r2 g2 b2) = Color (r1*r2) (g1*g2) (b1*b2)
 
 -- Physics Lows -----------------
 
@@ -150,6 +156,46 @@ specularReflection nvec vvec =
     else (nvec, -cos)
   where
     cos = -vvec <.> nvec  -- -(E,N)
+
+{-
+glossyな表面：法線ベクトルがブレていると捉える
+  ブレ幅は表面の粗さ(roughness)に依る。
+    完全に粗い  ：roughness=1.0
+    全く粗くない：roughness=0.0
+  
+  面の法線をN、glossy面でブレた法線をN'とすると
+  <N',N'>(NとN'のなす角をθとした時のcosθ)は、乱数ξ[0,1]を用いて
+    cosθ = ξ^(1/n+1)
+  とする。ここでnは
+    n = 10^(5*(1-√roughness))
+  と決める。（roughness 0 〜 1の時の増分に結果がスライドするように）
+-}
+
+distributedNormal :: Direction3 -> Double -> IO Direction3
+distributedNormal nvec pow = do
+  xi1 <- MT.randomIO :: IO Double    -- horizontal
+  xi2 <- MT.randomIO :: IO Double    -- virtical
+  let
+    phi = 2.0 * pi * xi2
+    uvec0 = normalize $ nvec <*> (Vector3 0.00424 1.0 0.00764)
+    uvec = case uvec0 of
+      Just v  -> v
+      Nothing -> fromJust $ normalize $ nvec <*> (Vector3 1.0 0.00424 0.00764)
+    vvec = uvec <*> nvec
+    xi1' = xi1 ** pow
+    rt = sqrt (1.0 - xi1' * xi1')
+
+    x = cos(phi) * rt
+    y = xi1'
+    z = sin(phi) * rt
+
+    nvec' = x *> uvec + y *> nvec + z *> vvec
+--    nvec' = if nvec <.> wi < 0.0
+--      then negate wi
+--      else wi
+  case normalize nvec' of
+    Just v  -> return v
+    Nothing -> return ex3    
 
 {-
 glossyな表面の反射ベクトルの求め方
@@ -237,13 +283,6 @@ snell r_ior nvec vvec
     t = fromJust $ normalize (r_ior *> (vvec + a *> nvec))
     c2 = sqrt (1.0 - n * (1.0 - c1 * c1))
 
-schlickColor :: Color -> Double -> Color
-schlickColor (Color r g b) cos =
-  Color (schlick r cos) (schlick g cos) (schlick b cos)
-
-schlick :: Double -> Double -> Double
-schlick f0 cos = f0 + (1.0 - f0) * (1.0 - cos) ** 5.0
-
 
 {- |
 russianRoulette
@@ -266,8 +305,10 @@ rr (c:cs) c0 rnd len
   where
     c' = c0 + c
 
+{-
 reflectionIndex :: Color -> Double -> Color
 reflectionIndex (Color r g b) c =
   Color (r + (1-r) * c') (g + (1-g) * c') (b + (1-b) * c')
   where
     c' = (1.0 - c) ** 5.0
+-}

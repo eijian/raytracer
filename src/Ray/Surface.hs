@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 --
 -- Surface
@@ -7,21 +8,44 @@
 
 module Ray.Surface (
   Surface (..)
+, PhotonBehavior (..)
 , reflectance   -- for Simple surface
-, albedo_diff   -- for TS surface
+, albedoDiff   -- for TS surface
+, albedoSpec
+, bsdf
+, densityPower
 , initSurfaceSimple
 , initSurfaceTS
-, store_photon
+, one_pi
+, reflect
+, refract
+, sr_half
+, photonBehavior
+, powerGlossy
+, storePhoton
+, rough
 ) where
 
 import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
+import           Data.Maybe
 import           GHC.Generics
-  
+import           NumericPrelude
+
+import Ray.Algebra
 import Ray.Physics
 import Ray.Optics
 
 -- CONSTANTS
+
+--sqpi2 :: Double
+--sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
+
+one_pi :: Double
+one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
+
+sr_half :: Double
+sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 
 -- Surface type
 
@@ -93,62 +117,123 @@ refract (TS diff _ scat metal _ _ _) _ =
 refract _ _ = False
 
 {-
+
+-}
+
 bsdf :: Surface -> Direction3 -> Direction3 -> Direction3 -> Maybe Direction3
   -> Double -> Double -> Radiance -> Radiance -> Radiance
   -> Radiance
-bsdf Nothing _ _ _ _ _ _ _ _ _ = radiance0
+bsdf None _ _ _ _ _ _ _ _ _ = radiance0
 bsdf (Simple ref spec diff metal _ _) _ _ _ _ cos0 _ di si ti =
-  diff         * (ref * ONE_PI * di) +
-  (1.0 - diff) * (f * si + (1.0 - metal) * f2 * ti)
+  diff           *> (ref <**> (one_pi *> di)) +
+    (1.0 - diff) *> (f <**> si + f2 <**> ((1.0 - metal) *> ti))
   where
     f = reflectionIndex spec cos0
-    f2 = -f
-bsdf (TS diff spec scat _ _ _ _) _ edir rdir _ cos0 _ di si ti =
+    f2 = negateColor f
+bsdf (TS aldiff alspec scat metal _ _ _) _ edir rdir _ cos0 _ di si ti =
   i_de + i_mt
   where
     lvec = rdir
-    vvec = -edir
-    hvec = normalize (lvec + vvec)
+    vvec = negate edir
+    hvec = fromJust $ normalize (lvec + vvec)
     cos_h = hvec <.> vvec
-    f = reflectionIndex spec cos0
-    f2 = -f
-    i_de = if metalness == 0.0
-      then f2 * diff * (scat * ONE_PI * di + (1.0 - scat) * ti)
-    i_mt = f * si
+    f = reflectionIndex alspec cos0
+    f2 = negateColor f
+    i_de = if metal == 0.0
+      then (mulColor aldiff f2) <**> ((scat * one_pi) *> di + (1.0 - scat) *> ti)
+      else radiance0
+    i_mt = f <**> si
 bsdf DisneyBRDF _ _ _ _ _ _ _ _ _ = radiance0
 bsdf Brady _ _ _ _ _ _ _ _ _ = radiance0
+
+-- PhotonBehavior
+
+data PhotonBehavior =
+    SpecularReflection
+  | Absorption
+  | DiffuseReflection
+  | SpecularTransmission
+  deriving Show
+
+photonBehavior :: Surface -> Double -> Wavelength -> IO PhotonBehavior
+photonBehavior (TS aldiff alspec scat _ _ _ _) cos wl = do
+  r1 <- russianRoulette [f]
+  --putStrLn ("r1=" ++ show r1 ++ ", f=" ++ show f)
+  if r1 == 1
+    then return SpecularReflection
+    else do
+      r2 <- russianRoulette [selectWavelength wl aldiff]
+      --putStrLn ("r2=" ++ show r2 ++ ", diff=" ++ show aldiff)
+      if r2 == 0
+        then return Absorption
+        else do
+          r3 <- russianRoulette [scat]
+          --putStrLn ("r3=" ++ show r3 ++ ", scat=" ++ show scat)
+          if r3 == 0
+            then return SpecularTransmission
+            else return DiffuseReflection
+  where
+    f = schlick (selectWavelength wl alspec) cos
+photonBehavior _ _ _ = return Absorption
+
+{- |
+selectDuffuse
 -}
 
--- OUT: dir  next ray direction. if dir is None, the photon is absorbed.
---      T/F  true = reflection, false = rafraction
-{-
-nextDirection :: Surface -> Double -> Direction3 -> Direction3 -> Wavelength
-  -> Maybe (Direction3, Boolean)
-nextDirection 
--}
+selectDiffuse :: Surface -> Double -> Wavelength -> IO Bool
+selectDiffuse (Simple _ _ _ metal _ _) cos wl = do
+  r <- russianRoulette [metal]
+  if r > 0 then return True else return False
+selectDiffuse (TS _ spec _ _ _ _ _) cos wl = do
+  let f = schlick (selectWavelength wl spec) cos
+  r <- russianRoulette [f]
+  if r > 0 then return True else return False
+selectDiffuse _ _ _ = return True
 
--- select_diffuse
 
-store_photon :: Surface -> Bool
-store_photon (Simple _ _ diff _ _ _) = diff > 0.0
-store_photon (TS _ _ scat metal _ _ _) = metal /= 0.0 && scat /= 0.0
-store_photon _ = True
+storePhoton :: Surface -> Bool
+storePhoton (Simple _ _ diff _ _ _) = diff > 0.0
+storePhoton (TS _ _ scat metal _ _ _) = metal /= 0.0 && scat /= 0.0
+storePhoton _ = True
+
+
+albedoDiff :: Surface -> Wavelength -> Double
+albedoDiff (Simple ref _ _ _ _ _) wl = selectWavelength wl ref
+albedoDiff (TS aldiff _ _ _ _ _ _) wl  = selectWavelength wl aldiff
+albedoDiff _ _ = 0.0
+
+albedoSpec :: Surface -> Wavelength -> Double
+albedoSpec (Simple _ spec _ _ _ _) wl = selectWavelength wl spec
+albedoSpec (TS _ alspec _ _ _ _ _) wl = selectWavelength wl alspec
+albedoSpec _ _ = 0.0
+
+rough :: Surface -> Double
+rough (Simple _ _ _ _ smooth _) = 1.0 - smooth
+rough (TS _ _ _ _ rough _ _)  = rough
+rough _ = 0.0
+
+powerGlossy :: Surface -> Double
+powerGlossy (Simple _ _ _ _ _ pow) = pow
+powerGlossy (TS _ _ _ _ _ pow _)   = pow
+powerGlossy _ = 0.0
 
 diffSpec :: Surface -> Color
 diffSpec (Simple r _ _ _ _ _) = r
 diffSpec (TS ad _ _ _ _ _ _)  = ad
 diffSpec _ = black
 
+-- UTILITY FUNCTIONS
 -- PRIVATE FUNCTIONS
 
 densityPower :: Double -> Double
 densityPower rough = 1.0 / (10.0 ** pw + 1.0)
   where
-    pw = 5.0 * (1.0 - sqrt rough)
+    pw = 6.0 * (1.0 - sqrt rough)
 
+{-
 reflectionIndex :: Color -> Double -> Color
 reflectionIndex (Color r g b) c =
   Color (r + (1.0 - r) * c2) (g + (1.0 - g) * c2) (b + (1.0 - b) * c2)
   where
     c2 = (1.0 - c) ** 5.0
-
+-}

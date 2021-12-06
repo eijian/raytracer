@@ -10,6 +10,35 @@
 -- Optics
 --
 
+{-
+  光束の単位「 lm 」について
+
+  大きな考え方としては、「放射束」を人間の眼で見たときの「明るさ」が「光束」
+  なのですが、この関係をもう少し厳密に説明します。正確には、放射量（ワット
+  単位）から測光量（ルーメン単位）への変換には、最大視感効果度 Km と呼ばれる
+  変換定数を掛ける必要があります。
+  
+     Km ＝ 683 [ lm / W ]
+
+  cf: https://www.ccs-inc.co.jp/guide/column/light_color/vol04.html
+
+--
+  ８畳間では3300-4300ルーメンぐらい。flux=5.0だと上の換算値から、
+
+    5.0[W] x 683[lm/W] = 3415[lm]
+  
+  となり、妥当な数字。
+
+--
+  作例の天井ライトは1.34[m]四方、5.0[W]である。光は下面のみから放射されるため
+  半球に広がる(1/2π[1/sr])となる。よってこのライトの放射輝度は、
+
+    5.0 / 2π / (1.34^2) = 0.4421 [W/sr/m^2]
+
+    米 これを光の三原色で均等割するのか、それぞれがこの値か？
+
+-}
+
 module Ray.Optics (
   Photon
 , PhotonCache
@@ -17,6 +46,9 @@ module Ray.Optics (
 , PhotonFilter (..)
 , Radiance (Radiance)
 , (<**>)
+, diffuseReflection
+, specularReflection
+, specularRefraction
 , rabs'
 , elemR
 , elemG
@@ -30,6 +62,9 @@ module Ray.Optics (
 , photonToRadiance
 , radiance0
 , radiance1
+, reflectionIndex
+, schlick
+, schlickColor
 ) where
 
 import qualified Algebra.Additive as Additive
@@ -38,6 +73,7 @@ import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
 import           Debug.Trace
 import           Data.List.Split
+import           Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Vector as V
@@ -195,4 +231,74 @@ photonToRadiance n pw (wl, (_, d)) =
   where
     cos0 = n <.> d
     pw'  = if cos0 > 0.0 then pw * cos0 else 0.0
+
+--
+-- REFLECTION AND REFRACTION
+--
+
+diffuseReflection :: Direction3 -> IO Direction3
+diffuseReflection n = do
+  dir <- generateRandomDir4
+  let c = n <.> dir
+  return $ if c > 0.0 then dir else negate dir
+
+{-
+  cos = -(E, N)
+
+    N <- nvec
+    E <- vvec  : E is to surface
+-}
+specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
+specularReflection nvec vvec
+  | cos < 0.0       = (nvec, -cos)
+  | rvec == Nothing = (nvec, 0.0)
+  | otherwise       = (fromJust rvec,  cos)
+  where
+    cos = -vvec <.> nvec
+    rvec = normalize (vvec + (2.0 * cos) *> nvec)
+
+{-
+  T = 1/n {L + (c - g) N}
+
+    c = cos θ1 = - (L . N)
+    g = √(η^2 + c^2 - 1)
+    η = η2 / η1 
+
+    N      <- nvec
+    L      <- vvec
+    η      <- eta
+    cos θ1 <- cos1 (-L.N)
+
+-}
+
+specularRefraction :: Direction3 -> Direction3 -> Double -> Double
+                   -> (Maybe Direction3, Double)
+specularRefraction nvec vvec eta cos1
+  | cos1 < 0.0      = (Nothing, 0.0) 
+  | g0 <  0.0       = (Nothing, 0.0)  -- 全反射
+  | tvec == Nothing = (Nothing, 0.0)
+  | otherwise       = (tvec, g / eta)
+  where
+    g0 = eta * eta + cos1 * cos1 - 1.0
+    g  = sqrt g0
+    --n' = if vvec <.> nvec > 0.0 then negate n else n
+    tvec = normalize ((1.0 / eta) *> (vvec + (cos1 - g) *> nvec))
+
+--
+-- 
+--
+
+reflectionIndex = schlickColor
+
+schlickColor :: Color -> Double -> Color
+schlickColor (Color r g b) cos =
+  Color (r + (1.0 - r) * cos') (g + (1.0 - g) * cos') (b + (1.0 - b) * cos')
+  where
+    cos' = (1.0 - cos) ** 5.0
+
+schlick :: Double -> Double -> Double
+schlick f0 cos = f0 + (1.0 - f0) * (1.0 - cos) ** 5.0
+
+
+
 

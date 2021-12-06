@@ -3,6 +3,8 @@
 # averager
 #
 
+require 'fileutils'
+
 USAGE = "Usage: averager2.rb [-h|-exr|-ppm] [output filename]\n" +
         "  app waits a temporary directory name from STDIN.\n"     +
         "  if o/p file isn't given, image is written to STDOUT."
@@ -225,6 +227,14 @@ def close_file(fp)
   fp.close
 end
 
+def delete_sources(bn)
+  begin
+    FileUtils.rm_rf(bn)
+  rescue StandardError => e
+    STDERR.puts "ERR:#{e}"
+  end
+end
+
 def main
   init
 
@@ -240,6 +250,7 @@ def main
     else
       output_exr(fp)
     end
+    delete_sources(basename)
   rescue
     close_file(fp)
   end
