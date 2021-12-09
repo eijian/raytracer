@@ -26,6 +26,7 @@ import           Debug.Trace
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as VU
 import           NumericPrelude
+import           System.Random.Mersenne as MT
 
 import Ray.Algebra
 import Ray.Geometry
@@ -167,7 +168,6 @@ nextDirection sf@(TS aldiff alspec scat _ _ _ pow) eta nvec (wl, (_, vvec)) = do
       case tdir of
         Just tdir -> return $ Just (tdir, False)
         Nothing   -> return Nothing
-    _                  -> return Nothing
 nextDirection (Simple _ _ _ _ _ _) _ _ _ = return Nothing
 nextDirection _ _ _ _ = return Nothing
 
@@ -188,9 +188,11 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !m0 !r@(_, vvec)
           tracer = traceRay scr uc objs lgts (l+1) pmap radius
 
         -- L_diffuse
+        r1 <- MT.randomIO :: IO Double
+        r2 <- MT.randomIO :: IO Double
         let
           di' = if uc 
-            then foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n) lgts
+            then foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n (r1, r2)) lgts
             else radiance0
           di = di' + estimateRadiance radius scr pmap (p, n, m, io)
 
@@ -368,13 +370,13 @@ traceRay' !scr l lgts objs r
   where
     is = calcIntersection r objs
     (p, n, m, io) = fromJust is
-    radDiff = foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n) lgts
+    radDiff = foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n (0.0, 0.0)) lgts
 
-getRadianceFromLight :: V.Vector Object -> Position3 -> Direction3 -> Light
-                     -> Radiance
-getRadianceFromLight objs p n l = sum $ zipWith (*>) coss $ getRadiance l dists
+getRadianceFromLight :: V.Vector Object -> Position3 -> Direction3 -> (Double, Double)
+                     -> Light -> Radiance
+getRadianceFromLight objs p n blur l = sum $ zipWith (*>) coss $ getRadiance l dists
   where
-    (dists, coss) = unzip $ illuminated objs p n $ getDirection l p
+    (dists, coss) = unzip $ illuminated objs p n $ getDirection l p blur
 
 illuminated :: V.Vector Object -> Position3 -> Direction3 -> [Direction3]
             -> [(Double, Double)]

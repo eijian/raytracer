@@ -84,10 +84,10 @@ parseConfig conf = do
       (initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0) 0.0 0.0 0.0)
     glass = Material radiance0 (Color 0.0 0.0 0.0) (Color 2.0 2.0 2.0)
       --(initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.55)
-      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.05)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.0)
     silver = Material radiance0 (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
       --(initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.78 0.78 0.78) 0.0 1.0 0.55)
-      (initSurfaceTS (Color 0.0 0.0 0.0) (Color 0.78 0.78 0.78) 0.0 1.0 0.05)
+      (initSurfaceTS (Color 0.0 0.0 0.0) (Color 0.78 0.78 0.78) 0.0 1.0 0.0)
     
     flooring = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) mwall
     ceiling  = Object (Plain (Vector3 0.0 (-1.0) 0.0) 4.0) mwall

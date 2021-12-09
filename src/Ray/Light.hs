@@ -87,21 +87,17 @@ generatePhoton (SunLight c _ p n d1 d2 d0) = do
 pi4 :: Double
 pi4 = 4 * pi -- for decay by distance (1/ 4pi) 
 
-paraDiv :: Double
-paraDiv = 0.2
-ts :: [Double]
-ts = [0.1, 0.3, 0.5, 0.7, 0.9]
-tss :: [(Double, Double)]
-tss = [(x, y) | x <- ts, y <- ts]
-
-getDirection :: Light -> Position3 -> [Direction3]
-getDirection (PointLight _ _ lp) p = [lp - p]
-getDirection (ParallelogramLight _ _ lp n d1 d2) p =
-  filter (\d -> n <.> d < 0.0) $ map (\(tx, ty) -> genPos tx ty - p) tss
+getDirection :: Light -> Position3 -> (Double, Double) -> [Direction3]
+getDirection (PointLight _ _ lp) p _ = [lp - p]
+getDirection (ParallelogramLight _ _ lp n d1 d2) p (x, y)
+  | n <.> d >= 0.0 = []
+  | otherwise = [d]
+  --filter (\d -> n <.> d < 0.0) $ map (\(tx, ty) -> genPos tx ty - p) tss
   where
+    d = genPos x y - p
     genPos :: Double -> Double -> Position3
     genPos tx ty = lp + tx *> d1 + ty *> d2
-getDirection (SunLight _ _ lp n d1 d2 dt) p
+getDirection (SunLight _ _ lp n d1 d2 dt) p _
   | cos0 > 0.0     = []
   | res == Nothing = []
   | otherwise      = [t *> dt']
@@ -111,6 +107,10 @@ getDirection (SunLight _ _ lp n d1 d2 dt) p
     dt' = negate dt
     res = methodMoller 2.0 lp d1 d2 p dt'
     (_, _, t) = fromJust res
+
+{-
+光源までの距離は二乗された状態で入力される。1/4πd となっているがdは実際はd^2。
+-}
 
 getRadiance :: Light -> [Double] -> [Radiance]
 getRadiance _ [] = [radiance0]
@@ -122,6 +122,6 @@ getRadiance l@(ParallelogramLight (Color r g b) f _ _ _ _) (d:ds) =
   (Radiance (r * l0) (g * l0) (b * l0)) : getRadiance l ds
   where
     -- 平面光源は片方向のみ放射するので2倍の出力になる
-    l0 = (2 * f * paraDiv * paraDiv) / (pi4 * d)
+    l0 = (2 * f) / (pi4 * d)
 getRadiance l@(SunLight (Color r g b) f _ _ _ _ _) (_:ds) =
   (Radiance (r * f) (g * f) (b * f)) : getRadiance l ds
