@@ -193,7 +193,7 @@ selectDiffuse _ _ _ = return True
 
 storePhoton :: Surface -> Bool
 storePhoton (Simple _ _ diff _ _ _) = diff > 0.0
-storePhoton (TS _ _ scat metal _ _ _) = metal /= 0.0 && scat /= 0.0
+storePhoton (TS _ _ scat metal _ _ _) = metal /= 1.0 && scat /= 0.0
 storePhoton _ = True
 
 

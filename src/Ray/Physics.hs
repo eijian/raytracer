@@ -11,6 +11,7 @@ module Ray.Physics (
 , Wavelength (Red, Green, Blue)
 , black
 , distributedNormal
+, expColor
 , initColor
 , normalizeColor
 , decideWavelength
@@ -38,6 +39,12 @@ import           Ray.Algebra
 --
 -- Wavelength
 
+{-
+波長
+  Red  : 700.0 nm
+  Green: 546.1 nm
+  Blue : 435.5 nm
+-}
 data Wavelength = Red | Green | Blue deriving (Show, Read, Enum, Eq, Generic)
 
 instance NFData Wavelength where
@@ -109,6 +116,9 @@ addColor (Color r1 g1 b1) (Color r2 g2 b2) = Color (r1+r2) (g1+g2) (b1+b2)
 
 mulColor :: Color -> Color -> Color
 mulColor (Color r1 g1 b1) (Color r2 g2 b2) = Color (r1*r2) (g1*g2) (b1*b2)
+
+expColor :: Color -> Double -> Color
+expColor (Color r g b) e = Color (r ** e) (g ** e) (b ** e)
 
 -- Physics Lows -----------------
 
