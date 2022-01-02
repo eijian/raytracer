@@ -29,6 +29,7 @@ module Ray.Surface (
 import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
 import           Data.Maybe
+import           Debug.Trace
 import           GHC.Generics
 import           NumericPrelude
 
@@ -125,26 +126,37 @@ bsdf :: Surface -> Direction3 -> Direction3 -> Direction3 -> Maybe Direction3
   -> Radiance
 bsdf None _ _ _ _ _ _ _ _ _ = radiance0
 bsdf (Simple ref spec diff metal _ _) _ _ _ _ cos0 _ di si ti =
-  diff           *> (ref <**> (one_pi *> di)) +
-    (1.0 - diff) *> (f <**> si + f2 <**> ((1.0 - metal) *> ti))
+  diff         *> (ref <**> (one_pi *> di)) +
+  (1.0 - diff) *> (f <**> si + f2 <**> ((1.0 - metal) *> ti))
   where
     f = reflectionIndex spec cos0
     f2 = negateColor f
-bsdf (TS aldiff alspec scat metal _ _ _) _ edir rdir _ cos0 _ di si ti =
+bsdf (TS aldiff alspec scat metal rough _ _) nvec edir rdir _ cos0 _ di si ti =
   i_de + i_mt
   where
-    lvec = rdir
-    vvec = negate edir
-    hvec = fromJust $ normalize (lvec + vvec)
-    cos_h = hvec <.> vvec
+    alpha = rough * rough * rough * rough
+
+    cos_v = -1.0 * (nvec <.> edir)
+    cos_l = nvec <.> rdir
+    cos_l' = if cos_l < 0.0 then (-cos_l) else cos_l
+
+    d = 1.0
+    v = (cos_v * cos_l') ** (rough * rough)
+
     f = reflectionIndex alspec cos0
     f2 = negateColor f
-    i_de = if metal == 0.0
-      then (mulColor aldiff f2) <**> ((scat * one_pi) *> di + (1.0 - scat) *> ti)
-      else radiance0
-    i_mt = f <**> si
+    i_de = if metal == 1.0
+      then radiance0
+      else (mulColor aldiff f2) <**> ((scat * one_pi) *> di + (1.0 - scat) *> ti)
+    k_metal = metal + (1.0 - metal) * v
+    i_mt = f <**> (k_metal *> si)
 bsdf DisneyBRDF _ _ _ _ _ _ _ _ _ = radiance0
 bsdf Brady _ _ _ _ _ _ _ _ _ = radiance0
+
+schlickG :: Direction3 -> Direction3 -> Double -> Double
+schlickG nvec vvec k = cos / (cos * (1.0 - k) + k)
+  where
+    cos = nvec <.> vvec
 
 -- PhotonBehavior
 

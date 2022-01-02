@@ -65,15 +65,17 @@ parseConfig conf = do
     ls = [ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
       (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)]
 
-    mball = Material radiance0 (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
-      (initSurfaceSimple (Color 0.5 0.5 0.5) (Color 0.0 0.0 0.0) 0.5 0.0 0.0)
-    mwall = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.5 1.5 1.5)
+    --mball = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.0 1.0 1.0)
+    --  (initSurfaceSimple (Color 0.5 0.5 0.5) (Color 0.0 0.0 0.0) 0.5 0.0 0.0)
+    mwall = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.534 1.534 1.534)
       --(initSurfaceSimple (Color 0.5 0.5 0.5) (Color 0.8 0.8 0.8) 1.0 0.0 0.0)
-      (initSurfaceTS (Color 0.5 0.5 0.5) (Color 0.05 0.05 0.05) 1.0 0.0 1.0)
-    mwallr = Material radiance0 (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
-      (initSurfaceSimple (Color 0.4 0.1 0.1) (Color 0.0 0.0 0.0) 1.0 0.0 0.0)
-    mwallb = Material radiance0 (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
-      (initSurfaceSimple (Color 0.1 0.1 0.4) (Color 0.0 0.0 0.0) 1.0 0.0 0.0)
+      (initSurfaceTS (Color 0.5 0.5 0.5) (Color 0.0444 0.0444 0.0444) 1.0 0.0 1.0)
+    mwallr = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.534 1.534 1.534)
+      --(initSurfaceSimple (Color 0.4 0.1 0.1) (Color 0.0 0.0 0.0) 1.0 0.0 0.0)
+      (initSurfaceTS (Color 0.4 0.1 0.1) (Color 0.0444 0.0444 0.0444) 1.0 0.0 1.0)
+    mwallb = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.534 1.534 1.534)
+      --(initSurfaceSimple (Color 0.1 0.1 0.4) (Color 0.0 0.0 0.0) 1.0 0.0 0.0)
+      (initSurfaceTS (Color 0.1 0.1 0.4) (Color 0.0444 0.0444 0.0444) 1.0 0.0 1.0)
     --mparal = Material (Radiance 0.15 0.15 0.15) (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
     --  (initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0) 0.0 0.0 0.0)
 
@@ -85,14 +87,56 @@ parseConfig conf = do
       (initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0) 0.0 0.0 0.0)
     --glass = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.455 1.460 1.467)
     glass = Material radiance0 (Color 1.0 1.0 1.0) (Color 1.7 1.7 1.7)
-      --(initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.55)
-      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.0)
+      --(initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.0)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.08 0.08 0.08) 0.0 0.0 1.0)
     silver = Material radiance0 (Color 0.0 0.0 0.0) (Color 0.142 0.128 0.159)
       --(initSurfaceSimple (Color 0.0 0.0 0.0) (Color 0.78 0.78 0.78) 0.0 1.0 0.55)
-      (initSurfaceTS (Color 0.0 0.0 0.0) (Color 0.78 0.78 0.78) 0.0 1.0 0.0)
-    mirror = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.5 1.5 1.5)
-      (initSurfaceTS (Color 0.6 0.35 0.1) (Color 0.05 0.05 0.05) 1.0 0.0 0.0)
-    
+      (initSurfaceTS (Color 0.0 0.0 0.0) (Color 0.96 0.76 0.39) 0.0 1.0 1.0)
+    --mirror = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.5 1.5 1.5)
+    --  (initSurfaceTS (Color 0.6 0.35 0.1) (Color 0.05 0.05 0.05) 1.0 0.0 0.0)
+{-
+    ypla00 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.0)
+    ypla01 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.1)
+    ypla02 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.2)
+    ypla03 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.3)
+    ypla04 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.4)
+    ypla05 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.5)
+    ypla06 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.6)
+    ypla07 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.7)
+    ypla08 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.8)
+    ypla10 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 1.0)
+-}
+    ypla00 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.7 1.7 1.7)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.08 0.08 0.08) 0.0 0.0 0.0)
+    ypla01 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 0.1)
+    ypla02 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 0.2)
+    ypla03 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 0.3)
+    ypla04 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 0.4)
+    ypla05 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 0.5)
+    ypla06 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 0.6)
+    ypla07 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 0.7)
+    ypla08 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 0.8)
+    ypla10 = Material radiance0 (Color 1.0 0.6 0.2) (Color 1.6 1.6 1.6)
+      (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 1.0)
+
     --flooring = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) mwall
     --flooring = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) mirror
     flooring = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) mwall
@@ -104,11 +148,25 @@ parseConfig conf = do
 
     ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) glass
     ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) silver
+    ball_01 = Object (Sphere (Vector3 (-1.6) 1.2 3.8) 0.4) ypla00
+    ball_02 = Object (Sphere (Vector3 (-0.8) 1.2 3.8) 0.4) ypla01
+    ball_03 = Object (Sphere (Vector3 ( 0.0) 1.2 3.8) 0.4) ypla02
+    ball_04 = Object (Sphere (Vector3 ( 0.8) 1.2 3.8) 0.4) ypla03
+    ball_05 = Object (Sphere (Vector3 ( 1.6) 1.2 3.8) 0.4) ypla04
+    ball_06 = Object (Sphere (Vector3 (-1.6) 0.4 2.8) 0.4) ypla05
+    ball_07 = Object (Sphere (Vector3 (-0.8) 0.4 2.8) 0.4) ypla06
+    ball_08 = Object (Sphere (Vector3 ( 0.0) 0.4 2.8) 0.4) ypla07
+    ball_09 = Object (Sphere (Vector3 ( 0.8) 0.4 2.8) 0.4) ypla08
+    ball_10 = Object (Sphere (Vector3 ( 1.6) 0.4 2.8) 0.4) ypla10
     --ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) mirror
     ceiling_light = Object (initParallelogram (Vector3 (-0.67) 3.99 2.33)
       (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)) mparal
 
     os = [flooring, ceiling, rsidewall, lsidewall, backwall, frontwall,
-      ball_glass, ball_silver, ceiling_light]
+          ceiling_light,
+          ball_01, ball_02, ball_03, ball_04, ball_05,
+          ball_06, ball_07, ball_08, ball_09, ball_10]
+
+      
 
   return (V.fromList ls, V.fromList os)

@@ -203,7 +203,6 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !m0 !r@(_, vvec)
             then foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n (r1, r2)) lgts
             else radiance0
           di = di' + estimateRadiance radius scr pmap (t, p, n, m, io)
-          --di = radiance0
 
         -- L_spec
         let
@@ -226,7 +225,8 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !m0 !r@(_, vvec)
           --hvec = fromJust $ normalize (rdir - vvec)
           --(tdir, cos2) = specularRefraction hvec (getDir r) eta cos1
           (tdir, cos2) = specularRefraction nvec' (getDir r) eta cos1
-          cos = if cos1 < cos2 then cos1 else cos2
+          --cos = if cos1 < cos2 then cos1 else cos2
+          cos = cos1
         ti <- case tdir of
           Nothing   -> return radiance0
           Just tdir ->
