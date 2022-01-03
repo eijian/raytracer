@@ -2,16 +2,16 @@
 
 ## How to do GitHub Flow
 
-1. command: git checkout -b __branch_name__
-2. command: git push origin __branch_name__
+1. command: git checkout -b _branch_name_
+2. command: git push origin _branch_name_
 3. work: update version number
-4. command: git push --set-upstream origin __branch_name__
+4. command: git push --set-upstream origin _branch_name_
 5. work: development
 6. command: git checkout master
-7. command: git merge __branch_name__
+7. command: git merge _branch_name_
 8. command: git push
-9. command: git tag __version__
-10. command: git push origin __version__
+9. command: git tag _version_
+10. command: git push origin _version_
 
 
 ## Branches
