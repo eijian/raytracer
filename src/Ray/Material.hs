@@ -115,7 +115,6 @@ selectDiffuse (Material _ _ _ _ _ as) cos wl = do
 
 storePhoton :: Material -> Bool
 storePhoton (Material _ scat metal _ _ _) = metal /= 1.0 && scat /= 0.0
-storePhoton _ = True
 
 {-
 diffSpec :: Surface -> Color

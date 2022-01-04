@@ -47,7 +47,7 @@ main = do
   let
     uc = useClassicForDirect scr
     rad = radius scr
-    tracer = traceRay scr uc objs lgts 0 photonmap rad m_air
+    tracer = traceRay scr uc objs lgts 0 photonmap rad m_air m_air
   rays <- V.mapM (generateRay scr) $ screenMap scr
   image <- V.mapM tracer rays
 

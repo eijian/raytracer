@@ -14,17 +14,17 @@ module Tracer (
 ) where
 
 import           Control.DeepSeq
-import           Control.DeepSeq.Generics (genericRnf)
+--import           Control.DeepSeq.Generics (genericRnf)
 import           Control.Monad
-import qualified Data.Map.Strict as Map
+--import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import           Data.List hiding (sum)
 import           Data.Ord
 --import qualified Data.KdTree.Static as KT
 --import qualified Data.KdTree.Dynamic as KT
-import           Debug.Trace
+--import           Debug.Trace
 import qualified Data.Vector as V
-import qualified Data.Vector.Unboxed as VU
+--import qualified Data.Vector.Unboxed as VU
 import           NumericPrelude
 import           System.Random.Mersenne as MT
 
@@ -35,11 +35,11 @@ import Ray.Light
 import Ray.Material
 import Ray.Physics
 import Ray.Optics
-import Ray.Surface hiding (alpha, diffuseness, metalness, reflectance)
+import Ray.Surface hiding (alpha)
 
 import PhotonMap
 import Screen
-import Scene
+--import Scene
 
 --
 -- CONSTANTS
@@ -61,16 +61,16 @@ max_trace = 10
       r  = ray
 -}
 
-tracePhoton :: Bool -> V.Vector Object -> Int -> Material -> Photon
+tracePhoton :: Bool -> V.Vector Object -> Int -> Material -> Material -> Photon
             -> IO (V.Vector Photon)
-tracePhoton !uc !os !l !m0 !ph@(wl, r@(_, rd))
+tracePhoton !uc !os !l !m_air !m0 !ph@(wl, r@(_, rd))
   | l >= max_trace = return V.empty
   | otherwise = do
     case (calcIntersection r os) of
       Just is -> do
         let
-          (t, p, n, m, surf, io) = is
-          tracer = tracePhoton uc os (l+1)
+          (t, p, n, m, surf, _) = is
+          tracer = tracePhoton uc os (l+1) m_air
         ref <- do
             -- フォトンが物体に到達するまでに透過率が低く吸収される場合あり
             -- transmission ** t の確率で到達する
@@ -147,8 +147,7 @@ nextDirection
 
 nextDirection :: Material -> Surface -> Double -> Direction3 -> Photon
   -> IO (Maybe (Direction3, Bool))
-nextDirection mate@(Material aldiff scat _ _ _ alspec) (Surface _ rough pow _)
-  eta nvec (wl, (_, vvec)) = do
+nextDirection mate (Surface _ rough pow _) eta nvec (wl, (_, vvec)) = do
 
   nvec' <- if rough == 0.0 then return nvec else blurredVector nvec pow
   let
@@ -172,15 +171,15 @@ nextDirection mate@(Material aldiff scat _ _ _ alspec) (Surface _ rough pow _)
 -----
 
 traceRay :: Screen -> Bool -> V.Vector Object -> V.Vector Light -> Int
-  -> PhotonMap -> Double -> Material -> Ray -> IO Radiance
-traceRay !scr !uc !objs !lgts !l !pmap !radius !m0 !r@(_, vvec) 
+  -> PhotonMap -> Double -> Material -> Material -> Ray -> IO Radiance
+traceRay !scr !uc !objs !lgts !l !pmap !radius !m_air !m0 !r@(_, vvec) 
   | l >= max_trace = return radiance0
   | otherwise     = do
     case (calcIntersection r objs) of
       Nothing            -> return radiance0
       Just is@(t, p, n, m, surf, io) -> do
         let
-          tracer = traceRay scr uc objs lgts (l+1) pmap radius
+          tracer = traceRay scr uc objs lgts (l+1) pmap radius m_air
 
         -- L_diffuse
         r1 <- MT.randomIO :: IO Double
@@ -206,7 +205,7 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !m0 !r@(_, vvec)
           eta = relativeIorAverage (ior m0) (ior m)
           --hvec = fromJust $ normalize (rdir - vvec)
           --(tdir, cos2) = specularRefraction hvec (getDir r) eta cos1
-          (tvec, cos2) = specularRefraction nvec' (getDir r) eta cos1
+          (tvec, _) = specularRefraction nvec' (getDir r) eta cos1
         ti <- case tvec of
           Nothing   -> return radiance0
           Just tvec ->
@@ -247,7 +246,7 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !m0 !r@(_, vvec)
 --ps0 = V.fromList [PhotonInfo Red o3 ex3, PhotonInfo Green ex3 ey3]
 
 estimateRadiance :: Double -> Screen -> PhotonMap -> Intersection -> Radiance
-estimateRadiance rmax scr pmap (t, p, n, m, surf, _)
+estimateRadiance rmax scr pmap (_, p, n, _, _, _)
   | V.null ps = radiance0
   | otherwise = (one_pi / rmax * (power pmap)) *> rad -- 半径は指定したものを使う
   where
@@ -353,7 +352,7 @@ sumRadiance3 _ n pw rmax rs ps = rds `deepseq` rad
 ------
 
 traceRay' :: Screen -> Int -> V.Vector Light -> V.Vector Object -> Ray -> IO Radiance
-traceRay' !scr l lgts objs r
+traceRay' !scr _ lgts objs r
   | is == Nothing = return radiance0
   | otherwise     = return (
                     sr_half *> emittance surf
@@ -361,7 +360,7 @@ traceRay' !scr l lgts objs r
                   )
   where
     is = calcIntersection r objs
-    (t, p, n, m, surf, io) = fromJust is
+    (_, p, n, m, surf, _) = fromJust is
     radDiff = foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n (0.0, 0.0)) lgts
 
 getRadianceFromLight :: V.Vector Object -> Position3 -> Direction3 -> (Double, Double)
@@ -403,7 +402,7 @@ calcIntersection ray@(_, raydir) objs
     case nvec of
       Just nvec -> if nvec <.> raydir > 0.0
         then Just (t, pos, negate nvec, mate, surf, Out)
-        else Just (t, pos, nvec, mate, surf, In)
+        else Just (t, pos, nvec       , mate, surf, In)
       Nothing -> Nothing
   where
     iss = filter (\x -> fst x > nearly0) (concat $ V.map (calcDistance ray) objs)
@@ -435,21 +434,21 @@ bsdf (Simple ref spec diff metal _ _) _ _ _ _ cos0 _ di si ti =
     f = reflectionIndex spec cos0
     f2 = negateColor f
 -}
-bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ alpha) nvec edir rdir _ cos0 _ di si ti =
+bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) nvec edir rdir _ cos0 _ di si ti =
   i_de + i_mt
   where
     cos_v = -1.0 * (nvec <.> edir)
     cos_l = nvec <.> rdir
     cos_l' = if cos_l < 0.0 then (-cos_l) else cos_l
 
-    d = 1.0
+    --d = 1.0
     v = (cos_v * cos_l') ** (2.0 * rough * rough)
 
     f = reflectionIndex alspec cos0
-    f2 = negateColor f
+    f2 = negate f
     i_de = if metal == 1.0
       then radiance0
-      else (mulColor aldiff f2) <**> ((scat * one_pi) *> di + (1.0 - scat) *> ti)
+      else (aldiff * f2) <**> ((scat * one_pi) *> di + (1.0 - scat) *> ti)
     k_metal = metal + (1.0 - metal) * v
     i_mt = f <**> (k_metal *> si)
 

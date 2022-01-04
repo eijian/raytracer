@@ -226,7 +226,6 @@ photonToRadiance n pw (wl, (_, d)) =
     Red   -> Radiance pw' 0 0
     Green -> Radiance 0 pw' 0
     Blue  -> Radiance 0 0 pw'
-    _     -> radiance0
   where
     cos0 = n <.> d
     pw'  = if cos0 > 0.0 then pw * cos0 else 0.0
@@ -242,10 +241,12 @@ diffuseReflection n = do
   return $ if c > 0.0 then dir else negate dir
 
 {-
-  cos = -(E, N)
-
-    N <- nvec
-    E <- vvec  : E is to surface
+specular reflection
+  IN : nvec  = Normal vector (from surface)
+       vvec  = eye direction (to surface)
+  OUT: rvec  = reflection vector (from surface)
+       cos1  = (rvec, nvec)
+  条件: cos = (N, V) は正にならないといけない。万が一そうでなければNを返す。
 -}
 specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
 specularReflection nvec vvec
@@ -272,16 +273,15 @@ specularReflection nvec vvec
 
 specularRefraction :: Direction3 -> Direction3 -> Double -> Double
                    -> (Maybe Direction3, Double)
-specularRefraction nvec vvec eta cos1
-  | cos1 < 0.0      = (Nothing, 0.0) 
+specularRefraction nvec vvec eta cos
+  | cos < 0.0       = (Nothing, 0.0) 
   | g0 <  0.0       = (Nothing, 0.0)  -- 全反射
   | tvec == Nothing = (Nothing, 0.0)
   | otherwise       = (tvec, g / eta)
   where
-    g0 = eta * eta + cos1 * cos1 - 1.0
+    g0 = eta * eta + cos * cos - 1.0
     g  = sqrt g0
-    --n' = if vvec <.> nvec > 0.0 then negate n else n
-    tvec = normalize ((1.0 / eta) *> (vvec + (cos1 - g) *> nvec))
+    tvec = normalize ((1.0 / eta) *> (vvec + (cos - g) *> nvec))
 
 --
 -- 

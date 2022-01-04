@@ -5,8 +5,7 @@
 --
 
 module Scene (
-  m_air
-, readScene
+  readScene
 ) where
 
 import Data.List
@@ -126,8 +125,8 @@ parseConfig conf = do
       (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 1.0)
 -}
 
-    flooring = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) mwall sf_wall
-    ceiling  = Object (Plain (Vector3 0.0 (-1.0) 0.0) 4.0) mwall sf_wall
+    floor = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) mwall sf_wall
+    ceil  = Object (Plain (Vector3 0.0 (-1.0) 0.0) 4.0) mwall sf_wall
     rsidewall = Object (Plain (Vector3 (-1.0) 0.0 0.0) 2.0) mwallb sf_wall
     lsidewall = Object (Plain (Vector3 1.0 0.0 0.0) 2.0) mwallr sf_wall
     backwall = Object (Plain (Vector3 0.0 0.0 1.0) 6.0) mwall sf_wall
@@ -151,7 +150,7 @@ parseConfig conf = do
     ceiling_light = Object (initParallelogram (Vector3 (-0.67) 3.99 2.33) 
       (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)) mparal sf_paral
 
-    os = [flooring, ceiling, rsidewall, lsidewall, backwall, frontwall,
+    os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall,
           ceiling_light,
           ball_glass, ball_silver]
 --          ball_01, ball_02, ball_03, ball_04, ball_05,

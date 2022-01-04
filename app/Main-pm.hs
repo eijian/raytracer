@@ -8,14 +8,14 @@
 
 module Main where
 
-import           Control.Monad
+--import           Control.Monad
 import qualified Data.Vector as V
-import           Debug.Trace
+--import           Debug.Trace
 import           System.Environment
 
 import Ray.Algebra
 import Ray.Light
-import Ray.Object
+--import Ray.Object
 import Ray.Optics
 import Tracer
 import Screen
@@ -35,20 +35,21 @@ main = do
   let
     --nPhoton = 100000
     power = (V.sum $ V.map flux lgts) / (fromIntegral $ nphoton scr)
-    ns    = V.map (calcN power) lgts
+    ns = V.map (calcN power) lgts
+    tracer = tracePhoton (useClassicForDirect scr) objs 0 m_air m_air
   putStrLn $ show $ nphoton scr
   putStrLn $ show power
-  V.zipWithM_ (outputPhotons (useClassicForDirect scr) objs) lgts ns
+  V.zipWithM_ (outputPhotons tracer) lgts ns
   
 calcN :: Double -> Light -> Int
 calcN power light = round (flux light / power)
 
-outputPhotons :: Bool -> V.Vector Object -> Light -> Int -> IO ()
-outputPhotons uc objs lgt n = V.mapM_ (outputPhoton uc lgt objs) $ V.replicate n 1
+outputPhotons :: (Photon -> IO (V.Vector Photon)) -> Light -> Int -> IO ()
+outputPhotons tracer lgt n = V.mapM_ (outputPhoton tracer lgt) $ V.replicate n 1
 
-outputPhoton :: Bool -> Light -> V.Vector Object -> Int -> IO ()
-outputPhoton uc lgt objs _ =
-  generatePhoton lgt >>= tracePhoton uc objs 0 m_air >>= V.mapM_ (putStrLn.showPhoton)
+outputPhoton :: (Photon -> IO (V.Vector Photon)) -> Light -> Int -> IO ()
+outputPhoton tracer lgt _ =
+  generatePhoton lgt >>= tracer >>= V.mapM_ (putStrLn.showPhoton)
 
 showPhoton :: Photon -> String
 showPhoton (wl, (Vector3 px py pz, Vector3 dx dy dz)) = show wl ++ " " 

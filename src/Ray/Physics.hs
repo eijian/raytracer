@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 
 --
 -- Physics
@@ -15,21 +17,20 @@ module Ray.Physics (
 , normalizeColor
 , decideWavelength
 , selectWavelength
-, negateColor
-, scaleColor
-, addColor
-, mulColor
 , relativeIorAverage
 , relativeIorWavelength
 , white
 ) where
 
+import qualified Algebra.Additive as Additive
+import qualified Algebra.Module as Module
+import qualified Algebra.Ring as Ring
 import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
 import           Data.Maybe
 import           GHC.Generics
 import           NumericPrelude
-import           System.Random.Mersenne as MT
+import           Test.QuickCheck
 
 import           Ray.Algebra
 
@@ -50,31 +51,49 @@ instance NFData Wavelength where
 --
 -- Color
 
-data Color = Color !Double !Double !Double deriving (Generic)
+data Color = Color !Double !Double !Double
+             deriving (Read, Generic)
 
 instance NFData Color where
   rnf = genericRnf
+
+instance Eq Color where
+  (Color r1 g1 b1) == (Color r2 g2 b2)
+    = r1 == r2 && g1 == g2 && b1 == b2
+
+instance Show Color where
+  show (Color r g b) = "[" ++ show r ++ "," ++ show g ++ "," ++ show b ++ "]"
+
+instance Arbitrary Color where
+  arbitrary = do
+    r <- arbitrary
+    g <- arbitrary
+    b <- arbitrary
+    return $ Color r g b
+
+instance Additive.C Color where
+  zero = Color 0 0 0
+  (Color r1 g1 b1) + (Color r2 g2 b2)
+    = Color (r1 + r2) (g1 + g2) (b1 + b2)
+  (Color r1 g1 b1) - (Color r2 g2 b2)
+    = Color (r1 - r2) (g1 - g2) (b1 - b2)
+  negate (Color r g b) = Color (1.0 - r) (1.0 - g) (1.0 - b)
+
+instance Module.C Double Color where
+  s *> (Color r g b) = Color (s * r) (s * g) (s * b)
+
+instance Ring.C Color where
+  (Color r1 g1 b1) * (Color r2 g2 b2)
+    = Color (r1*r2) (g1*g2) (b1*b2)
+  one = Color 1.0 1.0 1.0
 
 black :: Color
 black = Color 0.0 0.0 0.0
 white :: Color
 white = Color 1.0 1.0 1.0
 
-instance Show Color where
-  show (Color r g b) = "[" ++ show r ++ "," ++ show g ++ "," ++ show b ++ "]"
-
-instance Eq Color where
-  (Color ar ag ab) == (Color br bg bb) = (ar == br) && (ag == bg) && (ab == bb)
-
 initColor :: Double -> Double -> Double -> Color
-initColor r g b
-  | mag == 0  = Color (1/3) (1/3) (1/3)
-  | otherwise = Color (r'/mag) (g'/mag) (b'/mag)
-  where
-    r' = clipColor r
-    g' = clipColor g
-    b' = clipColor b
-    mag = r' + g' + b'
+initColor r g b = normalizeColor (Color r g b)
 
 normalizeColor :: Color -> Color
 normalizeColor (Color r g b)
@@ -102,18 +121,6 @@ selectWavelength Red   (Color r _ _) = r
 selectWavelength Green (Color _ g _) = g
 selectWavelength Blue  (Color _ _ b) = b
 
-negateColor :: Color -> Color
-negateColor (Color r g b) = Color (1.0 - r) (1.0 - g) (1.0 - b)
-
-scaleColor :: Double -> Color -> Color
-scaleColor s (Color r g b) = Color (s * r) (s * g) (s * b)
-
-addColor :: Color -> Color -> Color
-addColor (Color r1 g1 b1) (Color r2 g2 b2) = Color (r1+r2) (g1+g2) (b1+b2)
-
-mulColor :: Color -> Color -> Color
-mulColor (Color r1 g1 b1) (Color r2 g2 b2) = Color (r1*r2) (g1*g2) (b1*b2)
-
 expColor :: Color -> Double -> Color
 expColor c@(Color r g b) e
   | c == white = white
@@ -131,9 +138,11 @@ relativeIor ior1 ior2
   | ior1 == 0.0 = 1.0
   | otherwise   = ior2 / ior1
 
+{-
 relativeIorColor :: Color -> Color -> Color
 relativeIorColor (Color r1 g1 b1) (Color r2 g2 b2) =
   Color (relativeIor r1 r2) (relativeIor g1 g2) (relativeIor b1 b2)
+-}
 
 relativeIorWavelength :: Color -> Color -> Wavelength -> Double
 relativeIorWavelength (Color r1 g1 b1) (Color r2 g2 b2) wl =
@@ -148,44 +157,6 @@ relativeIorAverage (Color r1 g1 b1) (Color r2 g2 b2) =
   where
     a1 = (r1 + g1 + b1) / 3.0
     a2 = (r2 + g2 + b2) / 3.0
-
-{- |
-specular reflection
-  IN : nvec  = Normal vector (from surface)
-       vvec  = eye direction (to surface)
-  OUT: rvec  = reflection vector (from surface)
-       cos1  = (rvec, nvec)
-  条件: cos = (N, V) は正にならないといけない。万が一そうでなければNを返す。
--}
-
-specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
-specularReflection nvec vvec =
-  if cos >= 0.0
-    then (fromJust $ normalize (vvec + (2.0 * cos) *> nvec), cos)
-    else (nvec, -cos)
-  where
-    cos = -vvec <.> nvec  -- -(E,N)
-
-{-
-pecular_rafraction
-  IN : nvec  = Normal vector (from surface)
-       vvec  = eye direction (to surface)
-       eta   = relative of IoR (eta = n2 / n1)
-  OUT: tvec  = refraction vector (from surface)
-       cos2  = (tvec, -nvec)
--}
-
-specularRefraction :: Direction3 -> Direction3 -> Double -> (Maybe Direction3, Double)
-specularRefraction nvec vvec eta
-  | cos1 < 0.0 = (Nothing, 0.0)
-  | g0 < 0.0   = (Nothing, 0.0)
-  | otherwise  = (normalize ((1.0 / eta) *> (vvec + (cos1 - g) *> nvec)), g / eta)
-  where
-    cos1 = -vvec <.> nvec -- -(E,N)
-    sq_eta = eta * eta
-    sq_cos = cos1 * cos1
-    g0 = sq_eta + sq_cos - 1.0
-    g = sqrt g0
 
 {- |
 Snell's low

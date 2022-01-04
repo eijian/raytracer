@@ -13,13 +13,13 @@ module Ray.Surface (
 
 import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
-import           Data.Maybe
-import           Debug.Trace
+--import           Data.Maybe
+--import           Debug.Trace
 import           GHC.Generics
 import           NumericPrelude
 
-import Ray.Algebra
-import Ray.Physics
+--import Ray.Algebra
+--import Ray.Physics
 import Ray.Optics
 
 -- Surface type
