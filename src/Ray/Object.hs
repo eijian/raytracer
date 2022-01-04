@@ -11,8 +11,8 @@ import Ray.Geometry
 import Ray.Material
 import Ray.Surface
 
-data Object = Object Shape Material deriving (Eq, Show)
+data Object = Object Shape Material Surface deriving (Eq, Show)
 
-initObject :: Shape -> Material -> Object
-initObject shape mate = Object shape mate
+initObject :: Shape -> Material -> Surface -> Object
+initObject shape mate surf = Object shape mate surf
 

@@ -8,38 +8,41 @@
 -- Ray.Algebra
 --
 
-module Ray.Algebra
-  ( BasicMatrix
---  , module NumericPrelude
-  , nearly0
-  , o3
-  , ex3
-  , ey3
-  , ez3
---  , (+)
---  , (-)
---  , (*>)
-  , (/>)
-  , norm
-  , (.=.)
-  , normalize
-  , square
-  , (<.>)
-  , (<*>)
-  , Vector3(..)
-  , Position3
-  , Direction3
-  , initPos
-  , initDir
-  , initDirFromAngle
-  , generateRandomDir1
-  , generateRandomDir2
-  , generateRandomDir3
-  , generateRandomDir4
-  , elemX
-  , elemY
-  , elemZ
-  ) where
+module Ray.Algebra (
+  BasicMatrix
+--, module NumericPrelude
+, blurredVector
+, nearly0
+, o3
+, ex3
+, ey3
+, ez3
+--, (+)
+--, (-)
+--, (*>)
+, (/>)
+, norm
+, (.=.)
+, normalize
+, square
+, (<.>)
+, (<*>)
+, Vector3(..)
+, Position3
+, Direction3
+, initPos
+, initDir
+, initDirFromAngle
+, generateRandomDir1
+, generateRandomDir2
+, generateRandomDir3
+, generateRandomDir4
+, elemX
+, elemY
+, elemZ
+, russianRoulette
+, russianRouletteBinary
+) where
 
 import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
@@ -191,6 +194,70 @@ initDirFromAngle a b = normalize $ Vector3 x y z
 pi2 :: Double
 pi2 = 2 * pi
 
+
+o3 :: Vector3
+o3  = initPos 0 0 0               -- zero vector
+ex3 :: Vector3
+ex3 = fromJust $ initDir 1 0 0    -- unit vector (x axis)
+ey3 :: Vector3
+ey3 = fromJust $ initDir 0 1 0    -- unit vector (y axis)
+ez3 :: Vector3
+ez3 = fromJust $ initDir 0 0 1    -- unit vector (z axis)
+
+
+-- |
+-- positional vector and directional vector
+--
+-- >>> initDir 0 0 0
+-- Nothing
+-- >>> let rt3 = 1.0 / sqrt 3.0
+-- >>> fromJust (initDir 1 1 1) == Vector3 rt3 rt3 rt3
+-- True
+-- >>> initDirFromAngle 0 0
+-- Just (Vector3 0.0 1.0 0.0)
+-- >>> (fromJust $ initDirFromAngle 3.14159263 0) .=. Vector3 0.0 (-1.0) 0.0
+-- True
+--
+-- prop> \a b -> norm (fromJust $ initDirFromAngle a b) - 1.0 < nearly0
+
+--
+-- UTILITY
+--
+
+{- |
+russianRoulette
+
+>>> russianRoulette [0.5]
+0
+
+-}
+
+russianRoulette :: [Double] -> IO Int
+russianRoulette cs = do
+  rnd <- MT.randomIO :: IO Double
+  return $ rr cs 0.0 rnd (length cs)
+
+rr :: [Double] -> Double -> Double -> Int -> Int
+rr [] _ _ len = len
+rr (c:cs) c0 rnd len
+  | rnd < c'  = len
+  | otherwise = rr cs c' rnd (len-1)
+  where
+    c' = c0 + c
+
+{- |
+russianRouletteBinary
+  吟味値（0.0 - 1.0)より下ならTrue、そうでなければFalse
+-}
+russianRouletteBinary :: Double -> IO Bool
+russianRouletteBinary c = do
+  rnd <- MT.randomIO :: IO Double
+  return (rnd <= c)
+
+{- |
+ランダムなベクトルの生成
+-}
+
 generateRandomDir1 :: IO Direction3
 generateRandomDir1 = do
   theta <- randomRIO (0, pi)
@@ -234,28 +301,43 @@ generateRandomDir4 = do
       v = initPos x y z
   return $ fromJust $ normalize v
 
-o3 :: Vector3
-o3  = initPos 0 0 0               -- zero vector
-ex3 :: Vector3
-ex3 = fromJust $ initDir 1 0 0    -- unit vector (x axis)
-ey3 :: Vector3
-ey3 = fromJust $ initDir 0 1 0    -- unit vector (y axis)
-ez3 :: Vector3
-ez3 = fromJust $ initDir 0 0 1    -- unit vector (z axis)
+{-
+blurredVector:
+  中心となるベクトルからpowに応じてブレたベクトルを生成する
 
+  http://www.raytracegroundup.com/downloads/Chapter25.pdf
+  https://cg.informatik.uni-freiburg.de/course_notes/graphics2_08_renderingEquation.pdf
+  https://graphics.cg.uni-saarland.de/courses/ris-2018/slides/09_BRDF_LightSampling.pdf
+  x = cos(2 pi xi2) sqrt(1 - xi1^(2/(n+1)))
+  y = xi1^(1/(n+1))
+  z = sin(2 pi xi2) sqrt(1 - xi1^(2/(n+1)))
+  ※ pow = 1/(n+1) とする
+-}
 
--- |
--- positional vector and directional vector
---
--- >>> initDir 0 0 0
--- Nothing
--- >>> let rt3 = 1.0 / sqrt 3.0
--- >>> fromJust (initDir 1 1 1) == Vector3 rt3 rt3 rt3
--- True
--- >>> initDirFromAngle 0 0
--- Just (Vector3 0.0 1.0 0.0)
--- >>> (fromJust $ initDirFromAngle 3.14159263 0) .=. Vector3 0.0 (-1.0) 0.0
--- True
---
--- prop> \a b -> norm (fromJust $ initDirFromAngle a b) - 1.0 < nearly0
+blurredVector :: Direction3 -> Double -> IO Direction3
+blurredVector nvec pow = do
+  xi1 <- MT.randomIO :: IO Double    -- horizontal
+  xi2 <- MT.randomIO :: IO Double    -- virtical
+  let
+    phi = 2.0 * pi * xi2
+    uvec0 = normalize $ nvec <*> (Vector3 0.00424 1.0 0.00764)
+    uvec = case uvec0 of
+      Just v  -> v
+      Nothing -> fromJust $ normalize $ nvec <*> (Vector3 1.0 0.00424 0.00764)
+    vvec = uvec <*> nvec
+    xi1' = xi1 ** pow
+    rt = sqrt (1.0 - xi1' * xi1')
+
+    x = cos phi * rt
+    y = xi1'
+    z = sin phi * rt
+
+    nvec' = x *> uvec + y *> nvec + z *> vvec
+--    nvec' = if nvec <.> wi < 0.0
+--      then negate wi
+--      else wi
+  case normalize nvec' of
+    Just v  -> return v
+    Nothing -> return ex3    
+
 

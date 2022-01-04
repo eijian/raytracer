@@ -7,22 +7,39 @@
 module Ray.Geometry (
   Ray
 , Shape (Point, Plain, Sphere, Parallelogram)
-, initPolygon
-, initParallelogram
 , distance
 , getDir
-, getPos
 , getNormal
+, getPos
+, initParallelogram
+, initPolygon
 , initRay
 , initRayFromElem
-, target
 , methodMoller
+, one_pi
+, sqpi2
+, sr_half
+, target
 ) where
 
 import Data.Maybe
 import NumericPrelude
 
 import Ray.Algebra
+
+-- CONSTANTS
+
+sqpi2 :: Double
+sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
+
+one_pi :: Double
+one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
+
+sr_half :: Double
+sr_half = 1.0 / (2.0 * pi)  -- half of steradian
+
+
+-- Ray
 
 type Ray = (Position3, Direction3)
 
@@ -47,7 +64,7 @@ getPos = fst
 getDir :: Ray -> Direction3
 getDir = snd
 
--- Shape
+-- Shapes
 -----------------------
 
 data Shape =

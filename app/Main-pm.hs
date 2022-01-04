@@ -8,9 +8,10 @@
 
 module Main where
 
-import Control.Monad
+import           Control.Monad
 import qualified Data.Vector as V
-import System.Environment
+import           Debug.Trace
+import           System.Environment
 
 import Ray.Algebra
 import Ray.Light
