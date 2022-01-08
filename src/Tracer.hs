@@ -48,6 +48,9 @@ import Screen
 max_trace :: Int
 max_trace = 10
 
+min_F :: Color
+min_F = Color (1/10000) (1/10000) (1/10000)
+
 --
 
 {-
@@ -62,7 +65,7 @@ max_trace = 10
 -}
 
 tracePhoton :: Bool -> V.Vector Object -> Int -> Material -> Material -> Photon
-            -> IO (V.Vector Photon)
+  -> IO (V.Vector Photon)
 tracePhoton !uc !os !l !m_air !m0 !ph@(wl, r@(_, rd))
   | l >= max_trace = return V.empty
   | otherwise = do
@@ -147,24 +150,27 @@ nextDirection
 
 nextDirection :: Material -> Surface -> Double -> Direction3 -> Photon
   -> IO (Maybe (Direction3, Bool))
-nextDirection mate (Surface _ rough pow _) eta nvec (wl, (_, vvec)) = do
+nextDirection mate surf@(Surface _ rough pow _) eta nvec (wl, (_, vvec)) = do
 
-  nvec' <- if rough == 0.0 then return nvec else blurredVector nvec pow
-  let
-    (rdir, cos1) = specularReflection nvec' vvec
-    --cos = if cos1 < cos2 then cos1 else cos2
-  pb <- photonBehavior mate cos1 wl
-  case pb of
-    SpecularReflection -> return $ Just (rdir, True)   -- 鏡面反射
-    Absorption         -> return Nothing               -- 吸収
-    DiffuseReflection  -> do
-      df <- diffuseReflection nvec
-      return $ Just (df, True)                         -- 拡散反射
-    SpecularTransmission -> do                         -- 鏡面透過
-      let (tdir, _) = specularRefraction nvec' vvec eta cos1
-      case tdir of
-        Just tdir -> return $ Just (tdir, False)
-        Nothing   -> return Nothing
+  --nvec' <- if rough == 0.0 then return nvec else blurredVector nvec pow
+  nvec' <- microfacetNormal nvec vvec surf (metalness mate)
+  case nvec' of
+    Nothing    -> return Nothing
+    Just nvec' -> do
+      let
+        (rdir, cos1) = specularReflection nvec' vvec
+      pb <- photonBehavior mate cos1 wl
+      case pb of
+        SpecularReflection -> return $ Just (rdir, True)   -- 鏡面反射
+        Absorption         -> return Nothing               -- 吸収
+        DiffuseReflection  -> do
+          df <- diffuseReflection nvec
+          return $ Just (df, True)                         -- 拡散反射
+        SpecularTransmission -> do                         -- 鏡面透過
+          let (tdir, _) = specularRefraction nvec' vvec eta cos1
+          case tdir of
+            Just tdir -> return $ Just (tdir, False)
+            Nothing   -> return Nothing
 
 -----
 -- RAY TRACING WITH PHOTON MAP
@@ -191,29 +197,37 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !m_air !m0 !r@(_, vvec)
           di = di' + estimateRadiance radius scr pmap is
 
         -- L_spec
+        {-
         nvec' <- if roughness surf == 0.0
           then return n
           else blurredVector n (densityPow surf)
-        let
-          (rvec, cos1) = specularReflection nvec' vvec
-        si <- if (reflect m cos1) == True
-          then tracer m0 (p, rvec)
-          else return radiance0
-
-        -- L_trans
-        let
-          eta = relativeIorAverage (ior m0) (ior m)
-          --hvec = fromJust $ normalize (rdir - vvec)
-          --(tdir, cos2) = specularRefraction hvec (getDir r) eta cos1
-          (tvec, _) = specularRefraction nvec' (getDir r) eta cos1
-        ti <- case tvec of
-          Nothing   -> return radiance0
-          Just tvec ->
-            if refract m == True
-              then do
-                let m0' = if io == In then m else m_air
-                tracer m0' (p, tvec)
+        -}
+        nvec' <- microfacetNormal n vvec surf (metalness m)
+        (si, rvec, ti, tvec, cos1, eta) <- case nvec' of
+          Nothing    -> do
+            let
+              (rvec, cos1) = specularReflection n vvec
+            return (radiance0, rvec, radiance0, Nothing, cos1, 1.0)
+          Just nvec' -> do
+            let
+              (rvec, cos1) = specularReflection nvec' vvec
+            si <- if (reflect m cos1) == True
+              then tracer m0 (p, rvec)
               else return radiance0
+
+            -- L_trans
+            let
+              eta = relativeIorAverage (ior m0) (ior m)
+              (tvec, _) = specularRefraction nvec' (getDir r) eta cos1
+            ti <- case tvec of
+              Nothing   -> return radiance0
+              Just tvec ->
+               if refract m == True
+                  then do
+                    let m0' = if io == In then m else m_air
+                    tracer m0' (p, tvec)
+                  else return radiance0
+            return (si, rvec, ti, tvec, cos1, eta)
 
         let
           tc = expColor (transmittance m0) t
@@ -434,23 +448,26 @@ bsdf (Simple ref spec diff metal _ _) _ _ _ _ cos0 _ di si ti =
     f = reflectionIndex spec cos0
     f2 = negateColor f
 -}
-bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) nvec edir rdir _ cos0 _ di si ti =
+--bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) nvec edir rdir _ cos0 _ di si ti =
+bsdf (Material aldiff scat metal _ _ alspec) (Surface _ _ _ _) _ _ _ _ cos0 _ di si ti =
   i_de + i_mt
   where
+    {-
     cos_v = -1.0 * (nvec <.> edir)
     cos_l = nvec <.> rdir
     cos_l' = if cos_l < 0.0 then (-cos_l) else cos_l
 
-    --d = 1.0
     v = (cos_v * cos_l') ** (2.0 * rough * rough)
-
+    -}
+    
     f = reflectionIndex alspec cos0
     f2 = negate f
     i_de = if metal == 1.0
       then radiance0
-      else (aldiff * f2) <**> ((scat * one_pi) *> di + (1.0 - scat) *> ti)
-    k_metal = metal + (1.0 - metal) * v
-    i_mt = f <**> (k_metal *> si)
+      else ((1.0 - metal) *> (aldiff * f2)) <**>
+           ((scat * one_pi) *> di + (1.0 - scat) *> ti)
+    --k_metal = metal + (1.0 - metal)
+    i_mt = f <**> si
 
 schlickG :: Direction3 -> Direction3 -> Double -> Double
 schlickG nvec vvec k = cos / (cos * (1.0 - k) + k)

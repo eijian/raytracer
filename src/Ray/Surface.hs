@@ -9,6 +9,7 @@
 module Ray.Surface (
   Surface (..)
 , initSurface
+, microfacetNormal
 ) where
 
 import           Control.DeepSeq
@@ -18,7 +19,7 @@ import           Control.DeepSeq.Generics (genericRnf)
 import           GHC.Generics
 import           NumericPrelude
 
---import Ray.Algebra
+import Ray.Algebra
 --import Ray.Physics
 import Ray.Optics
 
@@ -78,6 +79,29 @@ powerGlossy (Simple _ _ _ _ _ pow) = pow
 powerGlossy (TS _ _ _ _ _ pow _)   = pow
 powerGlossy _ = 0.0
 -}
+
+{- |
+microfacetNormal: 微小平面での法線ベクトルを求める
+  IN:  nvec  マクロ平面での法線ベクトル
+       vvec  光子/視線の交点への入射ベクトル
+       surf  表面状態
+       retry 算出した法線ベクトルが無効な場合に再算出するかどうか[0-1]
+  OUT: 微小平面での法線ベクトル（Maybe）
+-}
+
+microfacetNormal :: Direction3 -> Direction3 -> Surface -> Double
+  -> IO (Maybe Direction3)
+microfacetNormal nvec vvec surf retry
+  | roughness surf == 0.0 = return $ Just nvec    -- 完全平滑面ならマクロ法線を返す
+  | otherwise             = do
+    nvec' <- blurredVector nvec (densityPow surf)
+    if nvec' <.> vvec < 0.0   -- 有効な法線ベクトルが得られた
+      then return $ Just nvec'
+      else do
+        r <- russianRouletteBinary retry
+        if r == True
+          then microfacetNormal nvec vvec surf retry
+          else return Nothing
 
 -- PRIVATE FUNCTIONS
 

@@ -14,6 +14,7 @@ module Ray.Physics (
 , black
 , expColor
 , initColor
+, lowerThan
 , normalizeColor
 , decideWavelength
 , selectWavelength
@@ -125,6 +126,10 @@ expColor :: Color -> Double -> Color
 expColor c@(Color r g b) e
   | c == white = white
   | otherwise  = Color (r ** e) (g ** e) (b ** e)
+
+lowerThan :: Color -> Color -> Bool
+lowerThan (Color r1 g1 b1) (Color r2 g2 b2) =  r1 < r2 && g1 < g2 && b1 < b2
+
 
 -- Physics Lows -----------------
 

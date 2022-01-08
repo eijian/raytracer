@@ -64,22 +64,24 @@ parseConfig conf = do
     ls = [ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
       (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)]
 
-    sf_wall = initSurface radiance0 1.0
-    sf_paral = initSurface (Radiance 0.4421 0.4421 0.4421) 0.0
-    sf_glass = initSurface radiance0 0.0
-    sf_silver = initSurface radiance0 0.5
+    sf_wall    = initSurface radiance0 1.0
+    sf_paral   = initSurface (Radiance 0.4421 0.4421 0.4421) 0.0
+    sf_glass   = initSurface radiance0 0.5
+    sf_silver  = initSurface radiance0 0.0
+    sf_plastic = initSurface radiance0 0.4
     --mball = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.0 1.0 1.0)
     --  (initSurfaceSimple (Color 0.5 0.5 0.5) (Color 0.0 0.0 0.0) 0.5 0.0 0.0)
-    mwall = initMaterial (Color 0.5 0.5 0.5) 1.0 0.0 black (Color 1.534 1.534 1.534) Nothing
+    mwall  = initMaterial (Color 0.5 0.5 0.5) 1.0 0.0 black (Color 1.534 1.534 1.534) Nothing
     mwallr = initMaterial (Color 0.4 0.1 0.1) 1.0 0.0 black (Color 1.534 1.534 1.534) Nothing
     mwallb = initMaterial (Color 0.1 0.1 0.4) 1.0 0.0 black (Color 1.534 1.534 1.534) Nothing
     -- 0.79578はflux 5.0 を半球（2πステラジアン）で割った値。<- 間違い
     --mparal = Material (Radiance 0.7958 0.7958 0.7958) (Color 0.0 0.0 0.0) (Color 0.0 0.0 0.0)
     -- emittanceは flux 5.0 / 半球 2π / ライト面積 1.34^2 = 0.4421。
     --   三原色それぞれがこの輝度を持つとした。
-    mparal = initMaterial black 0.0 0.0 black black Nothing
-    glass  = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 2.0 2.0 2.0) Nothing
-    silver = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.96 0.76 0.39))
+    mparal  = initMaterial black 0.0 0.0 black black Nothing
+    glass   = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 2.0 2.0 2.0) Nothing
+    silver  = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.96 0.76 0.39))
+    plastic = initMaterial (Color 0.5 0.30 0.1) 1.0 0.0 black (Color 2.0 2.0 2.0) Nothing
 {-
     ypla00 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
       (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.0)
@@ -134,6 +136,7 @@ parseConfig conf = do
 
     ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) glass sf_glass
     ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) silver sf_silver
+    ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) plastic sf_plastic
 {-
     ball_01 = Object (Sphere (Vector3 (-1.6) 1.2 3.8) 0.4) ypla00
     ball_02 = Object (Sphere (Vector3 (-0.8) 1.2 3.8) 0.4) ypla01
@@ -152,7 +155,7 @@ parseConfig conf = do
 
     os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall,
           ceiling_light,
-          ball_glass, ball_silver]
+          ball_glass, ball_plastic]
 --          ball_01, ball_02, ball_03, ball_04, ball_05,
 --          ball_06, ball_07, ball_08, ball_09, ball_10]
 
