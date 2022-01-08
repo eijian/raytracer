@@ -61,8 +61,12 @@ parseConfig conf = do
       Right (l', o') -> (l', o')
     (n, os) = unzip os0
     -}
-    ls = [ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
-      (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)]
+    ls = [
+      --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
+      --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
+      ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
+        (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
+      ]
 
     sf_wall    = initSurface radiance0 1.0
     sf_paral   = initSurface (Radiance 0.4421 0.4421 0.4421) 0.0

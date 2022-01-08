@@ -14,6 +14,7 @@ module Ray.Physics (
 , black
 , expColor
 , initColor
+, initColorByKelvin
 , lowerThan
 , normalizeColor
 , decideWavelength
@@ -95,6 +96,25 @@ white = Color 1.0 1.0 1.0
 
 initColor :: Double -> Double -> Double -> Color
 initColor r g b = normalizeColor (Color r g b)
+
+initColorByKelvin :: Double -> Color
+initColorByKelvin t = normalizeColor (Color (clip r) (clip g) (clip b))
+  where
+    t' = t / 100.0
+    r = if t' <= 66.0
+      then 255.0
+      else
+        329.698727446 * ((t' - 60) ** (-0.1332047592))
+    g = if t' <= 66.0
+      then 99.4708025861 * (logBase (exp 1) t') - 161.1195681661
+      else 288.1221695283 * (t' - 60) ** (-0.0755148492)
+    b = if t' >= 66.0
+      then 255.0
+      else 138.5177312231 * (logBase (exp 1) (t' - 10)) - 305.0447927307
+    clip :: Double -> Double
+    clip c = if c > 255.0
+      then 1.0
+      else c / 255.0
 
 normalizeColor :: Color -> Color
 normalizeColor (Color r g b)

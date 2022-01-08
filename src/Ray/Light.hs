@@ -7,6 +7,7 @@
 module Ray.Light (
   Light (PointLight, ParallelogramLight, SunLight)
 , flux
+, directivity
 , generatePhoton
 , getDirection
 , getRadiance
@@ -59,6 +60,9 @@ flux :: Light -> Flux
 flux (PointLight _ f _) = f
 flux (ParallelogramLight _ f _ _ _ _) = f
 flux (SunLight _ f _ _ _ _ _) = f
+
+directivity :: Double
+directivity = 0.0
 
 generatePhoton :: Light -> IO Photon
 generatePhoton (PointLight c _ p) = do

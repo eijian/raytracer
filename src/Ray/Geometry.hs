@@ -24,6 +24,7 @@ module Ray.Geometry (
 
 import Data.Maybe
 import NumericPrelude
+import           System.Random.Mersenne as MT
 
 import Ray.Algebra
 
@@ -157,6 +158,42 @@ distance (pos, dir) (Parallelogram p _ d1 d2)
     (_, _, t) = fromJust res
 -- Point
 distance _ _ = []
+
+{- |
+surfaceArea 表面積
+-}
+
+surfaceArea :: Shape -> Double
+surfaceArea (Point _) = 0.0
+surfaceArea (Plain n d) = 0.0
+surfaceArea (Sphere _ r) = 4 * pi * r * r
+surfaceArea (Polygon _ _ d1 d2) = norm (d1 <*> d2) / 2.0
+surfaceArea (Parallelogram _ _ d1 d2) = norm (d1 <*> d2)
+
+{-
+randomPoint 表面上のランダムな点
+-}
+
+randomPoint :: Shape -> IO Position3
+randomPoint (Point p) = return p
+randomPoint (Plain n d) = return o3
+randomPoint (Sphere c r) = do
+  d <- generateRandomDir3
+  return (c + (r *> d))
+randomPoint (Polygon p _ d1 d2) = do
+  m <- MT.randomIO :: IO Double
+  n <- MT.randomIO :: IO Double
+  let
+    (m', n') = if m + n > 1.0
+      then if m > n
+        then ((1.0 - m), n)
+        else (m, (1.0 - n))
+      else (m, n)
+  return (p + m' *> d1 + n' *> d2)
+randomPoint (Parallelogram p _ d1 d2) = do
+  m <- MT.randomIO :: IO Double
+  n <- MT.randomIO :: IO Double
+  return (p + m *> d1 + n *> d2)
 
 --
 -- UTILS
