@@ -97,6 +97,16 @@ white = Color 1.0 1.0 1.0
 initColor :: Double -> Double -> Double -> Color
 initColor r g b = normalizeColor (Color r g b)
 
+{- |
+initColorByKelvin
+  IN : color temperature (K)
+  OUT: Color
+
+  変換アルゴリズムは以下のサイトを参考にした。
+  https://ja.visual-foxpro-programmer.com/color-temperature-rgb-conversion
+  
+-}
+
 initColorByKelvin :: Double -> Color
 initColorByKelvin t = normalizeColor (Color (clip r) (clip g) (clip b))
   where

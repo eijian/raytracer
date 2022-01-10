@@ -12,6 +12,7 @@ module Ray.Algebra (
   BasicMatrix
 --, module NumericPrelude
 , blurredVector
+, densityPower
 , nearly0
 , o3
 , ex3
@@ -339,5 +340,11 @@ blurredVector nvec pow = do
   case normalize nvec' of
     Just v  -> return v
     Nothing -> return ex3    
+
+densityPower :: Double -> Double
+densityPower r = 1.0 / (10.0 ** pw + 1.0)
+  where
+    --pw = 6.0 * (1.0 - sqrt r)
+    pw = 6.0 * r
 
 

@@ -10,7 +10,7 @@ module Tracer (
   readMap
 , tracePhoton
 , traceRay
-, traceRay'
+--, traceRay'
 ) where
 
 import           Control.DeepSeq
@@ -31,7 +31,7 @@ import           System.Random.Mersenne as MT
 import Ray.Algebra
 import Ray.Geometry
 import Ray.Object
-import Ray.Light
+import Ray.Light hiding (power)
 import Ray.Material
 import Ray.Physics
 import Ray.Optics
@@ -188,11 +188,10 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !m_air !m0 !r@(_, vvec)
           tracer = traceRay scr uc objs lgts (l+1) pmap radius m_air
 
         -- L_diffuse
-        r1 <- MT.randomIO :: IO Double
-        r2 <- MT.randomIO :: IO Double
+        lpos <- V.mapM (randomPoint.lshape) lgts
         let
           di' = if uc 
-            then foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n (r1, r2)) lgts
+            then foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n) (V.zip lgts lpos)
             else radiance0
           di = di' + estimateRadiance radius scr pmap is
 
@@ -232,7 +231,7 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !m_air !m0 !r@(_, vvec)
         let
           tc = expColor (transmittance m0) t
           rad = bsdf m surf n vvec rvec tvec cos1 eta di si ti
-        return (tc <**> (sr_half *> emittance surf + rad))
+        return (tc <**> (sr_half *> (emittance surf p vvec) + rad))
 
 {-
 
@@ -281,21 +280,8 @@ estimateRadiance rmax scr pmap (_, p, n, _, _, _)
 --   sumRadiance3  gauss filter
 
 -- Normal (none filter)
-
 filter_none :: Double -> Double -> Double
 filter_none _ _ = 1.0
-
-{-
-sumRadiance1 :: Position3 -> Direction3 -> Double -> Double -> [Double]
-             -> [PhotonInfo] -> Radiance
-sumRadiance1 p n pw rmax _ ps = rds `deepseq` rad
-  where
-    ps' = filter adopt ps
-    rds = map (photonInfoToRadiance n pw) ps'
-    rad = foldl (+) radiance0 rds
-    adopt :: PhotonInfo -> Bool
-    adopt ph = square (p - photonPos ph) < rmax * rmax
--}
 
 -- Cone filter
 k_cone :: Double
@@ -309,25 +295,7 @@ filter_cone rmax d = if d' > 1.0 then 0.0 else (1.0 - d') / fac_k
   where
     d' = sqrt (d / rmax) / k_cone
 
-{-
-sumRadiance2 :: Position3 -> Direction3 -> Double -> Double -> [Double]
-             -> [PhotonInfo] -> Radiance
-sumRadiance2 _ n pw rmax rs ps = rds `deepseq` rad
-  where
-    wt = map (waitCone (pw / fac_k) rmax) rs
-    rds = zipWith (photonInfoToRadiance n) wt ps
-    rad = foldl (+) radiance0 rds
-
-waitCone :: Double -> Double -> Double -> Double
-waitCone pw radius dp
-  | d > 1.0   = 0.0
-  | otherwise = pw * (1.0 - d)
-  where
-    d = dp / (k_cone * radius)
--}
-
 -- Gauss filter
-
 alpha :: Double
 alpha = 0.918
 
@@ -344,23 +312,8 @@ filter_gauss :: Double -> Double -> Double
 filter_gauss rmax d = if e_r > e_beta then 0.0 else alpha * (1.0 - e_r / e_beta) + corr
   where
     e_r = 1.0 - exp (-beta * d / (rmax * 2.0))
-{-
-sumRadiance3 :: Position3 -> Direction3 -> Double -> Double -> [Double]
-             -> [PhotonInfo] -> Radiance
-sumRadiance3 _ n pw rmax rs ps = rds `deepseq` rad
-  where
-    wt = map (waitGauss pw rmax) rs
-    rds = zipWith (photonInfoToRadiance n) wt ps
-    rad = foldl (+) radiance0 rds
-    waitGauss :: Double -> Double -> Double -> Double
-    waitGauss p r dp
-      | wp < 0.0 = 0.0
-      | otherwise = wp
-      where
-        e_r = 1.0 - exp (-beta * dp * dp / (2.0 * r))
-        wp  = p * alpha * (1.0 - e_r / e_beta)
--}
 
+{-
 ------
 -- CLASICAL RAY TRACING
 ------
@@ -376,15 +329,30 @@ traceRay' !scr _ lgts objs r
     is = calcIntersection r objs
     (_, p, n, m, surf, _) = fromJust is
     radDiff = foldl (+) radiance0 $ V.map (getRadianceFromLight objs p n (0.0, 0.0)) lgts
+-}
 
-getRadianceFromLight :: V.Vector Object -> Position3 -> Direction3 -> (Double, Double)
-                     -> Light -> Radiance
-getRadianceFromLight objs p n blur l = sum $ zipWith (*>) coss $ getRadiance l dists
+getRadianceFromLight :: V.Vector Object -> Position3 -> Direction3
+  -> (Light, Position3) -> Radiance
+getRadianceFromLight objs p n (lgt, lpos)
+  | lvec == Nothing        = radiance0
+  | is   == Nothing        = radiance0
+  | dist2 - dist2' > 0.002 = radiance0   -- 光源の前に物体がある
+  | otherwise              = rad
   where
-    (dists, coss) = unzip $ illuminated objs p n $ getDirection l p blur
+    (dist2, lvec, rad) = getRadiance lgt lpos p
+    is = calcIntersection (initRay p (fromJust lvec)) objs
+    (_, p', _, _, _, _) = fromJust is
+    dist2' = square (p' - p)
 
-illuminated :: V.Vector Object -> Position3 -> Direction3 -> [Direction3]
-            -> [(Double, Double)]
+{-
+  
+  
+   sum $ zipWith (*>) coss $ getRadiance l dists
+  where
+    (dists, coss) = unzip $ illuminated objs p n $ getDirection l p lp
+
+illuminated :: V.Vector Object -> Position3 -> Direction3 -> Maybe Direction3
+            -> 
 illuminated _ _ _ []          = []
 illuminated os p n (ld:lds)
   | ld' == Nothing              = illuminated os p n lds
@@ -401,6 +369,7 @@ illuminated os p n (ld:lds)
     (_, p', _, _, _, _) = fromJust is
     sqLdist = square ld
     sqOdist = square (p' - p)
+-}
 
 ---------------------------------
 -- COMMON FUNCTIONS

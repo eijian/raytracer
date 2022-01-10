@@ -8,6 +8,7 @@
 
 module Ray.Surface (
   Surface (..)
+, emittance
 , initSurface
 , microfacetNormal
 ) where
@@ -20,8 +21,9 @@ import           GHC.Generics
 import           NumericPrelude
 
 import Ray.Algebra
---import Ray.Physics
+import Ray.Light
 import Ray.Optics
+
 
 -- Surface type
 
@@ -42,11 +44,11 @@ import Ray.Optics
 -}
 
 data Surface = Surface
-  { emittance   :: !Radiance  
-  , roughness   :: !Double
+  { elight     :: !(Maybe Light)
+  , roughness  :: !Double
     -- calculate values
   , densityPow :: !Double
-  , alpha       :: !Double
+  , alpha      :: !Double
   }
   deriving (Eq, Show, Generic)
 
@@ -55,9 +57,9 @@ instance NFData Surface where
 
 -- PUBLIC FUNCTIONS
 
-initSurface :: Radiance -> Double -> Surface
-initSurface emit rough =
-  Surface emit rough (densityPower rough) alpha
+initSurface :: Maybe Light -> Double -> Surface
+initSurface lgt rough =
+  Surface lgt rough (densityPower (1.0 - sqrt rough)) alpha
   where
     alpha = rough * rough * rough * rough
 
@@ -103,12 +105,18 @@ microfacetNormal nvec vvec surf retry
           then microfacetNormal nvec vvec surf retry
           else return Nothing
 
--- PRIVATE FUNCTIONS
+{- |
+emittance
 
-densityPower :: Double -> Double
-densityPower rough = 1.0 / (10.0 ** pw + 1.0)
-  where
-    pw = 6.0 * (1.0 - sqrt rough)
+
+-}
+
+emittance :: Surface -> Position3 -> Direction3 -> Radiance
+emittance (Surface Nothing _ _ _) _ _ = radiance0
+emittance (Surface (Just lgt) _ _ _) pos vvec = lemittance lgt pos vvec
+
+
+-- PRIVATE FUNCTIONS
 
 {-
 reflectionIndex :: Color -> Double -> Color

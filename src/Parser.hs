@@ -296,7 +296,8 @@ pointlight = do
   c <- colorparam rColor
   f <- doubleparam rFlux
   p <- vector3param rPosition
-  return $ PointLight (normalizeColor c) f p
+  --return $ PointLight (normalizeColor c) f p
+  return $ initLight (normalizeColor c) f 0.0 (Point o3)
 
 {- |
 >>> parse parallelogramlight "rt parser" "  - type: parallelogram\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 0.0, 0.0, 1.0 ]\n"
@@ -323,7 +324,8 @@ parallelogramlight = do
   let n' = normalize $ d1 <*> d2
   if n' == Nothing
     then error "Normal vector is zero."
-    else return $ ParallelogramLight (normalizeColor c) f p (fromJust n') d1 d2
+    --else return $ ParallelogramLight (normalizeColor c) f p (fromJust n') d1 d2
+    else return $ initLight (normalizeColor c) f 0.0 (Point o3)
 
 {- |
 >>> parse sunlight "rt parser" "  - type: sun\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 0.0, 0.0, 1.0 ]\n    ldir: [ 0.0, -1.0, 0.0 ]\n"
@@ -348,7 +350,8 @@ sunlight = do
   let n' = normalize $ d1 <*> d2
   if n' == Nothing
     then error "Normal vector is zero."
-    else return $ SunLight (normalizeColor c) f p (fromJust n') d1 d2 ld
+    --else return $ SunLight (normalizeColor c) f p (fromJust n') d1 d2 ld
+    else return $ initLight (normalizeColor c) f 0.0 (Point o3)
 
 -- MATERIAL
 
@@ -555,7 +558,7 @@ plain mmap = do
   let
     d = n <.> p
   --return (nm, initObject (Plain n (-d)) (mmap M.! mt))
-  return (nm, initObject (Plain n (-d)) (mmap M.! mt) (initSurface radiance0 0.0))
+  return (nm, initObject (Plain n (-d)) (mmap M.! mt) (initSurface Nothing 0.0))
 
 {- |
 >>> let mmap = M.fromList [("mball", Material radiance0 (Color 0.5 0.2 0.2) black black black 1.0 0.0 0.0)]
@@ -572,7 +575,7 @@ sphere mmap = do
   c  <- vector3param rCenter
   r  <- doubleparam rRadius
   mt <- nameparam "material"
-  return (nm, initObject (Sphere c r) (mmap M.! mt) (initSurface radiance0 0.0))
+  return (nm, initObject (Sphere c r) (mmap M.! mt) (initSurface Nothing 0.0))
 
 {- |
 >>> let mmap = M.fromList [("mball", Material radiance0 (Color 0.5 0.2 0.2) black black black 1.0 0.0 0.0)]
@@ -592,7 +595,7 @@ parallelogram mmap vmap = do
   p2 <- nameOrPos3 vmap rPos2
   p3 <- nameOrPos3 vmap rPos3
   mt <- nameparam "material"
-  return (nm, initObject (initParallelogram p1 p2 p3) (mmap M.! mt) (initSurface radiance0 0.0))
+  return (nm, initObject (initParallelogram p1 p2 p3) (mmap M.! mt) (initSurface Nothing 0.0))
 
 {- |
 >>> let mmap = M.fromList [("mball", Material radiance0 (Color 0.5 0.2 0.2) black black black 1.0 0.0 0.0)]
@@ -612,7 +615,7 @@ polygon mmap vmap = do
   p2 <- nameOrPos3 vmap rPos2
   p3 <- nameOrPos3 vmap rPos3
   mt <- nameparam "material"
-  return (nm, initObject (initPolygon p1 p2 p3) (mmap M.! mt) (initSurface radiance0 0.0))
+  return (nm, initObject (initPolygon p1 p2 p3) (mmap M.! mt) (initSurface Nothing 0.0))
 
 {- |
 >>> let vmap = M.fromList [("p1", Vector3 (-0.5) 3.99 2.5), ("p2", Vector3 0.5 3.99 2.5), ("p3", Vector3 (-0.5) 3.99 3.5)]

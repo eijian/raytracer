@@ -61,18 +61,28 @@ parseConfig conf = do
       Right (l', o') -> (l', o')
     (n, os) = unzip os0
     -}
+    sh_ceiling_light = initParallelogram (Vector3 (-0.67) 3.99 2.33) 
+      (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)
+    --sh_ceiling_bulb1 = Sphere (Vector3 0.0 3.75 3.0) 0.2
+    sh_ceiling_bulb1 = Sphere (Vector3 (-1.5) 0.2 1.5) 0.15
+    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 1.0 sh_ceiling_light
+    lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1
+
     ls = [
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
-      ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
-        (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
+      --ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
+      --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
+        lg_ceiling_light
+      --, lg_ceiling_bulb1
       ]
 
-    sf_wall    = initSurface radiance0 1.0
-    sf_paral   = initSurface (Radiance 0.4421 0.4421 0.4421) 0.0
-    sf_glass   = initSurface radiance0 0.5
-    sf_silver  = initSurface radiance0 0.0
-    sf_plastic = initSurface radiance0 0.4
+    sf_wall    = initSurface Nothing 1.0
+    sf_paral   = initSurface (Just lg_ceiling_light) 0.0
+    sf_bulb1   = initSurface (Just lg_ceiling_bulb1) 1.0
+    sf_glass   = initSurface Nothing 0.5
+    sf_silver  = initSurface Nothing 0.0
+    sf_plastic = initSurface Nothing 0.1
     --mball = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.0 1.0 1.0)
     --  (initSurfaceSimple (Color 0.5 0.5 0.5) (Color 0.0 0.0 0.0) 0.5 0.0 0.0)
     mwall  = initMaterial (Color 0.5 0.5 0.5) 1.0 0.0 black (Color 1.534 1.534 1.534) Nothing
@@ -84,7 +94,8 @@ parseConfig conf = do
     --   三原色それぞれがこの輝度を持つとした。
     mparal  = initMaterial black 0.0 0.0 black black Nothing
     glass   = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 2.0 2.0 2.0) Nothing
-    silver  = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.96 0.76 0.39))
+    --silver  = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.96 0.76 0.39))
+    silver  = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.974 0.960 0.906))
     plastic = initMaterial (Color 0.5 0.30 0.1) 1.0 0.0 black (Color 2.0 2.0 2.0) Nothing
 {-
     ypla00 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
@@ -154,12 +165,16 @@ parseConfig conf = do
     ball_10 = Object (Sphere (Vector3 ( 1.6) 0.4 2.8) 0.4) ypla10
 -}
     --ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) mirror
-    ceiling_light = Object (initParallelogram (Vector3 (-0.67) 3.99 2.33) 
-      (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)) mparal sf_paral
+    ceiling_light = Object sh_ceiling_light mparal sf_paral
+    ceiling_bulb1 = Object sh_ceiling_bulb1 mparal sf_bulb1
 
-    os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall,
-          ceiling_light,
-          ball_glass, ball_plastic]
+    os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall
+        , ceiling_light
+        --, ceiling_bulb1
+        , ball_glass
+        --, ball_silver
+        , ball_plastic
+        ]
 --          ball_01, ball_02, ball_03, ball_04, ball_05,
 --          ball_06, ball_07, ball_08, ball_09, ball_10]
 

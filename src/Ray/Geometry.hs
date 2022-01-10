@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 --
@@ -17,18 +19,27 @@ module Ray.Geometry (
 , initRayFromElem
 , methodMoller
 , one_pi
+, pi4
+, randomPoint
 , sqpi2
 , sr_half
+, surfaceArea
 , target
 ) where
 
+import           Control.DeepSeq
+import           Control.DeepSeq.Generics (genericRnf)
 import Data.Maybe
+import           GHC.Generics
 import NumericPrelude
 import           System.Random.Mersenne as MT
 
 import Ray.Algebra
 
 -- CONSTANTS
+
+pi4 :: Double
+pi4 = 4 * pi -- for decay by distance (1/ 4pi) 
 
 sqpi2 :: Double
 sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
@@ -96,7 +107,11 @@ data Shape =
   , dir1     :: !Direction3
   , dir2     :: !Direction3
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance NFData Shape where
+  rnf = genericRnf
+
 
 initPolygon :: Position3 -> Position3 -> Position3 -> Shape
 initPolygon p0 p1 p2 = Polygon p0 n d1 d2
