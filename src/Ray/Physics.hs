@@ -12,15 +12,17 @@ module Ray.Physics (
   Color (Color)
 , Wavelength (Red, Green, Blue)
 , black
+, decideWavelength
 , expColor
 , initColor
 , initColorByKelvin
 , lowerThan
+, minColor
 , normalizeColor
-, decideWavelength
-, selectWavelength
 , relativeIorAverage
 , relativeIorWavelength
+, selectWavelength
+, snellLow
 , white
 ) where
 
@@ -45,7 +47,8 @@ import           Ray.Algebra
   Green: 546.1 nm
   Blue : 435.5 nm
 -}
-data Wavelength = Red | Green | Blue deriving (Show, Read, Enum, Eq, Generic)
+data Wavelength = Red | Green | Blue
+  deriving (Show, Read, Enum, Eq, Generic)
 
 instance NFData Wavelength where
   rnf = genericRnf
@@ -54,7 +57,7 @@ instance NFData Wavelength where
 -- Color
 
 data Color = Color !Double !Double !Double
-             deriving (Read, Generic)
+  deriving (Read, Generic)
 
 instance NFData Color where
   rnf = genericRnf
@@ -93,6 +96,8 @@ black :: Color
 black = Color 0.0 0.0 0.0
 white :: Color
 white = Color 1.0 1.0 1.0
+minColor :: Color
+minColor = Color (1/10000) (1/10000) (1/10000)
 
 initColor :: Double -> Double -> Double -> Color
 initColor r g b = normalizeColor (Color r g b)
@@ -204,9 +209,9 @@ Snell's low
        cos2  refraction cosine
 -}
 
-snell :: Double -> Direction3 -> Direction3
+snellLow :: Double -> Direction3 -> Direction3
   -> (Direction3, Direction3, Double, Double)
-snell r_ior nvec vvec
+snellLow r_ior nvec vvec
   | g <= 0.0  = (r, o3, c1, 0.0)   -- 全反射
   | otherwise = (r, t, c1, c2)
   where

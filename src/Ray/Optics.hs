@@ -42,44 +42,41 @@
 module Ray.Optics (
   Photon
 , PhotonCache
---, PhotonInfo (..)
 , PhotonFilter (..)
 , Radiance (Radiance)
-, (<**>)
+, convertToInfo
 , diffuseReflection
-, specularReflection
-, specularRefraction
-, rabs'
 , elemR
 , elemG
 , elemB
-, convertToInfo
-, squaredDistance
+, fresnelReflectance
+, fresnelReflectanceColor
 , initPhoton
 , photonDir
 , photonDummy
 , photonPos
 , photonToRadiance
+, rabs'
 , radiance0
 , radiance1
-, reflectionIndex
-, schlick
-, schlickColor
+, specularReflection
+, specularRefraction
+, squaredDistance
+, (<**>)
 ) where
 
 import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
 import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
-import           Debug.Trace
-import           Data.List.Split
+--import           Debug.Trace
 import           Data.Maybe
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-import qualified Data.Vector as V
-import           Data.Vector.Generic.Base
-import           Data.Vector.Generic.Mutable  hiding (read)
-import qualified Data.Vector.Unboxed as VU
+--import qualified Data.Text as T
+--import qualified Data.Text.IO as T
+--import qualified Data.Vector as V
+--import           Data.Vector.Generic.Base
+--import           Data.Vector.Generic.Mutable  hiding (read)
+--import qualified Data.Vector.Unboxed as VU
 import           GHC.Generics 
 import           NumericPrelude
 import           Test.QuickCheck
@@ -92,10 +89,11 @@ import           Ray.Physics
 -- Photon Filter
 --
 
-data PhotonFilter = Nonfilter
-                  | Conefilter
-                  | Gaussfilter
-                  deriving (Eq, Ord, Show, Read, Generic)
+data PhotonFilter =
+    Nonfilter
+  | Conefilter
+  | Gaussfilter
+  deriving (Eq, Ord, Show, Read, Generic)
 
 instance NFData PhotonFilter where
   rnf = genericRnf                  
@@ -104,8 +102,7 @@ instance NFData PhotonFilter where
 -- Radiance
 
 data Radiance = Radiance !Double !Double !Double
-                deriving (Read, Show, Generic)
-                --deriving (Read, Show, Generic, Vector VU.Vector, MVector VU.MVector, VU.Unbox)
+  deriving (Read, Show, Generic)
 
 instance NFData Radiance where
   rnf = genericRnf
@@ -192,16 +189,6 @@ initPhoton l r = (l, r)
 
 type PhotonCache = Photon
 
---data PhotonInfo = PhotonInfo !Wavelength !Position3 !Direction3
---  deriving (Show, Read, Eq, Generic)
-  --deriving (Show, Read, Eq, Generic, VB.Vector U.Vector, MVector U.MVector, U.Unbox)
-
---instance VB.Vector U.Vector PhotonInfo where
---  basicLength (U.Vector (PhotonInfo w p d)) = VB.basicLength w + VB.basicLength p + VB.basicLength d
-
---instance NFData PhotonInfo where
---  rnf = genericRnf
-
 photonDummy :: Position3 -> Photon
 photonDummy p = (Red, (p, ex3))
 
@@ -211,7 +198,6 @@ photonDir (_, (_, d)) = d
 photonPos :: Photon -> Position3
 photonPos (_, (p, _)) = p
 
---convertToInfo :: PhotonCache -> PhotonInfo
 convertToInfo :: Photon -> Photon
 convertToInfo (wl, (rp, rd)) = (wl, (rp, (negate rd)))
 
@@ -284,19 +270,26 @@ specularRefraction nvec vvec eta cos
     tvec = normalize ((1.0 / eta) *> (vvec + (cos - g) *> nvec))
 
 --
--- 
+-- UTILITY
 --
 
-reflectionIndex = schlickColor
+{-
+fresnelReflectance: フレネル反射率計算
+  schlickの近似式を用いてF(0°)から計算する
+  cf: https://hanecci.hatenadiary.org/entry/20130525/p3
+-}
 
-schlickColor :: Color -> Double -> Color
-schlickColor (Color r g b) cos =
+fresnelReflectanceColor :: Color -> Double -> Color
+fresnelReflectanceColor (Color r g b) cos =
   Color (r + (1.0 - r) * cos') (g + (1.0 - g) * cos') (b + (1.0 - b) * cos')
   where
     cos' = (1.0 - cos) ** 5.0
+--fresnelReflectanceColor col@(Color r g b) cos = col + cos' *> (negate col)
+--  where
+--    cos' = (1.0 - cos) ** 5.0
 
-schlick :: Double -> Double -> Double
-schlick f0 cos = f0 + (1.0 - f0) * (1.0 - cos) ** 5.0
+fresnelReflectance :: Double -> Double -> Double
+fresnelReflectance f0 cos = f0 + (1.0 - f0) * (1.0 - cos) ** 5.0
 
 
 

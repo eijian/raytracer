@@ -60,7 +60,7 @@ import Control.DeepSeq
 import Control.DeepSeq.Generics (genericRnf)
 import GHC.Generics
 
-import qualified Data.Foldable as F
+--import qualified Data.Foldable as F
 import           Prelude hiding (null)
 --import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector as V

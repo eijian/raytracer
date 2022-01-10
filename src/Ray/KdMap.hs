@@ -44,7 +44,7 @@ import Control.DeepSeq
 import Control.DeepSeq.Generics (genericRnf)
 import GHC.Generics
 
-import Control.Applicative hiding (empty)
+--import Control.Applicative hiding (empty)
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Foldable hiding (null)
@@ -104,10 +104,10 @@ data TreeNode = TreeNode { _treeLeft  :: !TreeNode
   deriving (Generic, Show, Read)
 instance NFData TreeNode where rnf = genericRnf
 
+{-
 mapTreeNode :: TreeNode -> TreeNode
-mapTreeNode Empty = Empty
 mapTreeNode tn = tn
-
+-}
 
 -- | Converts a point of type @p@ with axis values of type
 -- @a@ into a list of axis values [a].
@@ -384,7 +384,7 @@ inRadius (KdMap pointAsList distSqr t _) radius query =
                             then V.cons (k, v) accAfterOffside
                             else accAfterOffside
       in  accAfterCurrent
-
+{-
 radianceInRadius ::
      KdMap
   -> Double -- ^ radius
@@ -410,6 +410,7 @@ radianceInRadius (KdMap pointAsList distSqr t _) radius query =
                             then V.cons (k, v) accAfterOffside
                             else accAfterOffside
       in  accAfterCurrent
+-}
 
 -- | Given a 'KdMap', a query point, and a number @k@, returns the @k@
 -- point-value pairs with the nearest points to the query.

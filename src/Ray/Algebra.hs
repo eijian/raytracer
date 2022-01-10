@@ -10,39 +10,36 @@
 
 module Ray.Algebra (
   BasicMatrix
+, Direction3
+, Position3
+, Vector3(..)
 --, module NumericPrelude
 , blurredVector
 , densityPower
-, nearly0
-, o3
+, elemX
+, elemY
+, elemZ
 , ex3
 , ey3
 , ez3
---, (+)
---, (-)
---, (*>)
-, (/>)
-, norm
-, (.=.)
-, normalize
-, square
-, (<.>)
-, (<*>)
-, Vector3(..)
-, Position3
-, Direction3
-, initPos
-, initDir
-, initDirFromAngle
 , generateRandomDir1
 , generateRandomDir2
 , generateRandomDir3
 , generateRandomDir4
-, elemX
-, elemY
-, elemZ
+, initDir
+, initDirFromAngle
+, initPos
+, nearly0
+, norm
+, normalize
+, o3
 , russianRoulette
 , russianRouletteBinary
+, square
+, (/>)
+, (.=.)
+, (<.>)
+, (<*>)
 ) where
 
 import qualified Algebra.Additive as Additive
@@ -60,7 +57,6 @@ import           Test.QuickCheck
 nearly0 :: Double
 --nearly0 = 0.00001  -- 10 micro meter
 nearly0 = 0.0001   -- 100 micro meter
---nearly0 = 0.001      -- 1 mili meter
 
 class (Show a, Eq a, Additive.C a, Module.C Double a) => BasicMatrix a where
   (/>) :: a -> Double -> Maybe a
@@ -80,16 +76,11 @@ class (BasicMatrix a) => Vector a where
   square :: a -> Double
   square v = v <.> v
 
-data Vector3 = Vector3 !Double !Double !Double deriving (Read, Show, Generic)
+data Vector3 = Vector3 !Double !Double !Double
+  deriving (Read, Show, Generic)
 
 instance NFData Vector3 where
   rnf = genericRnf
-
-{-
-instance Show Vector3 where
-  show (Vector3 ax ay az)
-    = "[" ++ (show ax) ++ "," ++ (show ay) ++ "," ++ (show az) ++ "]"
--}
 
 instance Eq Vector3 where
   (==) (Vector3 ax ay az) (Vector3 bx by bz)
@@ -334,17 +325,17 @@ blurredVector nvec pow = do
     z = sin phi * rt
 
     nvec' = x *> uvec + y *> nvec + z *> vvec
---    nvec' = if nvec <.> wi < 0.0
---      then negate wi
---      else wi
   case normalize nvec' of
     Just v  -> return v
     Nothing -> return ex3    
 
+{- |
+densityPower
+-}
+
 densityPower :: Double -> Double
 densityPower r = 1.0 / (10.0 ** pw + 1.0)
   where
-    --pw = 6.0 * (1.0 - sqrt r)
     pw = 6.0 * r
 
 

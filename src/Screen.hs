@@ -7,12 +7,12 @@
 module Screen (
   Rgb
 , Screen(..)
-, readScreen
-, rgbToString
-, rgbToText
 , radianceToString
 , radianceToText
+, readScreen
 , rgbToRadiance
+, rgbToString
+, rgbToText
 ) where
 
 --import          Control.Monad

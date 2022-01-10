@@ -15,8 +15,8 @@ import System.Environment
 
 import Ray.Algebra
 import Ray.Geometry
-import Ray.Physics
 import Ray.Optics
+import Ray.Physics
 
 import Screen
 
@@ -33,27 +33,29 @@ usage = "Usage: pm2img [screen info file] < [photon map file]"
 
 main :: IO ()
 main = do
-  as <- getArgs
-  fn <- if length as == 1
-    then return (as !! 0)
+  args <- getArgs
+  fn <- if length args == 1
+    then return (args !! 0)
     else error usage
   scr <- readScreen fn
   np <- getLine
   pw <- getLine
-  let nphoton = read np :: Int
-      power = read pw :: Double
+  let
+    _np = read np :: Int
+    _pw = read pw :: Double
   dat <- getContents
   pcs <- forM (lines dat) $ \i -> do
     return $ (read i :: PhotonCache)
-  let cp  = target (focus scr) (initRay (eyePos scr) (eyeDir scr))
-      sc  = Plain (eyeDir scr) (negate (eyeDir scr) <.> cp)
-      map = getMap scr cp sc pcs
-  a <- forM (map) $ \i -> do
+  let
+    cp  = target (focus scr) (initRay (eyePos scr) (eyeDir scr))
+    sc  = Plain (eyeDir scr) (negate (eyeDir scr) <.> cp)
+    map = getMap scr cp sc pcs
+  forM_ (map) $ \i -> do
     putStrLn $ show i
   return ()
 
 getMap :: Screen -> Position3 -> Shape -> [PhotonCache]
-       -> [(Wavelength, Int, Int)]
+   -> [(Wavelength, Int, Int)]
 getMap _ _ _ [] = []
 getMap scr cp sc (pc:pcs)
   | t < (focus scr)         = next

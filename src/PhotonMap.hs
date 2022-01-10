@@ -12,25 +12,11 @@
 
 module PhotonMap (
   PhotonMap
-, nearest
 , inradius
+, nearest
 , power
 , readMap
 ) where
-
-{-
-import qualified Algebra.Additive as Additive
-import qualified Algebra.Module as Module
-import           Debug.Trace
---import qualified Data.KdTree.Static as KT
-import           Data.Vector.Generic.Base
-import           Data.Vector.Generic.Mutable  hiding (read)
-import qualified Data.Vector.Unboxed as VU
-import           GHC.Generics 
-import           Test.QuickCheck
-
---import           Ray.Geometry
--}
 
 import           Control.DeepSeq
 --import           Control.DeepSeq.Generics (genericRnf)
@@ -53,53 +39,21 @@ data PhotonMap = PhotonMap
 
 readMap :: Int -> Double -> IO (Int, PhotonMap)
 readMap nsample radius = do
---  hPutStrLn stderr "start reading"
-{-
-  _   <- getLine           -- discard infomation about the number of photon 
-  pw0 <- getLine
-  ps  <- getContents
-  hPutStrLn stderr "after getContents"
-  let
-    pw = read pw0 :: Double
-    ls = lines ps
-  hPutStrLn stderr ("after lines" ++ show (length ls))
-  let
-    pcs = map convertToInfo (map (\x -> read x :: PhotonCache) ls)
--}
   _   <- T.getLine           -- discard infomation about the number of photon 
   pw0 <- T.getLine
   ps  <- T.getContents
---  hPutStrLn stderr "after getContents"
   let
-    --np = read np' :: Int
     pw = read (T.unpack pw0) :: Double
     ls = V.fromList $ T.lines ps
-  --hPutStrLn stderr ("after lines " ++ show (V.length ls))
-  --hPutStrLn stderr ("LN:" ++ (show $ T.unpack (ls V.! 0)))
-  let
-    --pcs = V.toList $ V.map convertToInfo (V.map (\x -> read (T.unpack x) :: PhotonCache) ls)
     pcs = V.toList $ V.map convertToInfo (V.map (readPhoton) ls)
-    --pcs = V.toList $ V.map (readPhoton) ls
-  
-  --pcs `deepseq` hPutStrLn stderr "convert"
---  hPutStrLn stderr "convert"
-  let
-    --pmap = KT.buildWithDist infoToPointList squaredDistance pcs
     pmap = pcs `deepseq` KT.buildWithDist photonToPointList squaredDistance pcs
-    --pmap = pcs `deepseq` fromList pcs
---  hPutStrLn stderr "after KT build"
-  let
-  --  msize = pmap `deepseq` KT.size pmap
     msize = KT.size pmap
-    --msize = length pcs
-  --hPutStrLn stderr ("radius= " ++ show radius)
   return (msize, PhotonMap pw (KT.kNearest pmap nsample) (KT.inRadius pmap $ sqrt radius))
-  --return (msize, PhotonMap pw (kNearestNeighbors pmap nsample) (nearNeighbors pmap $ sqrt radius))
 
 readPhoton :: T.Text -> Photon
-readPhoton p = (wl, (Vector3 px py pz, Vector3 dx dy dz))
+readPhoton photon = (wl, (Vector3 px py pz, Vector3 dx dy dz))
   where
-    [wl0, px0, py0, pz0, dx0, dy0, dz0] = splitOn " " $ T.unpack $ T.strip p
+    [wl0, px0, py0, pz0, dx0, dy0, dz0] = splitOn " " $ T.unpack $ T.strip photon
     wl = case wl0 of
       "Red"   -> Red
       "Green" -> Green

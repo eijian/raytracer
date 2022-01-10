@@ -27,19 +27,19 @@ module Ray.Geometry (
 , target
 ) where
 
-import           Control.DeepSeq
-import           Control.DeepSeq.Generics (genericRnf)
+import Control.DeepSeq
+import Control.DeepSeq.Generics (genericRnf)
 import Data.Maybe
-import           GHC.Generics
+import GHC.Generics
 import NumericPrelude
-import           System.Random.Mersenne as MT
+import System.Random.Mersenne as MT
 
 import Ray.Algebra
 
 -- CONSTANTS
 
 pi4 :: Double
-pi4 = 4 * pi -- for decay by distance (1/ 4pi) 
+pi4 = 4 * pi           -- for decay by distance (1/ 4pi) 
 
 sqpi2 :: Double
 sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
@@ -114,62 +114,62 @@ instance NFData Shape where
 
 
 initPolygon :: Position3 -> Position3 -> Position3 -> Shape
-initPolygon p0 p1 p2 = Polygon p0 n d1 d2
+initPolygon p0 p1 p2 = Polygon p0 nvec d1 d2
   where
     d1 = p1 - p0
     d2 = p2 - p0
-    n  = fromJust (normalize (d1 <*> d2))
+    nvec  = fromJust (normalize (d1 <*> d2))
 
 initParallelogram :: Position3 -> Position3 -> Position3 -> Shape
-initParallelogram p0 p1 p2 = Parallelogram p0 n d1 d2
+initParallelogram p0 p1 p2 = Parallelogram p0 nvec d1 d2
   where
     d1 = p1 - p0
     d2 = p2 - p0
-    n  = fromJust (normalize (d1 <*> d2))
+    nvec  = fromJust (normalize (d1 <*> d2))
 
 getNormal :: Position3 -> Shape -> Maybe Direction3
 -- Plain
-getNormal _ (Plain n _) = Just n
+getNormal _ (Plain nvec _) = Just nvec
 -- Sphere
-getNormal p (Sphere c _) = normalize (p - c)
+getNormal pos (Sphere center _) = normalize (pos - center)
 -- Polygon
-getNormal _ (Polygon _ n _ _) = Just n
+getNormal _ (Polygon _ nvec _ _) = Just nvec
 -- Parallelogram
-getNormal _ (Parallelogram _ n _ _) = Just n 
+getNormal _ (Parallelogram _ nvec _ _) = Just nvec
 -- Point
 getNormal _ _ = Nothing
 
 
 distance :: Ray -> Shape -> [Double]
 -- Plain
-distance (pos, dir) (Plain n d)
-  | cos0 == 0 = []
-  | otherwise = [(d + n <.> pos) / (-cos0)]
+distance (pos, dir) (Plain nvec d)
+  | cos == 0  = []
+  | otherwise = [(d + nvec <.> pos) / (-cos)]
   where
-    cos0 = n <.> dir
+    cos = nvec <.> dir
 -- Sphere
-distance (pos, dir) (Sphere c r)
+distance (pos, dir) (Sphere center radius)
   | t1 <= 0.0 = []
   | t2 == 0.0 = [t0]
   | t1 >  0.0 = [t0 - t2, t0 + t2]
   where
-    o  = c - pos
+    o  = center - pos
     t0 = o <.> dir
-    t1 = r * r - (square o - (t0 * t0))
+    t1 = radius * radius - (square o - (t0 * t0))
     t2 = sqrt t1
 -- Polygon
-distance (pos, dir) (Polygon p _ d1 d2)
+distance (pos, dir) (Polygon pos0 _ dir1 dir2)
   | res == Nothing = []
   | otherwise      = [t]
   where
-    res = methodMoller 1.0 p d1 d2 pos dir
+    res = methodMoller 1.0 pos0 dir1 dir2 pos dir
     (_, _, t) = fromJust res
 -- Parallelogram
-distance (pos, dir) (Parallelogram p _ d1 d2)
+distance (pos, dir) (Parallelogram pos0 _ dir1 dir2)
   | res == Nothing = []
   | otherwise      = [t]
   where
-    res = methodMoller 2.0 p d1 d2 pos dir
+    res = methodMoller 2.0 pos0 dir1 dir2 pos dir
     (_, _, t) = fromJust res
 -- Point
 distance _ _ = []
@@ -180,22 +180,22 @@ surfaceArea 表面積
 
 surfaceArea :: Shape -> Double
 surfaceArea (Point _) = 0.0
-surfaceArea (Plain n d) = 0.0
-surfaceArea (Sphere _ r) = 4 * pi * r * r
-surfaceArea (Polygon _ _ d1 d2) = norm (d1 <*> d2) / 2.0
-surfaceArea (Parallelogram _ _ d1 d2) = norm (d1 <*> d2)
+surfaceArea (Plain _ _) = 0.0
+surfaceArea (Sphere _ radius) = 4 * pi * radius * radius
+surfaceArea (Polygon _ _ dir1 dir2) = norm (dir1 <*> dir2) / 2.0
+surfaceArea (Parallelogram _ _ dir1 dir2) = norm (dir1 <*> dir2)
 
 {-
 randomPoint 表面上のランダムな点
 -}
 
 randomPoint :: Shape -> IO Position3
-randomPoint (Point p) = return p
-randomPoint (Plain n d) = return o3
-randomPoint (Sphere c r) = do
-  d <- generateRandomDir3
-  return (c + (r *> d))
-randomPoint (Polygon p _ d1 d2) = do
+randomPoint (Point pos) = return pos
+randomPoint (Plain _ _) = return o3
+randomPoint (Sphere center radius) = do
+  dir <- generateRandomDir3
+  return (center + (radius *> dir))
+randomPoint (Polygon pos _ dir1 dir2) = do
   m <- MT.randomIO :: IO Double
   n <- MT.randomIO :: IO Double
   let
@@ -204,11 +204,11 @@ randomPoint (Polygon p _ d1 d2) = do
         then ((1.0 - m), n)
         else (m, (1.0 - n))
       else (m, n)
-  return (p + m' *> d1 + n' *> d2)
-randomPoint (Parallelogram p _ d1 d2) = do
+  return (pos + m' *> dir1 + n' *> dir2)
+randomPoint (Parallelogram pos _ dir1 dir2) = do
   m <- MT.randomIO :: IO Double
   n <- MT.randomIO :: IO Double
-  return (p + m *> d1 + n *> d2)
+  return (pos + m *> dir1 + n *> dir2)
 
 --
 -- UTILS
@@ -219,17 +219,17 @@ randomPoint (Parallelogram p _ d1 d2) = do
 methodMoller :: Double -> Position3 -> Direction3 -> Direction3
              -> Position3 -> Direction3
              -> Maybe (Double, Double, Double)
-methodMoller l p0 d1 d2 p d
+methodMoller l pos0 dir1 dir2 pos dir
   | detA == 0.0        = Nothing
   | u < 0.0 || u > 1.0 = Nothing
   | v < 0.0 || v > 1.0 = Nothing
   | u + v > l          = Nothing
   | otherwise          = Just (u, v, t)
   where
-    re2 = d <*> d2
-    detA = re2 <.> d1
-    p'   = p - p0
-    te1  = p' <*> d1
+    re2 = dir <*> dir2
+    detA = re2 <.> dir1
+    p'   = pos - pos0
+    te1  = p' <*> dir1
     u    = (re2 <.> p') / detA
-    v    = (te1 <.> d)  / detA
-    t    = (te1 <.> d2) / detA
+    v    = (te1 <.> dir)  / detA
+    t    = (te1 <.> dir2) / detA
