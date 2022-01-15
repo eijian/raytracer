@@ -111,9 +111,9 @@ emittance
 
 -}
 
-emittance :: Surface -> Position3 -> Direction3 -> Radiance
-emittance (Surface Nothing _ _ _) _ _ = radiance0
-emittance (Surface (Just lgt) _ _ _) pos vvec = lemittance lgt pos vvec
+emittance :: Surface -> Position3 -> Direction3 -> Direction3 -> Radiance
+emittance (Surface Nothing _ _ _) _ _ _ = radiance0
+emittance (Surface (Just lgt) _ _ _) pos nvec vvec = lemittance lgt pos nvec vvec
 
 
 -- PRIVATE FUNCTIONS

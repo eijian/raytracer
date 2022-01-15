@@ -66,7 +66,7 @@ getMap scr cp sc (pc:pcs)
     d = (getPt pc) - (eyePos scr)
     d' = fromJust $ normalize d
     r = initRay (eyePos scr) d'
-    t = head $ distance r sc
+    (t, _) = head $ distance r sc
     p = (target t r) - cp
     px = round ((elemX p + 1.0) * (fromIntegral xr / 2))
     py = round ((1.0 - elemY p) * (fromIntegral yr / 2))

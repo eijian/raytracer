@@ -9,6 +9,7 @@ module Scene (
 ) where
 
 import           Data.List
+import           Data.Array.Unboxed
 import           Data.Maybe
 --import qualified Data.Map.Strict as M
 import qualified Data.Vector as V
@@ -55,6 +56,31 @@ readConfig file = do
 parseConfig :: String -> IO (V.Vector Light, V.Vector Object)
 parseConfig conf = do
   let
+
+    vtxs = listArray (0, 5)
+      [ Vector3 1.0 1.4 2.6
+      , Vector3 1.0 0.7 1.9
+      , Vector3 1.7 0.7 2.6
+      , Vector3 1.0 0.7 3.3
+      , Vector3 0.3 0.7 2.6
+      , Vector3 1.0 0.0 2.6
+      ]
+
+    norms = listArray (0, 0)
+      [ ex3
+      ]
+
+    sh_octahedron = Mesh (V.fromList
+      [ ((0, 0), (1, 0), (2, 0))  
+      , ((0, 0), (2, 0), (3, 0))
+      , ((0, 0), (3, 0), (4, 0))
+      , ((0, 0), (4, 0), (1, 0))
+      , ((5, 0), (1, 0), (4, 0))
+      , ((5, 0), (4, 0), (3, 0))
+      , ((5, 0), (3, 0), (2, 0))
+      , ((5, 0), (2, 0), (1, 0))
+      ]) vtxs norms
+
     {-
     (ls, os0) = case (parse scene "rt scene file parse error" conf) of
       Left e -> error (show e)
@@ -66,21 +92,22 @@ parseConfig conf = do
     --sh_ceiling_bulb1 = Sphere (Vector3 0.0 3.75 3.0) 0.2
     sh_ceiling_bulb1 = Sphere (Vector3 (-1.5) 0.2 1.5) 0.15
     lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 1.0 sh_ceiling_light
-    lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1
+    --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1
+    lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_octahedron
 
     ls = [
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
       --ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
-        lg_ceiling_light
-      --, lg_ceiling_bulb1
+      --  lg_ceiling_light
+        lg_ceiling_bulb1
       ]
 
     sf_wall    = initSurface Nothing 1.0
     sf_paral   = initSurface (Just lg_ceiling_light) 0.0
     sf_bulb1   = initSurface (Just lg_ceiling_bulb1) 1.0
-    sf_glass   = initSurface Nothing 0.5
+    sf_glass   = initSurface Nothing 0.0
     sf_silver  = initSurface Nothing 0.0
     sf_plastic = initSurface Nothing 0.1
     --mball = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.0 1.0 1.0)
@@ -152,6 +179,7 @@ parseConfig conf = do
     ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) glass sf_glass
     ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) silver sf_silver
     ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) plastic sf_plastic
+    octahedron = Object sh_octahedron glass sf_glass
 {-
     ball_01 = Object (Sphere (Vector3 (-1.6) 1.2 3.8) 0.4) ypla00
     ball_02 = Object (Sphere (Vector3 (-0.8) 1.2 3.8) 0.4) ypla01
@@ -166,12 +194,14 @@ parseConfig conf = do
 -}
     --ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) mirror
     ceiling_light = Object sh_ceiling_light mparal sf_paral
-    ceiling_bulb1 = Object sh_ceiling_bulb1 mparal sf_bulb1
+    --ceiling_bulb1 = Object sh_ceiling_bulb1 mparal sf_bulb1
+    ceiling_bulb1 = Object sh_octahedron mparal sf_bulb1
 
     os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall
-        , ceiling_light
-        --, ceiling_bulb1
-        , ball_glass
+        --, ceiling_light
+        , ceiling_bulb1
+        --, ball_glass
+        , octahedron
         --, ball_silver
         , ball_plastic
         ]

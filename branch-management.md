@@ -16,6 +16,10 @@
 
 ## Branches
 
+* 20220111-mesh_support
+    - version 2.7.2.0
+    - メッシュ（三角パッチ集合）のサポート
+        - メッシュ型の新設
 
 * 20220110-code_cleaning
     - version 2.7.1.1

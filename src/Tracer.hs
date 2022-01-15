@@ -136,8 +136,9 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
           tracer = traceRay scr uc objs lgts (l+1) pmap radius mate_air
 
         -- L_diffuse
-        lpos <- V.mapM (randomPoint.lshape) lgts
+        lpos0 <- V.mapM (randomPoint.lshape) lgts
         let
+          (lpos, _) = V.unzip lpos0
           di' = if uc 
             then foldl (+) radiance0 $ V.map (getRadianceFromLight objs pos nvec) (V.zip lgts lpos)
             else radiance0
@@ -174,7 +175,7 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
         let
           tc = expColor (transmittance mate0) t
           rad = bsdf mate cos1 di si ti
-        return (tc <**> (sr_half *> (emittance surf pos vvec) + rad))
+        return (tc <**> (sr_half *> (emittance surf pos nvec vvec) + rad))
 
 
 estimateRadiance :: Double -> Screen -> PhotonMap -> Intersection -> Radiance
@@ -266,9 +267,11 @@ calcIntersection ray@(_, vvec) objs
     nvec = getNormal pos shape
 
 calcDistance :: Ray -> Object -> [(Double, Object)]
-calcDistance ray obj@(Object shape _ _) = zip ts (replicate (length ts) obj)
+calcDistance ray obj@(Object shape _ _) = zipWith toDistance ts (replicate (length ts) obj)
   where
     ts = distance ray shape
+    toDistance :: (Double, Shape) -> Object -> (Double, Object)
+    toDistance (t, shape) (Object _ mate surf) = (t, (Object shape mate surf))
 
 {-
 bsdf: BSDF

@@ -8,7 +8,7 @@
 
 module Ray.Geometry (
   Ray
-, Shape (Point, Plain, Sphere, Parallelogram)
+, Shape (Point, Plain, Sphere, Parallelogram, Mesh)
 , distance
 , getDir
 , getNormal
@@ -29,7 +29,10 @@ module Ray.Geometry (
 
 import Control.DeepSeq
 import Control.DeepSeq.Generics (genericRnf)
+import Data.Array.Unboxed as UA
+import Data.Int
 import Data.Maybe
+import Data.Vector as V
 import GHC.Generics
 import NumericPrelude
 import System.Random.Mersenne as MT
@@ -79,6 +82,9 @@ getDir = snd
 -- Shapes
 -----------------------
 
+type Vertex = (Int, Int)   -- 頂点型：頂点座標の番号＋法線ベクトルの番号
+type Patch = (Vertex, Vertex, Vertex)
+
 data Shape =
   Point
   { position :: !Position3
@@ -106,6 +112,12 @@ data Shape =
   , nvec     :: !Direction3
   , dir1     :: !Direction3
   , dir2     :: !Direction3
+  }
+  |
+  Mesh
+  { patches  :: !(V.Vector Patch)
+  , vertexes :: !(UA.Array Int Position3)
+  , normals  :: !(UA.Array Int Direction3)
   }
   deriving (Eq, Show, Generic)
 
@@ -138,39 +150,46 @@ getNormal _ (Polygon _ nvec _ _) = Just nvec
 getNormal _ (Parallelogram _ nvec _ _) = Just nvec
 -- Point
 getNormal _ _ = Nothing
+-- Mesh
+getNormal _ (Mesh ps _ _) = Nothing
 
-
-distance :: Ray -> Shape -> [Double]
+distance :: Ray -> Shape -> [(Double, Shape)]
 -- Plain
-distance (pos, dir) (Plain nvec d)
+distance (pos, dir) shape@(Plain nvec d)
   | cos == 0  = []
-  | otherwise = [(d + nvec <.> pos) / (-cos)]
+  | otherwise = [((d + nvec <.> pos) / (-cos), shape)]
   where
     cos = nvec <.> dir
 -- Sphere
-distance (pos, dir) (Sphere center radius)
+distance (pos, dir) shape@(Sphere center radius)
   | t1 <= 0.0 = []
-  | t2 == 0.0 = [t0]
-  | t1 >  0.0 = [t0 - t2, t0 + t2]
+  | t2 == 0.0 = [(t0, shape)]
+  | t1 >  0.0 = [(t0 - t2, shape), (t0 + t2, shape)]
   where
     o  = center - pos
     t0 = o <.> dir
     t1 = radius * radius - (square o - (t0 * t0))
     t2 = sqrt t1
 -- Polygon
-distance (pos, dir) (Polygon pos0 _ dir1 dir2)
+distance (pos, dir) shape@(Polygon pos0 _ dir1 dir2)
   | res == Nothing = []
-  | otherwise      = [t]
+  | otherwise      = [(t, shape)]
   where
     res = methodMoller 1.0 pos0 dir1 dir2 pos dir
     (_, _, t) = fromJust res
 -- Parallelogram
-distance (pos, dir) (Parallelogram pos0 _ dir1 dir2)
+distance (pos, dir) shape@(Parallelogram pos0 _ dir1 dir2)
   | res == Nothing = []
-  | otherwise      = [t]
+  | otherwise      = [(t, shape)]
   where
     res = methodMoller 2.0 pos0 dir1 dir2 pos dir
     (_, _, t) = fromJust res
+-- Mesh
+distance ray (Mesh ps vs ns) = if t >= infinity
+  then []
+  else [d]
+  where
+    d@(t, shape) = foldl' (compPolygon ray vs ns) (infinity, Point o3) ps
 -- Point
 distance _ _ = []
 
@@ -184,18 +203,28 @@ surfaceArea (Plain _ _) = 0.0
 surfaceArea (Sphere _ radius) = 4 * pi * radius * radius
 surfaceArea (Polygon _ _ dir1 dir2) = norm (dir1 <*> dir2) / 2.0
 surfaceArea (Parallelogram _ _ dir1 dir2) = norm (dir1 <*> dir2)
+surfaceArea (Mesh ps vtxs _) = foldl' (sumPatchArea) 0.0 ps
+  where
+    sumPatchArea :: Double -> Patch -> Double
+    sumPatchArea s ((p0, _), (p1, _), (p2, _)) = s + (norm (d1 <*> d2) / 2.0)
+      where
+        d1 = vtxs UA.! p1 - vtxs UA.! p0
+        d2 = vtxs UA.! p2 - vtxs UA.! p0
 
 {-
 randomPoint 表面上のランダムな点
 -}
 
-randomPoint :: Shape -> IO Position3
-randomPoint (Point pos) = return pos
-randomPoint (Plain _ _) = return o3
-randomPoint (Sphere center radius) = do
+randomPoint :: Shape -> IO (Position3, Direction3)
+randomPoint (Point pos) = return (pos, o3)
+randomPoint (Plain _ _) = return (o3, o3)
+randomPoint shape@(Sphere center radius) = do
   dir <- generateRandomDir3
-  return (center + (radius *> dir))
-randomPoint (Polygon pos _ dir1 dir2) = do
+  let
+    pos = center + (radius *> dir)
+    nvec = getNormal pos shape
+  return (pos, fromJust nvec)
+randomPoint (Polygon pos nvec dir1 dir2) = do
   m <- MT.randomIO :: IO Double
   n <- MT.randomIO :: IO Double
   let
@@ -204,11 +233,29 @@ randomPoint (Polygon pos _ dir1 dir2) = do
         then ((1.0 - m), n)
         else (m, (1.0 - n))
       else (m, n)
-  return (pos + m' *> dir1 + n' *> dir2)
-randomPoint (Parallelogram pos _ dir1 dir2) = do
+  return (pos + m' *> dir1 + n' *> dir2, nvec)
+randomPoint (Parallelogram pos nvec dir1 dir2) = do
   m <- MT.randomIO :: IO Double
   n <- MT.randomIO :: IO Double
-  return (pos + m *> dir1 + n *> dir2)
+  return (pos + m *> dir1 + n *> dir2, nvec)
+randomPoint (Mesh ps vtxs _) = do
+  ri <- MT.randomIO :: IO Double
+  let
+    len = fromIntegral $ V.length ps
+    ri' = len * ri
+    i = if ri' == len then len - 1 else ri'
+    ((p0, _), (p1, _), (p2, _)) = ps V.! (truncate i)
+    d1 = vtxs UA.! p1 - vtxs UA.! p0
+    d2 = vtxs UA.! p2 - vtxs UA.! p0
+  m  <- MT.randomIO :: IO Double
+  n  <- MT.randomIO :: IO Double
+  let
+    (m', n') = if m + n > 1.0
+      then if m > n
+        then ((1.0 - m), n)
+        else (m, (1.0 - n))
+      else (m, n)
+  return (vtxs UA.! p0 + m' *> d1 + n' *> d2, d1 <*> d2)
 
 --
 -- UTILS
@@ -233,3 +280,24 @@ methodMoller l pos0 dir1 dir2 pos dir
     u    = (re2 <.> p') / detA
     v    = (te1 <.> dir)  / detA
     t    = (te1 <.> dir2) / detA
+
+--
+-- PRIVATE
+--
+
+compPolygon :: Ray -> UA.Array Int Position3 -> UA.Array Int Position3 -> (Double, Shape) -> Patch
+  -> (Double, Shape)
+compPolygon (pos, dir) vtxs norms d@(t, shape) ((p0, n0), (p1, n1), (p2, n2)) =
+  case res of
+    Just (u, v, t') -> if t' < t
+      then (t', Polygon (vtxs UA.! p0) (fromJust (normalize (d1 <*> d2))) d1 d2)
+      -- initPolygon (vtxs UA.! p0) (vtxs UA.! p1) (vtxs UA.! p2))
+      else d
+    Nothing        -> d
+  where
+    d1 = vtxs UA.! p1 - vtxs UA.! p0
+    d2 = vtxs UA.! p2 - vtxs UA.! p0
+    res = methodMoller 1 (vtxs UA.! p0) d1 d2 pos dir
+
+infinity :: Double
+infinity = 1e100

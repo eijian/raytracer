@@ -74,22 +74,21 @@ initLight col lumen direct shape = Light col flux direct shape pow em
     e0   = sr_half * flux / surfaceArea shape
     em   = (3.0 * e0) *> col <**> radiance1
 
-lemittance :: Light -> Position3 -> Direction3 -> Radiance
-lemittance (Light _ _ _ shape pow em) pos vvec = cos' *> em
+lemittance :: Light -> Position3 -> Direction3 -> Direction3 -> Radiance
+lemittance (Light _ _ _ _ pow em) pos nvec vvec = cos' *> em
   where
-    nvec = getNormal pos shape
-    cos = (fromJust nvec) <.> vvec
+    cos = nvec <.> vvec
     cos' = (-cos) ** (0.5 / pow)
 
 generatePhoton :: Light -> IO Photon
 generatePhoton (Light c _ _ s pow _) = do
   wl <- MT.randomIO :: IO Double
-  pos <- randomPoint s
+  (pos, nvec) <- randomPoint s
   let
     w = decideWavelength c wl
-    nvec = getNormal pos s
+    --nvec = getNormal pos s
   --putStrLn ("lpos=" ++ show pos ++ "/shape=" ++ show s)
-  nvec' <- blurredVector (fromJust nvec) pow
+  nvec' <- blurredVector nvec pow
   return (w, initRay pos nvec')
 
 getDirection :: Light -> Position3 -> Position3 -> Maybe Direction3
