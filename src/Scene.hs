@@ -82,6 +82,39 @@ parseConfig conf = do
       ]) vtxs norms
 -}
 
+    vtxs_octahedron = listArray (0, 5)
+      [ Vector3 1.4499513267805775 1.3362311101832847 2.6
+      , Vector3 1.0 0.8 1.9000000000000001
+      , Vector3 0.5500486732194225 0.2637688898167154 2.6
+      , Vector3 1.0 0.8 3.3
+      , Vector3 0.4637688898167154 1.2499513267805775 2.6
+      , Vector3 1.5362311101832846 0.3500486732194225 2.6
+      ]
+    
+    norms_octahedron = listArray (0, 0)
+      [ Vector3 (0.0) (0.0) (0.0)
+      , Vector3 0.07116236596167938 (-0.8133895649302385) 0.5773502691896257
+      , Vector3 0.8133895649302385 0.0711623659616794 0.5773502691896257
+      , Vector3 0.8133895649302385 0.0711623659616794 (-0.5773502691896258)
+      , Vector3 0.07116236596167938 (-0.8133895649302383) (-0.5773502691896258)
+      , Vector3 (-0.8133895649302385) (-0.0711623659616794) 0.5773502691896257
+      , Vector3 (-0.07116236596167931) 0.8133895649302385 0.5773502691896257
+      , Vector3 (-0.07116236596167934) 0.8133895649302383 (-0.577350269189626)
+      , Vector3 (-0.8133895649302384) (-0.0711623659616794) (-0.5773502691896258)
+      ]
+    
+    sh_octahedron = Mesh (V.fromList
+      [ ((1, 1), (0, 1), (4, 1))
+      , ((2, 2), (1, 2), (4, 2))
+      , ((3, 3), (2, 3), (4, 3))
+      , ((0, 4), (3, 4), (4, 4))
+      , ((0, 5), (1, 5), (5, 5))
+      , ((1, 6), (2, 6), (5, 6))
+      , ((2, 7), (3, 7), (5, 7))
+      , ((3, 8), (0, 8), (5, 8))
+      ]) vtxs_octahedron norms_octahedron
+
+{-
     vtxs = listArray (0, 11)
       [ Vector3 1.0 2.1 1.9819662822943842
       , Vector3 2.0 1.718033717705616 2.6
@@ -141,6 +174,7 @@ parseConfig conf = do
       , ((3, 19), (9, 19), (8, 19))
       , ((4, 20), (8, 20), (0, 20))
       ]) vtxs norms
+-}
 
     {-
     (ls, os0) = case (parse scene "rt scene file parse error" conf) of
@@ -152,10 +186,10 @@ parseConfig conf = do
       (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)
     --sh_ceiling_bulb1 = Sphere (Vector3 0.0 3.75 3.0) 0.2
     sh_ceiling_bulb1 = Sphere (Vector3 (-1.5) 0.2 1.5) 0.15
-    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 0.5 sh_ceiling_light
-    --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1
+    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 0.0 sh_ceiling_light
+    lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_octahedron
-    lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_icosahedron
+    --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_icosahedron
 
     ls = [
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
@@ -241,9 +275,9 @@ parseConfig conf = do
     ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) glass sf_glass
     ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) silver sf_silver
     ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) plastic sf_plastic
-    --octahedron = Object sh_octahedron glass sf_glass
+    octahedron = Object sh_octahedron silver sf_silver
     --icosahedron = Object sh_icosahedron silver sf_silver
-    icosahedron = Object sh_icosahedron silver sf_silver
+    --icosahedron = Object sh_icosahedron silver sf_silver
 {-
     ball_01 = Object (Sphere (Vector3 (-1.6) 1.2 3.8) 0.4) ypla00
     ball_02 = Object (Sphere (Vector3 (-0.8) 1.2 3.8) 0.4) ypla01
@@ -266,8 +300,8 @@ parseConfig conf = do
         , ceiling_light
         --, ceiling_bulb1
         --, ball_glass
-        --, octahedron
-        , icosahedron
+        , octahedron
+        --, icosahedron
         --, ball_silver
         , ball_plastic
         ]

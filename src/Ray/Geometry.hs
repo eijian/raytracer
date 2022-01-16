@@ -267,7 +267,6 @@ randomPoint (Mesh ps vtxs norms) = do
         then ((1.0 - m), n)
         else (m, (1.0 - n))
       else (m, n)
-  --return (vtxs UA.! p0 + m' *> d1 + n' *> d2, d1 <*> d2)
   return (vtxs UA.! p0 + m' *> d1 + n' *> d2, norms UA.! nvec)
 
 --
