@@ -153,18 +153,26 @@ getNormal _ _ = Nothing
 -- Mesh
 getNormal _ (Mesh ps _ _) = Nothing
 
-distance :: Ray -> Shape -> [(Double, Shape)]
+distance :: Ray -> Shape -> Maybe (Double, Shape)
 -- Plain
 distance (pos, dir) shape@(Plain nvec d)
-  | cos == 0  = []
-  | otherwise = [((d + nvec <.> pos) / (-cos), shape)]
+  | cos == 0       = Nothing
+  | dist < nearly0 = Nothing
+  | otherwise      = Just (dist, shape)
   where
     cos = nvec <.> dir
+    dist = (d + nvec <.> pos) / (-cos)
 -- Sphere
 distance (pos, dir) shape@(Sphere center radius)
-  | t1 <= 0.0 = []
-  | t2 == 0.0 = [(t0, shape)]
-  | t1 >  0.0 = [(t0 - t2, shape), (t0 + t2, shape)]
+  | t1 <= 0.0 = Nothing
+  | t2 == 0.0 = if t0 >= nearly0
+      then Just (t0, shape)
+      else Nothing
+  | t1 >  0.0 = if t0 - t2 >= nearly0
+      then Just (t0 - t2, shape)
+      else if t0 + t2 >= nearly0
+        then Just (t0 + t2, shape)
+        else Nothing
   where
     o  = center - pos
     t0 = o <.> dir
@@ -172,26 +180,30 @@ distance (pos, dir) shape@(Sphere center radius)
     t2 = sqrt t1
 -- Polygon
 distance (pos, dir) shape@(Polygon pos0 _ dir1 dir2)
-  | res == Nothing = []
-  | otherwise      = [(t, shape)]
+  | res == Nothing = Nothing
+  | t < nearly0    = Nothing
+  | otherwise      = Just (t, shape)
   where
     res = methodMoller 1.0 pos0 dir1 dir2 pos dir
     (_, _, t) = fromJust res
 -- Parallelogram
 distance (pos, dir) shape@(Parallelogram pos0 _ dir1 dir2)
-  | res == Nothing = []
-  | otherwise      = [(t, shape)]
+  | res == Nothing = Nothing
+  | t < nearly0    = Nothing
+  | otherwise      = Just (t, shape)
   where
     res = methodMoller 2.0 pos0 dir1 dir2 pos dir
     (_, _, t) = fromJust res
 -- Mesh
 distance ray (Mesh ps vs ns) = if t >= infinity
-  then []
-  else [d]
+  then Nothing
+  else if t >= nearly0
+    then Just d
+    else Nothing
   where
     d@(t, shape) = foldl' (compPolygon ray vs ns) (infinity, Point o3) ps
 -- Point
-distance _ _ = []
+distance _ _ = Nothing
 
 {- |
 surfaceArea 表面積
@@ -238,13 +250,13 @@ randomPoint (Parallelogram pos nvec dir1 dir2) = do
   m <- MT.randomIO :: IO Double
   n <- MT.randomIO :: IO Double
   return (pos + m *> dir1 + n *> dir2, nvec)
-randomPoint (Mesh ps vtxs _) = do
+randomPoint (Mesh ps vtxs norms) = do
   ri <- MT.randomIO :: IO Double
   let
     len = fromIntegral $ V.length ps
     ri' = len * ri
     i = if ri' == len then len - 1 else ri'
-    ((p0, _), (p1, _), (p2, _)) = ps V.! (truncate i)
+    ((p0, nvec), (p1, _), (p2, _)) = ps V.! (truncate i)
     d1 = vtxs UA.! p1 - vtxs UA.! p0
     d2 = vtxs UA.! p2 - vtxs UA.! p0
   m  <- MT.randomIO :: IO Double
@@ -255,7 +267,8 @@ randomPoint (Mesh ps vtxs _) = do
         then ((1.0 - m), n)
         else (m, (1.0 - n))
       else (m, n)
-  return (vtxs UA.! p0 + m' *> d1 + n' *> d2, d1 <*> d2)
+  --return (vtxs UA.! p0 + m' *> d1 + n' *> d2, d1 <*> d2)
+  return (vtxs UA.! p0 + m' *> d1 + n' *> d2, norms UA.! nvec)
 
 --
 -- UTILS

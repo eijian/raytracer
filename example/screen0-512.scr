@@ -1,11 +1,11 @@
 #
 
 nphoton       : 100000
-progressive   : no
+progressive   : yes
 xresolution   : 512
 yresolution   : 512
-#antialias     : yes                # yes or no
-antialias     : no                # yes or no
+antialias     : yes                # yes or no
+#antialias     : no                # yes or no
 samplephoton  : 500
 #useclassic    : yes                # yes or no
 useclassic    : no                # yes or no

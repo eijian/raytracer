@@ -61,12 +61,14 @@ getMap scr cp sc (pc:pcs)
   | t < (focus scr)         = next
   | px < 0 || px > (xr - 1) = next
   | py < 0 || py > (yr - 1) = next
+  | dist == Nothing         = next
   | otherwise = (getWl pc, px, py) : next
   where
     d = (getPt pc) - (eyePos scr)
     d' = fromJust $ normalize d
     r = initRay (eyePos scr) d'
-    (t, _) = head $ distance r sc
+    dist = distance r sc
+    (t, _) = fromJust dist
     p = (target t r) - cp
     px = round ((elemX p + 1.0) * (fromIntegral xr / 2))
     py = round ((1.0 - elemY p) * (fromIntegral yr / 2))

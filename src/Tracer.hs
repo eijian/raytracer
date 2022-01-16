@@ -253,23 +253,29 @@ type Intersection = (Double, Position3, Direction3, Material, Surface, InOut)
 
 calcIntersection :: Ray -> V.Vector Object -> Maybe Intersection
 calcIntersection ray@(_, vvec) objs
-  | iss == [] = Nothing
-  | otherwise =
+  | iss == V.empty = Nothing
+  | otherwise      =
     case nvec of
       Just nvec -> if nvec <.> vvec > 0.0
         then Just (t, pos, negate nvec, mate, surf, Out)
         else Just (t, pos, nvec       , mate, surf, In)
       Nothing -> Nothing
   where
-    iss = filter (\x -> fst x > nearly0) (concat $ V.map (calcDistance ray) objs)
-    (t, (Object shape mate surf)) = head $ sortBy (comparing fst) iss
+    iss = V.mapMaybe (calcDistance ray) objs
+    (t, (Object shape mate surf)) = V.foldl' nearer (V.head iss) (V.tail iss)
     pos = target t ray
     nvec = getNormal pos shape
+    nearer :: (Double, Object) -> (Double, Object) -> (Double, Object)
+    nearer d1@(t1, _) d2@(t2, _) = if t1 <= t2
+      then d1
+      else d2
 
-calcDistance :: Ray -> Object -> [(Double, Object)]
-calcDistance ray obj@(Object shape _ _) = zipWith toDistance ts (replicate (length ts) obj)
+calcDistance :: Ray -> Object -> Maybe (Double, Object)
+calcDistance ray obj@(Object shape _ _) = 
+  case distance ray shape of
+    Just t  -> Just (toDistance t obj)
+    Nothing -> Nothing
   where
-    ts = distance ray shape
     toDistance :: (Double, Shape) -> Object -> (Double, Object)
     toDistance (t, shape) (Object _ mate surf) = (t, (Object shape mate surf))
 
