@@ -297,7 +297,7 @@ pointlight = do
   f <- doubleparam rFlux
   p <- vector3param rPosition
   --return $ PointLight (normalizeColor c) f p
-  return $ initLight (normalizeColor c) f 0.0 (Point o3)
+  return $ initLight (normalizeColor c) f 0.0 (Point o3) True
 
 {- |
 >>> parse parallelogramlight "rt parser" "  - type: parallelogram\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 0.0, 0.0, 1.0 ]\n"
@@ -325,7 +325,7 @@ parallelogramlight = do
   if n' == Nothing
     then error "Normal vector is zero."
     --else return $ ParallelogramLight (normalizeColor c) f p (fromJust n') d1 d2
-    else return $ initLight (normalizeColor c) f 0.0 (Point o3)
+    else return $ initLight (normalizeColor c) f 0.0 (Point o3) True
 
 {- |
 >>> parse sunlight "rt parser" "  - type: sun\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 0.0, 0.0, 1.0 ]\n    ldir: [ 0.0, -1.0, 0.0 ]\n"
@@ -351,7 +351,7 @@ sunlight = do
   if n' == Nothing
     then error "Normal vector is zero."
     --else return $ SunLight (normalizeColor c) f p (fromJust n') d1 d2 ld
-    else return $ initLight (normalizeColor c) f 0.0 (Point o3)
+    else return $ initLight (normalizeColor c) f 0.0 (Point o3) True
 
 -- MATERIAL
 

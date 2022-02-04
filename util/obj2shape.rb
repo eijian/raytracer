@@ -187,10 +187,16 @@ def main
   #shape.move(1.0, 1.1, 2.6)
 
   # octahedron
-  shape.rotate(0.0, 0.0, 50.0)
-  shape.scale(0.7)
-  shape.move(1.0, 0.8, 2.6)
+  #shape.rotate(0.0, 0.0, 50.0)
+  #shape.scale(0.7)
+  #shape.move(1.0, 0.8, 2.6)
 
+  # sun plane
+  shape.scale(5)
+  shape.rotate(180, 0, 0)
+  shape.move(0, 100, 0)
+
+  # sun plane
   #shape.rotate(0, 45, 0)
 
   puts shape.to_s

@@ -57,6 +57,7 @@ data Light = Light
   , flux        :: !Flux
   , directivity :: !Double
   , lshape      :: !Shape
+  , dirflag     :: !Bool
   -- calcuration when initializing
   , power       :: !Double
   , emittance0  :: !Radiance
@@ -66,8 +67,8 @@ data Light = Light
 instance NFData Light where
   rnf = genericRnf
 
-initLight :: Color -> Flux -> Double -> Shape -> Light
-initLight col lumen direct shape = Light col flux direct shape pow em
+initLight :: Color -> Flux -> Double -> Shape -> Bool -> Light
+initLight col lumen direct shape dirf = Light col flux direct shape dirf pow em
   where
     flux = lumen / 683.0
     pow  = densityPower (direct ** 3)
@@ -75,24 +76,26 @@ initLight col lumen direct shape = Light col flux direct shape pow em
     em   = (3.0 * e0) *> col <**> radiance1
 
 lemittance :: Light -> Position3 -> Direction3 -> Direction3 -> Radiance
-lemittance (Light _ _ _ _ pow em) pos nvec vvec = cos' *> em
+lemittance (Light _ _ _ _ _ pow em) pos nvec vvec = cos' *> em
   where
     cos = nvec <.> vvec
     cos' = (-cos) ** (0.5 / pow)
 
 generatePhoton :: Light -> IO Photon
-generatePhoton (Light c _ _ s pow _) = do
+generatePhoton (Light c _ _ s flag pow _) = do
   wl <- MT.randomIO :: IO Double
   (pos, nvec) <- randomPoint s
   let
     w = decideWavelength c wl
-    --nvec = getNormal pos s
-  --putStrLn ("lpos=" ++ show pos ++ "/shape=" ++ show s)
-  nvec' <- blurredVector nvec pow
+    nvec2 = if flag == True
+      then nvec
+      else negate nvec
+  
+  nvec' <- blurredVector nvec2 pow
   return (w, initRay pos nvec')
 
 getDirection :: Light -> Position3 -> Position3 -> Maybe Direction3
-getDirection (Light _ _ _ shape _ _) lpos pos
+getDirection (Light _ _ _ shape _ _ _) lpos pos
   | nvec == Nothing = Nothing
   | cos > 0.0       = Nothing
   | otherwise       = Just lvec
@@ -107,7 +110,7 @@ getDirection (Light _ _ _ shape _ _) lpos pos
 
 getRadiance :: Light -> Position3 -> Position3
   -> (Double, Maybe Direction3, Radiance)
-getRadiance lgt@(Light (Color r g b) f _ shape pow _) lpos pos
+getRadiance lgt@(Light (Color r g b) f _ shape _ pow _) lpos pos
   | ldir0 == Nothing = (0.0, Nothing, radiance0)
   | lvec == Nothing  = (0.0, Nothing, radiance0)
   | cos < 0.0        = (0.0, Nothing, radiance0)
