@@ -333,9 +333,15 @@ blurredVector nvec pow = do
 densityPower
 -}
 
-densityPower :: Double -> Double
-densityPower r = 1.0 / (10.0 ** pw + 1.0)
+densityPower :: Double -> (Double, Double)
+densityPower r = (n, 1.0 / (n + 1.0))
   where
-    pw = 6.0 * r
+    r' = if r > 1.0
+      then 1.0
+      else
+        if r < (-1.0)
+          then (-1.0)
+          else r
+    n = 10.0 ** (6.0 * r')
 
 

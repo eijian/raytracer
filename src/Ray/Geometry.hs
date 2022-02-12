@@ -19,6 +19,7 @@ module Ray.Geometry (
 , initRayFromElem
 , methodMoller
 , one_pi
+, pi2
 , pi4
 , randomPoint
 , sqpi2
@@ -40,6 +41,9 @@ import System.Random.Mersenne as MT
 import Ray.Algebra
 
 -- CONSTANTS
+
+pi2 :: Double
+pi2 = 2 * pi
 
 pi4 :: Double
 pi4 = 4 * pi           -- for decay by distance (1/ 4pi) 
@@ -255,8 +259,8 @@ randomPoint (Mesh ps vtxs norms) = do
   let
     len = fromIntegral $ V.length ps
     ri' = len * ri
-    i = if ri' == len then len - 1 else ri'
-    ((p0, nvec), (p1, _), (p2, _)) = ps V.! (truncate i)
+    i = if ri' == len then truncate (len - 1) else truncate ri'
+    ((p0, nvec), (p1, _), (p2, _)) = ps V.! i
     d1 = vtxs UA.! p1 - vtxs UA.! p0
     d2 = vtxs UA.! p2 - vtxs UA.! p0
   m  <- MT.randomIO :: IO Double

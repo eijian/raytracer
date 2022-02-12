@@ -28,7 +28,7 @@ main :: IO ()
 main = do
   let
     nvec = ey3
-    pow = densityPower 1.0
+    (_, pow) = densityPower 1.0
   putStrLn ("power=" ++ show pow)
   vs1 <- mapM (\_ -> blurredVector nvec pow) [1..n]
   let

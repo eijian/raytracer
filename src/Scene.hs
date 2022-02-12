@@ -91,7 +91,7 @@ parseConfig conf = do
       , Vector3 1.5362311101832846 0.3500486732194225 2.6
       ]
     
-    norms_octahedron = listArray (0, 0)
+    norms_octahedron = listArray (0, 8)
       [ Vector3 (0.0) (0.0) (0.0)
       , Vector3 0.07116236596167938 (-0.8133895649302385) 0.5773502691896257
       , Vector3 0.8133895649302385 0.0711623659616794 0.5773502691896257
@@ -129,7 +129,7 @@ parseConfig conf = do
       , Vector3 1.0 0.1000000000000002 3.218033717705616
       , Vector3 1.0 2.1 3.218033717705616
       ]    
-    norms = listArray (0, 0)
+    norms = listArray (0, 20)
       [ Vector3 0.0 0.0 0.0
       , Vector3 (-0.934172274562006) (-0.0) (-0.356822310736938)
       , Vector3 (-0.934172274562006) 0.0 0.356822310736938
@@ -186,33 +186,44 @@ parseConfig conf = do
       (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)
     --sh_ceiling_bulb1 = Sphere (Vector3 0.0 3.75 3.0) 0.2
     sh_ceiling_bulb1 = Sphere (Vector3 (-1.5) 0.2 1.5) 0.15
-    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 0.0 sh_ceiling_light True
-    lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1 True
-    --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_octahedron
-    --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_icosahedron
+    lg_ceiling_light = initLight (initColorByKelvin 6500) 500 0.0 sh_ceiling_light True
+    --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1 True
+    lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_octahedron True
+    --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_icosahedron True
 
     sh_sunlight = initParallelogram (Vector3 4.0 100.0 (-4.0)) (Vector3 4.0 100.0 4.0) (Vector3 (-4.0) 100.0 (-4.0)) 
     sh_skylight = Sphere (Vector3 0 0 0) 1000.0
     lg_sunlight = initLight (initColorByKelvin 6500) 4000 1.0 sh_sunlight True
-    lg_skylight = initLight (initColorByKelvin 12000) 16000 0.95 sh_skylight False
+    lg_skylight = initLight (initColorByKelvin 12000) 16000 0.0 sh_skylight False
 
     ls = [
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
       --ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
-      --  lg_ceiling_light
-      --  lg_ceiling_bulb1
-        lg_sunlight
-      , lg_skylight
+      lg_ceiling_light
+      , lg_ceiling_bulb1
+      --  lg_sunlight
+      --, lg_skylight
       ]
+    
+    {-
+    ls = [
+      --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
+      --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
+      --ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
+      --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
+      --  lg_sunlight
+       lg_skylight
+      ]
+    -}
 
     sf_wall    = initSurface Nothing 1.0
     sf_paral   = initSurface (Just lg_ceiling_light) 0.0
     sf_bulb1   = initSurface (Just lg_ceiling_bulb1) 1.0
     sf_glass   = initSurface Nothing 0.4
     sf_silver  = initSurface Nothing 0.0
-    sf_plastic = initSurface Nothing 0.1
+    sf_plastic = initSurface Nothing 0.5
     --mball = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.0 1.0 1.0)
     --  (initSurfaceSimple (Color 0.5 0.5 0.5) (Color 0.0 0.0 0.0) 0.5 0.0 0.0)
     mwall  = initMaterial (Color 0.5 0.5 0.5) 1.0 0.0 black (Color 1.534 1.534 1.534) Nothing
@@ -283,7 +294,8 @@ parseConfig conf = do
     ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) glass sf_glass
     ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) silver sf_silver
     ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) plastic sf_plastic
-    octahedron = Object sh_octahedron silver sf_silver
+    --octahedron = Object sh_octahedron plastic sf_plastic
+    octahedron = Object sh_octahedron plastic sf_bulb1
 
     one_ball = Object (Sphere (Vector3 0.0 1.1 0.0) 1.0) plastic sf_plastic
     --icosahedron = Object sh_icosahedron silver sf_silver
@@ -308,24 +320,25 @@ parseConfig conf = do
     sunlight = Object sh_sunlight mparal sf_paral
     skylight = Object sh_skylight sky sf_paral
 
-    {-
+    
     os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall
         , ceiling_light
         --, ceiling_bulb1
         --, ball_glass
         , octahedron
         --, icosahedron
-        --, ball_silver
-        , ball_plastic
+        , ball_silver
+        --, ball_plastic
         ]
-    -}
-    os = [floor, one_ball
-         , sunlight
-         --, skylight
-         ]
-
 --          ball_01, ball_02, ball_03, ball_04, ball_05,
 --          ball_06, ball_07, ball_08, ball_09, ball_10]
+    
+    {-
+    os = [floor, one_ball
+         --, sunlight
+         , skylight
+         ]
+    -}
 
       
 

@@ -52,7 +52,7 @@ class Shape
     body += vtxs_str.join("\n      , ") + "\n"
     body += "      ]\n"
     body += "    \n"
-    body += "    norms_#{@grp} = listArray (0, 0)\n"
+    body += "    norms_#{@grp} = listArray (0, #{norms.size})\n"
     body += "      [ "
     @pats.each_with_index do |p, i|
       @norms[i+1] = recalc_normal(p[0], p[1], p[2])

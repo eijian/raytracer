@@ -59,9 +59,10 @@ instance NFData Surface where
 
 initSurface :: Maybe Light -> Double -> Surface
 initSurface lgt rough =
-  Surface lgt rough (densityPower (1.0 - sqrt rough)) alpha
+  Surface lgt rough pow alpha
   where
     alpha = rough * rough * rough * rough
+    (_, pow) = densityPower (1.0 - sqrt rough)
 
 {-
 rough :: Surface -> Double

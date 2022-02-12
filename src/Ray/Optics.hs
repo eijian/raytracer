@@ -214,7 +214,7 @@ photonToRadiance n pw (wl, (_, d)) =
     Blue  -> Radiance 0 0 pw'
   where
     cos0 = n <.> d
-    pw'  = if cos0 > 0.0 then pw * cos0 else 0.0
+    pw'  = if cos0 > 0.0 then pw else 0.0
 
 --
 -- REFLECTION AND REFRACTION
