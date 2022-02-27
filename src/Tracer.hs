@@ -24,6 +24,7 @@ import           Debug.Trace
 import qualified Data.Vector as V
 --import qualified Data.Vector.Unboxed as VU
 import           NumericPrelude
+import           System.IO
 --import           System.Random.Mersenne as MT
 
 import Ray.Algebra
@@ -138,15 +139,11 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
         -- L_diffuse
         di' <- if uc 
           then do
-            lpos0 <- V.mapM (randomPoint.lshape) lgts
-            {-
             lrads <- V.forM lgts $ \lgt -> do
-              lpoints <- V.replicateM (nsample lgt) (randomPoint.lshape lgt)
-              return (getRadianceFromLight lgt lpoints objs pos nvec)
-            -}
-            let
-              (lpos, _) = V.unzip lpos0
-            return (foldl (+) radiance0 $ V.map (getRadianceFromLight objs pos nvec) (V.zip lgts lpos))
+              lpoints <- V.replicateM (nsample lgt) (randomPoint (lshape lgt))
+              return (lpoints `deepseq` getRadianceFromLight2 lgt lpoints objs pos nvec)
+            return (lrads `deepseq` foldl (+) radiance0 lrads) 
+            --return (foldl (+) radiance0 $ V.map (getRadianceFromLight objs pos nvec) (V.zip lgts lpos))
           else return radiance0
         let
           di = di' + estimateRadiance radius scr pmap is
@@ -238,46 +235,32 @@ filter_gauss rmax d = if e_r > e_beta then 0.0 else alpha * (1.0 - e_r / e_beta)
   where
     e_r = 1.0 - exp (-beta * d / (rmax * 2.0))
 
-getRadianceFromLight :: V.Vector Object -> Position3 -> Direction3
-  -> (Light, Position3) -> Radiance
-getRadianceFromLight objs pos nvec (lgt, lpos)
-  | lvec == Nothing        = radiance0
-  | is   == Nothing        = radiance0
-  | dist2 - dist2' > 0.002 = radiance0   -- 光源の前に物体がある
-  | cos <= 0.0             = radiance0    
-  | otherwise              = cos *> rad 
-  where
-    (dist2, lvec, rad) = getRadiance lgt lpos pos
-    is = calcIntersection (initRay pos (fromJust lvec)) objs
-    (_, pos', _, _, _, _) = fromJust is
-    dist2' = square (pos' - pos)
-    cos = nvec <.> (fromJust lvec)
-
-{-
 getRadianceFromLight2 :: Light -> V.Vector (Position3, Direction3)
   ->V.Vector Object -> Position3 -> Direction3 -> Radiance
 getRadianceFromLight2 lgt lpoints objs pos nvec
-  = (foldl (+) radiance0 rads) / (fromIntegral $ length lpoints)
+  = (1.0 / (fromIntegral (length lpoints) :: Double)) *> (V.foldl (+) radiance0 rads)
   where
-    rads = map (calcRadiance lgt objs pos nvec) lpoints
+    rads = V.mapMaybe (calcRadiance lgt objs pos nvec) lpoints
 
 calcRadiance :: Light -> V.Vector Object -> Position3 -> Direction3
-  -> (Position3, Direction3) -> Radiance
+  -> (Position3, Direction3) -> Maybe Radiance
 calcRadiance lgt objs pos nvec (lpos, lnvec)
-  | ldir == o3 = radiance0
-  | lvec == Nothing = radiance0
-  | is == Nothing = radiance0
-  | dist2  - t * t > 0.002 = radiance0  -- 光源の手前に物体がある
-  | 
+  | ldir  == o3            = Nothing
+  | ldir <.> lnvec > 0.0   = Nothing
+  | lvec0 == Nothing       = Nothing
+  | cos <= 0.0             = Nothing
+  | is    == Nothing       = Nothing
+  | dist2  - t * t > 0.002 = Nothing  -- 光源の手前に物体がある
+  | otherwise              = Just ((cos / dist2) *> rad)
   where
     ldir = lpos - pos
-    lvec = normalize ldir
-    cos = nvec <.> 
+    lvec0 = normalize ldir
+    lvec = fromJust lvec0
+    cos = nvec <.> lvec
+    is = calcIntersection (initRay pos lvec) objs
     dist2 = square ldir
-    is = calcIntersection (initRay pos (fromJust lvec)) objs
     (t, _, _, _, _, _) = fromJust is
--}
-
+    rad = getRadiance lgt lnvec (negate lvec)
 
   
 

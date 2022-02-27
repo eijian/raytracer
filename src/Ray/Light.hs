@@ -76,7 +76,9 @@ initLight col lumen direct shape dirf = Light col flux direct shape dirf cpow po
     (cpow, pow)  = densityPower (direct ** 3)
     e0   = sr_half * flux / surfaceArea shape
     em   = (3.0 * e0) *> col <**> radiance1
-    nsam = truncate (1.6 ** (direct * 10))
+    ns   = truncate (1.5 ** (direct * 10))
+    nsam = if ns < 1 then nSurface shape else ns * nSurface shape
+    --nsam = if ns < 1 then 1 else ns
 
 lemittance :: Light -> Position3 -> Direction3 -> Direction3 -> Radiance
 lemittance (Light _ _ _ _ _ _ pow em _) pos nvec vvec = cos' *> em
@@ -110,22 +112,10 @@ getDirection (Light _ _ _ shape _ _ _ _ _) lpos pos
 光源までの距離は二乗された状態で入力される。1/4πd となっているがdは実際はd^2。
 -}
 
-getRadiance :: Light -> Position3 -> Position3
-  -> (Double, Maybe Direction3, Radiance)
-getRadiance lgt@(Light (Color r g b) f _ shape df cpow _ _ nsam) lpos pos
-  | ldir0 == Nothing = (0.0, Nothing, radiance0)
-  | lvec == Nothing  = (0.0, Nothing, radiance0)
-  | cos < 0.0        = (0.0, Nothing, radiance0)
-  | otherwise        = (dist, lvec, rad)
+getRadiance :: Light -> Direction3 -> Direction3 -> Radiance
+getRadiance lgt@(Light (Color r g b) f _ _ _ cpow _ _ _) lnvec lvec
+  = Radiance (r * decay) (g * decay) (b * decay)
   where
-    nvec0 = fromJust $ getNormal lpos shape
-    nvec = if df == True then nvec0 else (negate nvec0)
-    ldir0 = getDirection lgt lpos pos
-    ldir = fromJust ldir0
-    lvec = normalize $ ldir
-    cos = nvec <.> (negate $ fromJust lvec)
-    dist = square ldir
-    decay = (cos ** cpow) * (cpow + 1.0) / (pi2 * dist)
-    mag = f * decay
-    rad = Radiance (mag * r) (mag * g) (mag * b)
+    cos = lnvec <.> lvec
+    decay = f * (cos ** cpow) * (cpow + 1.0) / pi2
 

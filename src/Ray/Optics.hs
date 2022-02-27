@@ -69,7 +69,7 @@ import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
 import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
---import           Debug.Trace
+import           Debug.Trace
 import           Data.Maybe
 --import qualified Data.Text as T
 --import qualified Data.Text.IO as T

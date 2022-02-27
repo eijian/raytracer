@@ -18,6 +18,7 @@ module Ray.Geometry (
 , initRay
 , initRayFromElem
 , methodMoller
+, nSurface
 , one_pi
 , pi2
 , pi4
@@ -208,6 +209,18 @@ distance ray (Mesh ps vs ns) = if t >= infinity
     d@(t, shape) = foldl' (compPolygon ray vs ns) (infinity, Point o3) ps
 -- Point
 distance _ _ = Nothing
+
+{-
+nSurface  面の数
+-}
+
+nSurface :: Shape -> Int
+nSurface (Point _) = 0
+nSurface (Plain _ _) = 1
+nSurface (Sphere _ _) = 1
+nSurface (Polygon _ _ _ _) = 1
+nSurface (Parallelogram _ _ _ _) = 1
+nSurface (Mesh ps _ _) = V.length ps
 
 {- |
 surfaceArea 表面積

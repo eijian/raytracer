@@ -52,7 +52,7 @@ class Shape
     body += vtxs_str.join("\n      , ") + "\n"
     body += "      ]\n"
     body += "    \n"
-    body += "    norms_#{@grp} = listArray (0, #{norms.size})\n"
+    body += "    norms_#{@grp} = listArray (0, #{@norms.size - 1})\n"
     body += "      [ "
     @pats.each_with_index do |p, i|
       @norms[i+1] = recalc_normal(p[0], p[1], p[2])
@@ -135,7 +135,7 @@ private
     d2z = @vtxs[p3[0]][2] - @vtxs[p1[0]][2]
     n0 = [d1y * d2z - d2y * d1z, d1z * d2x - d2z * d1x, d1x * d2y - d2x * d1y]
     len = Math.sqrt(n0[0] * n0[0] + n0[1] * n0[1] + n0[2] * n0[2])
-    nv = [n0[0] / len, n0[1] / len, n0[2] / len]
+    nv = [-n0[0] / len, -n0[1] / len, -n0[2] / len]
     idx = @norms.size
     @norms << nv
     p1[1] = idx
@@ -153,7 +153,7 @@ private
     d2z = @vtxs[p3[0]][2] - @vtxs[p1[0]][2]
     n0 = [d1y * d2z - d2y * d1z, d1z * d2x - d2z * d1x, d1x * d2y - d2x * d1y]
     len = Math.sqrt(n0[0] * n0[0] + n0[1] * n0[1] + n0[2] * n0[2])
-    [n0[0] / len, n0[1] / len, n0[2] / len]
+    [-n0[0] / len, -n0[1] / len, -n0[2] / len]
   end
 
   def vector_to_s(v)
@@ -183,18 +183,19 @@ def main
 
   shape = Shape.read_obj(ARGV[0])
   # icosahedron
-  #shape.scale(1.0 / 0.850651)
-  #shape.move(1.0, 1.1, 2.6)
+  shape.scale(1.0 / 0.850651)
+  shape.rotate(2.0, 0.0, 50.0)
+  shape.move(1.0, 1.1, 2.6)
 
   # octahedron
-  #shape.rotate(0.0, 0.0, 50.0)
+  #shape.rotate(2.0, 0.0, 50.0)
   #shape.scale(0.7)
   #shape.move(1.0, 0.8, 2.6)
 
   # sun plane
-  shape.scale(5)
-  shape.rotate(180, 0, 0)
-  shape.move(0, 100, 0)
+  #shape.scale(5)
+  #shape.rotate(180, 0, 0)
+  #shape.move(0, 100, 0)
 
   # sun plane
   #shape.rotate(0, 45, 0)
