@@ -186,17 +186,17 @@ parseConfig conf = do
     sh_sunlight = initParallelogram (Vector3 4.0 100.0 (-4.0)) (Vector3 4.0 100.0 4.0) (Vector3 (-4.0) 100.0 (-4.0)) 
     sh_skylight = Sphere (Vector3 0 0 0) 1000.0
     lg_sunlight = initLight (initColorByKelvin 6500) 4000 1.0 sh_sunlight True
-    lg_skylight = initLight (initColorByKelvin 12000) 16000 0.0 sh_skylight False
+    lg_skylight = initLight (initColorByKelvin 12000) 4000 0.0 sh_skylight False
 
     ls = [
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
       --ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
-      lg_ceiling_light
+      -- lg_ceiling_light
       --, lg_ceiling_bulb1
       --  lg_sunlight
-      --, lg_skylight
+      lg_skylight
       ]
     
     {-
@@ -217,6 +217,7 @@ parseConfig conf = do
     sf_metal  = initSurface Nothing 0.5
     sf_metal2 = initSurface Nothing 0.0
     sf_plastic = initSurface Nothing 0.0
+    sf_plastic2 = initSurface Nothing 1.0
     --mball = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.0 1.0 1.0)
     --  (initSurfaceSimple (Color 0.5 0.5 0.5) (Color 0.0 0.0 0.0) 0.5 0.0 0.0)
     mwall  = initMaterial (Color 0.5 0.5 0.5) 1.0 0.0 black (Color 1.534 1.534 1.534) Nothing
@@ -290,7 +291,7 @@ parseConfig conf = do
     --octahedron = Object sh_octahedron plastic sf_plastic
     --octahedron = Object sh_octahedron plastic sf_bulb1
 
-    one_ball = Object (Sphere (Vector3 0.0 1.1 0.0) 1.0) plastic sf_plastic
+    one_ball = Object (Sphere (Vector3 0.0 1.01 0.0) 1.0) plastic sf_plastic2
     icosahedron = Object sh_icosahedron glass sf_glass
     --icosahedron = Object sh_icosahedron silver sf_silver
 {-
@@ -313,7 +314,7 @@ parseConfig conf = do
     sunlight = Object sh_sunlight mparal sf_paral
     skylight = Object sh_skylight sky sf_paral
 
-    
+    {-
     os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall
         , ceiling_light
         --, ceiling_bulb1
@@ -325,13 +326,12 @@ parseConfig conf = do
         ]
 --          ball_01, ball_02, ball_03, ball_04, ball_05,
 --          ball_06, ball_07, ball_08, ball_09, ball_10]
+    -}
     
-    {-
     os = [floor, one_ball
          --, sunlight
          , skylight
          ]
-    -}
 
       
 

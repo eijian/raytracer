@@ -13,6 +13,7 @@ module Ray.Light (
 , getRadiance
 , initLight
 , lemittance
+, validPoint
 ) where
 
 --import System.Random
@@ -119,3 +120,22 @@ getRadiance lgt@(Light (Color r g b) f _ _ _ cpow _ _ _) lnvec lvec
     cos = lnvec <.> lvec
     decay = f * (cos ** cpow) * (cpow + 1.0) / pi2
 
+{-
+
+-}
+
+validPoint :: Light -> Position3 -> Direction3 -> IO (Position3, Direction3)
+validPoint lgt pos nvec = do
+  (lpos, lnvec) <- randomPoint (lshape lgt)
+  if lnvec <.> nvec >= 0.0
+    then validPoint lgt pos nvec
+    else return (lpos, lnvec)
+{-
+    else do
+      let
+        ldir = lpos - pos
+      p <- if ldir <.> nvec < 0.0
+        then validPoint lgt pos nvec
+        else return (lpos, lnvec)
+      return p
+-}

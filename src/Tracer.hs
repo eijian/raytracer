@@ -140,7 +140,8 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
         di' <- if uc 
           then do
             lrads <- V.forM lgts $ \lgt -> do
-              lpoints <- V.replicateM (nsample lgt) (randomPoint (lshape lgt))
+              --lpoints <- V.replicateM (nsample lgt) (randomPoint (lshape lgt))
+              lpoints <- V.replicateM (nsample lgt) (validPoint lgt pos nvec)
               return (lpoints `deepseq` getRadianceFromLight2 lgt lpoints objs pos nvec)
             return (lrads `deepseq` foldl (+) radiance0 lrads) 
             --return (foldl (+) radiance0 $ V.map (getRadianceFromLight objs pos nvec) (V.zip lgts lpos))
@@ -250,7 +251,7 @@ calcRadiance lgt objs pos nvec (lpos, lnvec)
   | lvec0 == Nothing       = Nothing
   | cos <= 0.0             = Nothing
   | is    == Nothing       = Nothing
-  | dist2  - t * t > 0.002 = Nothing  -- 光源の手前に物体がある
+  | dist2  - t * t > 0.002 = trace ("T=" ++ show t) Nothing  -- 光源の手前に物体がある
   | otherwise              = Just ((cos / dist2) *> rad)
   where
     ldir = lpos - pos
