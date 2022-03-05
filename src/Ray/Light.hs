@@ -81,8 +81,8 @@ initLight col lumen direct shape dirf = Light col flux direct shape dirf cpow po
     nsam = if ns < 1 then nSurface shape else ns * nSurface shape
     --nsam = if ns < 1 then 1 else ns
 
-lemittance :: Light -> Position3 -> Direction3 -> Direction3 -> Radiance
-lemittance (Light _ _ _ _ _ _ pow em _) pos nvec vvec = cos' *> em
+lemittance :: Light -> SurfacePoint -> Direction3 -> Radiance
+lemittance (Light _ _ _ _ _ _ pow em _) (_, nvec) vvec = cos' *> em
   where
     cos = nvec <.> vvec
     cos' = (-cos) ** (0.5 / pow)
@@ -124,12 +124,12 @@ getRadiance lgt@(Light (Color r g b) f _ _ _ cpow _ _ _) lnvec lvec
 
 -}
 
-validPoint :: Light -> Position3 -> Direction3 -> IO (Position3, Direction3)
-validPoint lgt pos nvec = do
-  (lpos, lnvec) <- randomPoint (lshape lgt)
+validPoint :: Light -> SurfacePoint -> IO SurfacePoint
+validPoint lgt (pos, nvec) = do
+  sfpt@(lpos, lnvec) <- randomPoint (lshape lgt)
   if lnvec <.> nvec >= 0.0
-    then validPoint lgt pos nvec
-    else return (lpos, lnvec)
+    then validPoint lgt sfpt
+    else return sfpt
 {-
     else do
       let

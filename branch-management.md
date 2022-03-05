@@ -2,19 +2,31 @@
 
 ## How to do GitHub Flow
 
-1. command: git checkout -b _branch_name_
-2. command: git push origin _branch_name_
-3. work: update version number
-4. command: git push --set-upstream origin _branch_name_
-5. work: development
-6. command: git checkout master
-7. command: git merge _branch_name_
-8. command: git push
-9. command: git tag _version_
+1.  command: git checkout -b _branch_name_
+2.  command: git push origin _branch_name_
+3.  work: update version number
+4.  command: git push --set-upstream origin _branch_name_
+5.  work: development
+6.  command: git checkout master
+7.  command: git merge _branch_name_
+8.  command: git push
+9.  command: git tag _version_
 10. command: git push origin _version_
 
 
 ## Branches
+
+* 20220305-mapping
+    - version 2.7.3.0
+    - マッピングサポート
+        - 表面点(SurfacePoint)の導入
+        - 交点計算で(U,V)を返す
+        - Material, Surfaceをリスト化する
+        - マッピング用変換関数(Mapper)の導入
+        - 入力は表面点+(U,V)、出力はMaterial, Surface、表面点'
+        - 関数による2Dテクスチャ（チェック、ストライプ、など）
+        - ノイズテクスチャ
+        - displacement mappingの考慮
 
 * 20220118-skylight
     - version 2.7.2.1
@@ -51,8 +63,8 @@
         - ○ MaterialとSurfaceの分離やり直し
         - ○ 開発中断分の取り入れ
         - ○ 幾何減衰対応（n'や反射屈折方向が面の裏側になった場合の処置）
-        - × PhysicsモジュールをOpticsモジュールへ統合
-        - × BSDFの改善
+        - NG PhysicsモジュールをOpticsモジュールへ統合
+        - NG BSDFの改善
         - △ 反射率(鏡面アルベド)は屈折率から求める（金属=複素数屈折率は後）
 
 
@@ -63,8 +75,10 @@
 - パーサーの作り直し
 - pmとrtの統合
 - Rubyスクリプトからの脱却
-- ポリゴンの法線補間
+- ポリゴンの法線補間（スムースシェーディング）
 - 光源の属性に直接光を計算で求めることを強制するしくみ
 - SkyLightのバグ取り（マダラ、影なし）
+- 簡易モデリング言語(Ruby)
+- 反射率(鏡面アルベド)は屈折率から求める（金属=複素数屈折率は後）
 
 ---

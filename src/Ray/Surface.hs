@@ -21,6 +21,7 @@ import           GHC.Generics
 import           NumericPrelude
 
 import Ray.Algebra
+import Ray.Geometry
 import Ray.Light
 import Ray.Optics
 
@@ -112,9 +113,9 @@ emittance
 
 -}
 
-emittance :: Surface -> Position3 -> Direction3 -> Direction3 -> Radiance
-emittance (Surface Nothing _ _ _) _ _ _ = radiance0
-emittance (Surface (Just lgt) _ _ _) pos nvec vvec = lemittance lgt pos nvec vvec
+emittance :: Surface -> SurfacePoint -> Direction3 -> Radiance
+emittance (Surface Nothing _ _ _) _ _ = radiance0
+emittance (Surface (Just lgt) _ _ _) sfpt vvec = lemittance lgt sfpt vvec
 
 
 -- PRIVATE FUNCTIONS

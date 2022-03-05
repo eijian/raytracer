@@ -12,6 +12,7 @@ module Ray.Algebra (
   BasicMatrix
 , Direction3
 , Position3
+, Vector2
 , Vector3(..)
 --, module NumericPrelude
 , blurredVector
@@ -211,6 +212,9 @@ ez3 = fromJust $ initDir 0 0 1    -- unit vector (z axis)
 -- True
 --
 -- prop> \a b -> norm (fromJust $ initDirFromAngle a b) - 1.0 < nearly0
+
+type Vector2 = (Double, Double)
+
 
 --
 -- UTILITY

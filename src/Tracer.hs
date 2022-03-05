@@ -67,7 +67,7 @@ tracePhoton !uc !objs !l !mate_air !mate0 !photon@(wl, ray@(_, vvec))
     case (calcIntersection ray objs) of
       Just is -> do
         let
-          (t, pos, nvec, mate, surf, _) = is
+          (t, (pos, nvec), mate, surf, _) = is
           tracer = tracePhoton uc objs (l+1) mate_air
         ref <- do
             -- フォトンが物体に到達するまでに透過率が低く吸収される場合あり
@@ -132,7 +132,7 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
   | otherwise     = do
     case (calcIntersection ray objs) of
       Nothing            -> return radiance0
-      Just is@(t, pos, nvec, mate, surf, io) -> do
+      Just is@(t, sfpt@(pos, nvec), mate, surf, io) -> do
         let
           tracer = traceRay scr uc objs lgts (l+1) pmap radius mate_air
 
@@ -141,8 +141,8 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
           then do
             lrads <- V.forM lgts $ \lgt -> do
               --lpoints <- V.replicateM (nsample lgt) (randomPoint (lshape lgt))
-              lpoints <- V.replicateM (nsample lgt) (validPoint lgt pos nvec)
-              return (lpoints `deepseq` getRadianceFromLight2 lgt lpoints objs pos nvec)
+              lpoints <- V.replicateM (nsample lgt) (validPoint lgt sfpt)
+              return (lpoints `deepseq` getRadianceFromLight2 lgt lpoints objs sfpt)
             return (lrads `deepseq` foldl (+) radiance0 lrads) 
             --return (foldl (+) radiance0 $ V.map (getRadianceFromLight objs pos nvec) (V.zip lgts lpos))
           else return radiance0
@@ -180,11 +180,11 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
         let
           tc = expColor (transmittance mate0) t
           rad = bsdf mate cos1 di si ti
-        return (tc <**> (sr_half *> (emittance surf pos nvec vvec) + rad))
+        return (tc <**> (sr_half *> (emittance surf sfpt vvec) + rad))
 
 
 estimateRadiance :: Double -> Screen -> PhotonMap -> Intersection -> Radiance
-estimateRadiance rmax scr pmap (_, pos, nvec, _, _, _)
+estimateRadiance rmax scr pmap (_, (pos, nvec), _, _, _)
   | V.null ps = radiance0
   | otherwise = (one_pi / rmax * (power pmap)) *> rad -- 半径は指定したものを使う
   where
@@ -236,16 +236,16 @@ filter_gauss rmax d = if e_r > e_beta then 0.0 else alpha * (1.0 - e_r / e_beta)
   where
     e_r = 1.0 - exp (-beta * d / (rmax * 2.0))
 
-getRadianceFromLight2 :: Light -> V.Vector (Position3, Direction3)
-  ->V.Vector Object -> Position3 -> Direction3 -> Radiance
-getRadianceFromLight2 lgt lpoints objs pos nvec
+getRadianceFromLight2 :: Light -> V.Vector SurfacePoint ->V.Vector Object
+  -> SurfacePoint -> Radiance
+getRadianceFromLight2 lgt lpoints objs sfpt
   = (1.0 / (fromIntegral (length lpoints) :: Double)) *> (V.foldl (+) radiance0 rads)
   where
-    rads = V.mapMaybe (calcRadiance lgt objs pos nvec) lpoints
+    rads = V.mapMaybe (calcRadiance lgt objs sfpt) lpoints
 
-calcRadiance :: Light -> V.Vector Object -> Position3 -> Direction3
-  -> (Position3, Direction3) -> Maybe Radiance
-calcRadiance lgt objs pos nvec (lpos, lnvec)
+calcRadiance :: Light -> V.Vector Object -> SurfacePoint -> SurfacePoint
+  -> Maybe Radiance
+calcRadiance lgt objs (pos, nvec) (lpos, lnvec)
   | ldir  == o3            = Nothing
   | ldir <.> lnvec > 0.0   = Nothing
   | lvec0 == Nothing       = Nothing
@@ -260,7 +260,7 @@ calcRadiance lgt objs pos nvec (lpos, lnvec)
     cos = nvec <.> lvec
     is = calcIntersection (initRay pos lvec) objs
     dist2 = square ldir
-    (t, _, _, _, _, _) = fromJust is
+    (t, _, _, _, _) = fromJust is
     rad = getRadiance lgt lnvec (negate lvec)
 
   
@@ -270,7 +270,7 @@ calcRadiance lgt objs pos nvec (lpos, lnvec)
 ---------------------------------
 
 data InOut = In | Out deriving (Eq, Show)
-type Intersection = (Double, Position3, Direction3, Material, Surface, InOut)
+type Intersection = (Double, SurfacePoint, Material, Surface, InOut)
 
 calcIntersection :: Ray -> V.Vector Object -> Maybe Intersection
 calcIntersection ray@(_, vvec) objs
@@ -278,8 +278,8 @@ calcIntersection ray@(_, vvec) objs
   | otherwise      =
     case nvec of
       Just nvec -> if nvec <.> vvec > 0.0
-        then Just (t, pos, negate nvec, mate, surf, Out)
-        else Just (t, pos, nvec       , mate, surf, In)
+        then Just (t, (pos, negate nvec), mate, surf, Out)
+        else Just (t, (pos, nvec)       , mate, surf, In)
       Nothing -> Nothing
   where
     iss = V.mapMaybe (calcDistance ray) objs

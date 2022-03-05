@@ -193,10 +193,10 @@ parseConfig conf = do
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
       --ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
-      -- lg_ceiling_light
+      lg_ceiling_light
       --, lg_ceiling_bulb1
       --  lg_sunlight
-      lg_skylight
+      -- lg_skylight
       ]
     
     {-
@@ -314,7 +314,6 @@ parseConfig conf = do
     sunlight = Object sh_sunlight mparal sf_paral
     skylight = Object sh_skylight sky sf_paral
 
-    {-
     os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall
         , ceiling_light
         --, ceiling_bulb1
@@ -326,13 +325,13 @@ parseConfig conf = do
         ]
 --          ball_01, ball_02, ball_03, ball_04, ball_05,
 --          ball_06, ball_07, ball_08, ball_09, ball_10]
-    -}
     
+    {-
     os = [floor, one_ball
          --, sunlight
          , skylight
          ]
-
+    -}
       
 
   return (V.fromList ls, V.fromList os)

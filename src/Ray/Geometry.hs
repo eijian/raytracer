@@ -9,6 +9,7 @@
 module Ray.Geometry (
   Ray
 , Shape (Point, Plain, Sphere, Parallelogram, Mesh)
+, SurfacePoint
 , distance
 , getDir
 , getNormal
@@ -83,6 +84,12 @@ getPos = fst
 
 getDir :: Ray -> Direction3
 getDir = snd
+
+-- SurfacePoint
+
+type SurfacePoint = (Position3, Direction3)
+
+
 
 -- Shapes
 -----------------------
