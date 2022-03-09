@@ -19,7 +19,7 @@
 * 20220305-mapping
     - version 2.7.3.0
     - マッピングサポート
-        - 表面点(SurfacePoint)の導入
+        - ○ 表面点(SurfacePoint)の導入
         - 交点計算で(U,V)を返す
         - Material, Surfaceをリスト化する
         - マッピング用変換関数(Mapper)の導入

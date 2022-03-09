@@ -165,12 +165,12 @@ getNormal _ _ = Nothing
 -- Mesh
 getNormal _ (Mesh ps _ _) = Nothing
 
-distance :: Ray -> Shape -> Maybe (Double, Shape)
+distance :: Ray -> Shape -> Maybe (Vector2, Double, Shape)
 -- Plain
 distance (pos, dir) shape@(Plain nvec d)
   | cos == 0       = Nothing
   | dist < nearly0 = Nothing
-  | otherwise      = Just (dist, shape)
+  | otherwise      = Just (o2, dist, shape)
   where
     cos = nvec <.> dir
     dist = (d + nvec <.> pos) / (-cos)
@@ -178,12 +178,12 @@ distance (pos, dir) shape@(Plain nvec d)
 distance (pos, dir) shape@(Sphere center radius)
   | t1 <= 0.0 = Nothing
   | t2 == 0.0 = if t0 >= nearly0
-      then Just (t0, shape)
+      then Just (o2, t0, shape)
       else Nothing
   | t1 >  0.0 = if t0 - t2 >= nearly0
-      then Just (t0 - t2, shape)
+      then Just (o2, t0 - t2, shape)
       else if t0 + t2 >= nearly0
-        then Just (t0 + t2, shape)
+        then Just (o2, t0 + t2, shape)
         else Nothing
   where
     o  = center - pos
@@ -194,18 +194,18 @@ distance (pos, dir) shape@(Sphere center radius)
 distance (pos, dir) shape@(Polygon pos0 _ dir1 dir2)
   | res == Nothing = Nothing
   | t < nearly0    = Nothing
-  | otherwise      = Just (t, shape)
+  | otherwise      = Just (uv, t, shape)
   where
     res = methodMoller 1.0 pos0 dir1 dir2 pos dir
-    (_, _, t) = fromJust res
+    (uv, t) = fromJust res
 -- Parallelogram
 distance (pos, dir) shape@(Parallelogram pos0 _ dir1 dir2)
   | res == Nothing = Nothing
   | t < nearly0    = Nothing
-  | otherwise      = Just (t, shape)
+  | otherwise      = Just (uv, t, shape)
   where
     res = methodMoller 2.0 pos0 dir1 dir2 pos dir
-    (_, _, t) = fromJust res
+    (uv, t) = fromJust res
 -- Mesh
 distance ray (Mesh ps vs ns) = if t >= infinity
   then Nothing
@@ -213,7 +213,7 @@ distance ray (Mesh ps vs ns) = if t >= infinity
     then Just d
     else Nothing
   where
-    d@(t, shape) = foldl' (compPolygon ray vs ns) (infinity, Point o3) ps
+    d@(uv, t, shape) = foldl' (compPolygon ray vs ns) (o2, infinity, Point o3) ps
 -- Point
 distance _ _ = Nothing
 
@@ -301,13 +301,13 @@ randomPoint (Mesh ps vtxs norms) = do
 -- https://shikousakugo.wordpress.com/2012/07/01/ray-intersection-3/
 methodMoller :: Double -> Position3 -> Direction3 -> Direction3
              -> Position3 -> Direction3
-             -> Maybe (Double, Double, Double)
+             -> Maybe (Vector2, Double)
 methodMoller l pos0 dir1 dir2 pos dir
   | detA == 0.0        = Nothing
   | u < 0.0 || u > 1.0 = Nothing
   | v < 0.0 || v > 1.0 = Nothing
   | u + v > l          = Nothing
-  | otherwise          = Just (u, v, t)
+  | otherwise          = Just ((u, v), t)
   where
     re2 = dir <*> dir2
     detA = re2 <.> dir1
@@ -321,12 +321,12 @@ methodMoller l pos0 dir1 dir2 pos dir
 -- PRIVATE
 --
 
-compPolygon :: Ray -> UA.Array Int Position3 -> UA.Array Int Position3 -> (Double, Shape) -> Patch
-  -> (Double, Shape)
-compPolygon (pos, dir) vtxs norms d@(t, shape) ((p0, n0), (p1, n1), (p2, n2)) =
+compPolygon :: Ray -> UA.Array Int Position3 -> UA.Array Int Position3
+  -> (Vector2, Double, Shape) -> Patch -> (Vector2, Double, Shape)
+compPolygon (pos, dir) vtxs norms d@(uv, t, shape) ((p0, n0), (p1, n1), (p2, n2)) =
   case res of
-    Just (u, v, t') -> if t' < t
-      then (t', Polygon (vtxs UA.! p0) (fromJust (normalize (d1 <*> d2))) d1 d2)
+    Just (uv', t') -> if t' < t
+      then (uv', t', Polygon (vtxs UA.! p0) (fromJust (normalize (d1 <*> d2))) d1 d2)
       -- initPolygon (vtxs UA.! p0) (vtxs UA.! p1) (vtxs UA.! p2))
       else d
     Nothing        -> d

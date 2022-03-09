@@ -297,8 +297,8 @@ calcDistance ray obj@(Object shape _ _) =
     Just t  -> Just (toDistance t obj)
     Nothing -> Nothing
   where
-    toDistance :: (Double, Shape) -> Object -> (Double, Object)
-    toDistance (t, shape) (Object _ mate surf) = (t, (Object shape mate surf))
+    toDistance :: (Vector2, Double, Shape) -> Object -> (Double, Object)
+    toDistance (uv, t, shape) (Object _ mate surf) = (t, (Object shape mate surf))
 
 {-
 bsdf: BSDF

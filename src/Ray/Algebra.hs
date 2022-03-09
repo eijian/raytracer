@@ -12,7 +12,7 @@ module Ray.Algebra (
   BasicMatrix
 , Direction3
 , Position3
-, Vector2
+, Vector2(..)
 , Vector3(..)
 --, module NumericPrelude
 , blurredVector
@@ -20,7 +20,9 @@ module Ray.Algebra (
 , elemX
 , elemY
 , elemZ
+, ex2
 , ex3
+, ey2
 , ey3
 , ez3
 , generateRandomDir1
@@ -33,6 +35,7 @@ module Ray.Algebra (
 , nearly0
 , norm
 , normalize
+, o2
 , o3
 , russianRoulette
 , russianRouletteBinary
@@ -215,6 +218,12 @@ ez3 = fromJust $ initDir 0 0 1    -- unit vector (z axis)
 
 type Vector2 = (Double, Double)
 
+o2 :: Vector2
+o2 = (0.0, 0.0)
+ex2 :: Vector2
+ex2 = (1.0, 0.0)
+ey2 :: Vector2
+ey2 = (0.0, 1.0)
 
 --
 -- UTILITY
