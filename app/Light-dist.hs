@@ -29,11 +29,13 @@ theta = pi / 2.0 / (fromIntegral ndiv)
 nphoton :: Int
 nphoton = 20000000
 
-n :: Double
-n = 1000000.0
+--n :: Double
+--n = 1.0
 
 main :: IO ()
 main = do
+  args <- getArgs
+  let n = read (args !! 0) :: Double
   putStrLn (show ndiv)
   putStrLn (show nphoton)
   putStrLn (show n)

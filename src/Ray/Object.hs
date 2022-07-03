@@ -8,12 +8,13 @@ module Ray.Object (
 ) where
 
 import Ray.Geometry
-import Ray.Material
-import Ray.Surface
+import Ray.Mapper
+--import Ray.Material
+--import Ray.Surface
 
-data Object = Object Shape Material Surface
-  deriving (Eq, Show)
+data Object = Object Shape Mapper
+  --deriving (Eq, Show)
 
-initObject :: Shape -> Material -> Surface -> Object
-initObject shape mate surf = Object shape mate surf
+initObject :: Shape -> Mapper -> Object
+initObject shape mapper = Object shape mapper
 

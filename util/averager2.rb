@@ -41,11 +41,16 @@ end
 
 def get_base
   bn = ""
+  n = -1
   STDIN.each do |l|
-    l.chomp =~ /^TMPDIR=(.+)/
-    bn = $1 if $1 != ""
+    case l.chomp
+    when /^TMPDIR=(.+)/
+      bn = $1 if $1 != ""
+    when /NITERATION=(\d+)/
+      n = $1.to_i
+    end
   end
-  bn
+  return bn, n
 end
 
 def add_pixel(pos, px, idx)
@@ -173,11 +178,12 @@ def header_exr(xlen, ylen)
              s2b("")
 end
 
-def output_exr(fp)
+def output_exr(fp, nite)
 
   xlen = @hd3[0].to_i
   ylen = @hd3[1].to_i
-  cmag  = @nfile * @hd2
+  cmag  = (if nite == -1 then @nfile else nite end) * @hd2
+  #STDERR.puts "NF:#{@nfile}, IT:#{nite}, CMAG:#{cmag}, HD2:#{@hd2}"
 
   header = header_exr(xlen, ylen)
   headerlen = header.size
@@ -238,7 +244,7 @@ end
 def main
   init
 
-  basename = get_base
+  basename, nite = get_base
   Dir.glob(basename + "*.ppmf").sort.reverse.each_with_index do |f, i|
     add_image(f, i)
   end
@@ -246,9 +252,9 @@ def main
   fp = open_file
   begin
     if $FORMAT == FMT_PPM
-      output_ppm(fp)
+      output_ppm(fp, nite)
     else
-      output_exr(fp)
+      output_exr(fp, nite)
     end
     delete_sources(basename)
   rescue

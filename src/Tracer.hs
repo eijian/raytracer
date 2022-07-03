@@ -30,6 +30,7 @@ import           System.IO
 import Ray.Algebra
 import Ray.Geometry
 import Ray.Light hiding (power)
+import Ray.Mapper
 import Ray.Material
 import Ray.Object
 import Ray.Optics
@@ -67,7 +68,7 @@ tracePhoton !uc !objs !l !mate_air !mate0 !photon@(wl, ray@(_, vvec))
     case (calcIntersection ray objs) of
       Just is -> do
         let
-          (t, (pos, nvec), mate, surf, _) = is
+          (t, (pos, nvec), (mate, surf), _) = is
           tracer = tracePhoton uc objs (l+1) mate_air
         ref <- do
             -- フォトンが物体に到達するまでに透過率が低く吸収される場合あり
@@ -132,7 +133,7 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
   | otherwise     = do
     case (calcIntersection ray objs) of
       Nothing            -> return radiance0
-      Just is@(t, sfpt@(pos, nvec), mate, surf, io) -> do
+      Just is@(t, sfpt@(pos, nvec), (mate, surf), io) -> do
         let
           tracer = traceRay scr uc objs lgts (l+1) pmap radius mate_air
 
@@ -184,7 +185,7 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
 
 
 estimateRadiance :: Double -> Screen -> PhotonMap -> Intersection -> Radiance
-estimateRadiance rmax scr pmap (_, (pos, nvec), _, _, _)
+estimateRadiance rmax scr pmap (_, (pos, nvec), _, _)
   | V.null ps = radiance0
   | otherwise = (one_pi / rmax * (power pmap)) *> rad -- 半径は指定したものを使う
   where
@@ -260,7 +261,7 @@ calcRadiance lgt objs (pos, nvec) (lpos, lnvec)
     cos = nvec <.> lvec
     is = calcIntersection (initRay pos lvec) objs
     dist2 = square ldir
-    (t, _, _, _, _) = fromJust is
+    (t, _, _, _) = fromJust is
     rad = getRadiance lgt lnvec (negate lvec)
 
   
@@ -270,35 +271,36 @@ calcRadiance lgt objs (pos, nvec) (lpos, lnvec)
 ---------------------------------
 
 data InOut = In | Out deriving (Eq, Show)
-type Intersection = (Double, SurfacePoint, Material, Surface, InOut)
+type Intersection = (Double, SurfacePoint, SurfaceChar, InOut)
 
 calcIntersection :: Ray -> V.Vector Object -> Maybe Intersection
 calcIntersection ray@(_, vvec) objs
-  | iss == V.empty = Nothing
-  | otherwise      =
+  | length iss == 0 = Nothing
+  | otherwise       =
     case nvec of
       Just nvec -> if nvec <.> vvec > 0.0
-        then Just (t, (pos, negate nvec), mate, surf, Out)
-        else Just (t, (pos, nvec)       , mate, surf, In)
-      Nothing -> Nothing
+        then Just (t, (pos, negate nvec), mapper (pos, negate nvec) uv, Out)
+        else Just (t, (pos, nvec)       , mapper (pos, nvec)        uv, In)
+      Nothing   -> Nothing
   where
     iss = V.mapMaybe (calcDistance ray) objs
-    (t, (Object shape mate surf)) = V.foldl' nearer (V.head iss) (V.tail iss)
+    (t, uv, (Object shape mapper)) = V.foldl' nearer (V.head iss) (V.tail iss)
     pos = target t ray
     nvec = getNormal pos shape
-    nearer :: (Double, Object) -> (Double, Object) -> (Double, Object)
-    nearer d1@(t1, _) d2@(t2, _) = if t1 <= t2
+    nearer :: (Double, Vector2, Object) -> (Double, Vector2, Object)
+      -> (Double, Vector2, Object)
+    nearer d1@(t1, _, _) d2@(t2, _, _) = if t1 <= t2
       then d1
       else d2
 
-calcDistance :: Ray -> Object -> Maybe (Double, Object)
-calcDistance ray obj@(Object shape _ _) = 
+calcDistance :: Ray -> Object -> Maybe (Double, Vector2, Object)
+calcDistance ray obj@(Object shape _) = 
   case distance ray shape of
-    Just t  -> Just (toDistance t obj)
-    Nothing -> Nothing
+    Just dist -> Just (toDistance dist obj)
+    Nothing   -> Nothing
   where
-    toDistance :: (Vector2, Double, Shape) -> Object -> (Double, Object)
-    toDistance (uv, t, shape) (Object _ mate surf) = (t, (Object shape mate surf))
+    toDistance :: (Vector2, Double, Shape) -> Object -> (Double, Vector2, Object)
+    toDistance (uv, t, shape) (Object _ mapper) = (t, uv, (Object shape mapper))
 
 {-
 bsdf: BSDF

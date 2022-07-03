@@ -63,6 +63,7 @@ executable pm
     Ray.KdMap
     Ray.KdTree
     Ray.Light
+    Ray.Mapper
     Ray.Material
     Ray.Object
     Ray.Optics
@@ -150,6 +151,7 @@ executable rt
     Ray.KdMap
     Ray.KdTree
     Ray.Light
+    Ray.Mapper
     Ray.Material
     Ray.Object
     Ray.Optics

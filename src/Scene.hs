@@ -18,6 +18,7 @@ import           NumericPrelude
 import Ray.Algebra
 import Ray.Geometry
 import Ray.Light
+import Ray.Mapper
 import Ray.Material
 --import Ray.Optics
 import Ray.Object
@@ -210,10 +211,12 @@ parseConfig conf = do
       ]
     -}
 
-    sf_wall    = initSurface Nothing 1.0
     sf_paral   = initSurface (Just lg_ceiling_light) 0.0
     --sf_bulb1   = initSurface (Just lg_ceiling_bulb1) 1.0
-    sf_glass   = initSurface Nothing 0.0
+    sf_rough    = initSurface Nothing 1.0
+    sf_polish   = initSurface Nothing 0.0
+    sf_glossy05 = initSurface Nothing 0.5
+
     sf_metal  = initSurface Nothing 0.5
     sf_metal2 = initSurface Nothing 0.0
     sf_plastic = initSurface Nothing 0.0
@@ -278,21 +281,37 @@ parseConfig conf = do
       (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 1.0)
 -}
 
-    floor = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) mwall sf_wall
-    ceil  = Object (Plain (Vector3 0.0 (-1.0) 0.0) 4.0) mwall sf_wall
-    rsidewall = Object (Plain (Vector3 (-1.0) 0.0 0.0) 2.0) mwallb sf_wall
-    lsidewall = Object (Plain (Vector3 1.0 0.0 0.0) 2.0) mwallr sf_wall
-    backwall = Object (Plain (Vector3 0.0 0.0 1.0) 6.0) mwall sf_wall
-    frontwall = Object (Plain (Vector3 0.0 0.0 (-1.0)) 5.0) mwall sf_wall
+    map_whwall = uniMapper (mwall, sf_rough)
+    map_rdwall = uniMapper (mwallr, sf_rough)
+    map_blwall = uniMapper (mwallb, sf_rough)
+    --map_floor  = checkerMapper (mwall, sf_rough) (gold, sf_polish)
+    map_floor  = checkerMapper (plastic, sf_rough) (mwall, sf_rough)
 
-    ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) glass sf_glass
-    ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) silver sf_metal2
-    ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) plastic sf_plastic
+    map_clearglass = uniMapper (glass, sf_polish)
+    map_smokeglass = uniMapper (glass, sf_glossy05)
+    map_polishgold = uniMapper (gold, sf_polish)
+    map_glossygold = uniMapper (gold, sf_glossy05)
+    map_polishsilver = uniMapper (silver, sf_polish)
+    map_smoothplastic = uniMapper (plastic, sf_polish)
+    map_roughplastic  = uniMapper (plastic, sf_rough)
+
+
+    floor = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) map_floor
+    ceil  = Object (Plain (Vector3 0.0 (-1.0) 0.0) 4.0) map_whwall
+    rsidewall = Object (Plain (Vector3 (-1.0) 0.0 0.0) 2.0) map_blwall
+    lsidewall = Object (Plain (Vector3 1.0 0.0 0.0) 2.0) map_rdwall
+    backwall = Object (Plain (Vector3 0.0 0.0 1.0) 6.0) map_whwall
+    frontwall = Object (Plain (Vector3 0.0 0.0 (-1.0)) 5.0) map_whwall
+
+    ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_clearglass
+    ball_gold = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_glossygold
+    ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_polishsilver
+    ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_smoothplastic
     --octahedron = Object sh_octahedron plastic sf_plastic
     --octahedron = Object sh_octahedron plastic sf_bulb1
 
-    one_ball = Object (Sphere (Vector3 0.0 1.01 0.0) 1.0) plastic sf_plastic2
-    icosahedron = Object sh_icosahedron glass sf_glass
+    one_ball = Object (Sphere (Vector3 0.0 1.01 0.0) 1.0) map_roughplastic
+    icosahedron = Object sh_icosahedron map_clearglass
     --icosahedron = Object sh_icosahedron silver sf_silver
 {-
     ball_01 = Object (Sphere (Vector3 (-1.6) 1.2 3.8) 0.4) ypla00
@@ -307,19 +326,24 @@ parseConfig conf = do
     ball_10 = Object (Sphere (Vector3 ( 1.6) 0.4 2.8) 0.4) ypla10
 -}
     --ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) mirror
-    ceiling_light = Object sh_ceiling_light mparal sf_paral
+
+    map_paral = uniMapper (mparal, sf_paral)
+    map_skyl  = uniMapper (sky, sf_paral)
+
+    ceiling_light = Object sh_ceiling_light map_paral
     --ceiling_bulb1 = Object sh_ceiling_bulb1 mparal sf_bulb1
     --ceiling_bulb1 = Object sh_octahedron mparal sf_bulb1
     --ceiling_bulb1 = Object sh_icosahedron mparal sf_bulb1
-    sunlight = Object sh_sunlight mparal sf_paral
-    skylight = Object sh_skylight sky sf_paral
+    sunlight = Object sh_sunlight map_paral
+    skylight = Object sh_skylight map_skyl
 
     os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall
         , ceiling_light
         --, ceiling_bulb1
-        --, ball_glass
+        , ball_glass
+        --, ball_gold
         --, octahedron
-        , icosahedron
+        --, icosahedron
         , ball_silver
         --, ball_plastic
         ]

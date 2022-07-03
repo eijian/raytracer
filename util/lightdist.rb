@@ -6,9 +6,9 @@ def area(i)
 end
 
 def main
-  ndiv = gets.to_i
-  nphoton = gets.to_i
-  n = gets.to_f
+  ndiv = STDIN.gets.to_i
+  nphoton = STDIN.gets.to_i
+  n = STDIN.gets.to_f
   STDERR.puts "NDIV=#{ndiv}/NPHOTON=#{nphoton}/N=#{n}"
   STDERR.puts "1/2 PI =#{1.0 / Math::PI / 2.0}"
 
