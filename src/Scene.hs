@@ -284,8 +284,9 @@ parseConfig conf = do
     map_whwall = uniMapper (mwall, sf_rough)
     map_rdwall = uniMapper (mwallr, sf_rough)
     map_blwall = uniMapper (mwallb, sf_rough)
+    map_floor  = uniMapper (mwall, sf_rough)
     --map_floor  = checkerMapper (mwall, sf_rough) (gold, sf_polish)
-    map_floor  = checkerMapper (plastic, sf_rough) (mwall, sf_rough)
+    --map_floor  = checkerMapper (plastic, sf_rough) (mwall, sf_rough)
 
     map_clearglass = uniMapper (glass, sf_polish)
     map_smokeglass = uniMapper (glass, sf_glossy05)
