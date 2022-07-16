@@ -179,7 +179,7 @@ parseConfig conf = do
       (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)
     --sh_ceiling_bulb1 = Sphere (Vector3 0.0 3.75 3.0) 0.2
     sh_ceiling_bulb1 = Sphere (Vector3 (-1.5) 0.2 1.5) 0.15
-    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 0.0 sh_ceiling_light PhotonMap Out
+    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 0.0 sh_ceiling_light Formula Out
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1 True
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_octahedron True
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_icosahedron True
@@ -233,6 +233,7 @@ parseConfig conf = do
     mparal  = initMaterial black 0.0 0.0 black black Nothing
     glass   = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 1.467 1.460 1.455) Nothing
     diamond = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 2.404 2.42364 2.44984) Nothing
+    prism_f2 = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 1.61259 1.623655 1.643454) Nothing
     gold    = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.96 0.76 0.39))
     silver  = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.974 0.960 0.906))
     plastic = initMaterial (Color 0.5 0.30 0.1) 1.0 0.0 black (Color 2.0 2.0 2.0) Nothing
@@ -291,6 +292,7 @@ parseConfig conf = do
 
     map_clearglass = uniMapper (glass, sf_polish)
     map_cleardiamond = uniMapper (diamond, sf_polish)
+    map_clearprism = uniMapper (prism_f2, sf_polish)
     map_smokeglass = uniMapper (glass, sf_glossy05)
     map_polishgold = uniMapper (gold, sf_polish)
     map_glossygold = uniMapper (gold, sf_glossy05)
@@ -308,6 +310,7 @@ parseConfig conf = do
 
     ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_clearglass
     ball_diamond = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_cleardiamond
+    ball_prism = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_clearprism
     ball_gold = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_glossygold
     ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_polishsilver
     ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_smoothplastic
@@ -345,7 +348,8 @@ parseConfig conf = do
         , ceiling_light
         --, ceiling_bulb1
         --, ball_glass
-        , ball_diamond
+        --, ball_diamond
+        , ball_prism
         --, ball_gold
         --, octahedron
         --, icosahedron

@@ -101,8 +101,8 @@ lemittance (Light _ _ _ _ _ _ _ pow em _) (_, nvec) vvec = cos' *> em
     cos = nvec <.> vvec
     cos' = (-cos) ** (0.5 / pow)
 
-generatePhoton :: Light -> IO Photon
-generatePhoton (Light c _ _ s _ dirf _ pow _ _) = do
+generatePhoton :: Light -> IO (Photon, RadEstimation)
+generatePhoton (Light c _ _ s radest dirf _ pow _ _) = do
   wl <- MT.randomIO :: IO Double
   (pos, nvec) <- randomPoint s
   let
@@ -111,7 +111,7 @@ generatePhoton (Light c _ _ s _ dirf _ pow _ _) = do
       then nvec
       else negate nvec
   nvec' <- blurredVector nvec2 pow
-  return (w, initRay pos nvec')
+  return ((w, initRay pos nvec'), radest)
 
 getDirection :: Light -> Position3 -> Position3 -> Maybe Direction3
 getDirection (Light _ _ _ shape _ _ _ _ _ _) lpos pos

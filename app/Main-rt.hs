@@ -44,9 +44,9 @@ main = do
 
   -- tracing image
   let
-    uc = useClassicForDirect scr
+    filter = pfilter scr
     r = radius scr
-    tracer = traceRay scr uc objs lgts 0 photonmap r mate_air mate_air
+    tracer = traceRay filter objs lgts 0 photonmap r mate_air mate_air
   rays <- V.mapM (generateRay scr) $ screenMap scr
   image <- V.mapM tracer rays
 

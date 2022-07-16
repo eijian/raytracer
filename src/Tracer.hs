@@ -52,24 +52,24 @@ max_trace = 10
 {-
   tracePhoton:
     In:
-      uc = flag of the use classic ray-tracing for direct illumination
-      os = the list of Ojbect
-      l  = depth level (max is 10)
-      m0 = Material to travel
-      wl = wavelength of the photon
-      r  = ray
+      objs   = the list of Ojbect
+      l      = depth level (max is 10)
+      mate0  = Material to travel
+      wl     = wavelength of the photon
+      ray    = ray
+      radest = method of estimating radiances
 -}
 
-tracePhoton :: Bool -> V.Vector Object -> Int -> Material -> Material -> Photon
-  -> IO (V.Vector Photon)
-tracePhoton !uc !objs !l !mate_air !mate0 !photon@(wl, ray@(_, vvec))
+tracePhoton :: V.Vector Object -> Int -> Material -> Material
+   -> (Photon, RadEstimation) -> IO (V.Vector Photon)
+tracePhoton !objs !l !mate_air !mate0 (!photon@(wl, ray@(_, vvec)), !radest)
   | l >= max_trace = return V.empty
   | otherwise = do
     case (calcIntersection ray objs) of
       Just is -> do
         let
           (t, (pos, nvec), (mate, surf), _) = is
-          tracer = tracePhoton uc objs (l+1) mate_air
+          tracer = tracePhoton objs (l+1) mate_air
         ref <- do
             -- フォトンが物体に到達するまでに透過率が低く吸収される場合あり
             -- transmission ** t の確率で到達する
@@ -85,9 +85,10 @@ tracePhoton !uc !objs !l !mate_air !mate0 !photon@(wl, ray@(_, vvec))
                 case nextdir of
                   Just (dir, mf) -> do
                     let mate' = if mf == True then mate0 else mate
-                    tracer mate' (wl, initRay pos dir)
+                    tracer mate' ((wl, initRay pos dir), PhotonMap)
                   Nothing -> return V.empty
-        if (uc == False || l > 0) && storePhoton mate == True
+        --if (uc == False || l > 0) && storePhoton mate == True
+        if (radest == PhotonMap || l > 0) && storePhoton mate == True
           then return $ V.cons (wl, (pos, vvec)) ref
           else return ref
       Nothing -> return V.empty
@@ -126,18 +127,19 @@ nextDirection mate surf eta nvec (wl, (_, vvec)) = do
 -- RAY TRACING WITH PHOTON MAP
 -----
 
-traceRay :: Screen -> Bool -> V.Vector Object -> V.Vector Light -> Int
+traceRay :: PhotonFilter -> V.Vector Object -> V.Vector Light -> Int
   -> PhotonMap -> Double -> Material -> Material -> Ray -> IO Radiance
-traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec) 
+traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec) 
   | l >= max_trace = return radiance0
   | otherwise     = do
     case (calcIntersection ray objs) of
       Nothing            -> return radiance0
       Just is@(t, sfpt@(pos, nvec), (mate, surf), io) -> do
         let
-          tracer = traceRay scr uc objs lgts (l+1) pmap radius mate_air
+          tracer = traceRay filter objs lgts (l+1) pmap radius mate_air
 
         -- L_diffuse
+        {-
         di' <- if uc
           then do
             lrads <- V.forM lgts $ \lgt -> do
@@ -145,8 +147,16 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
               return $ getRadianceFromLight2 lgt lpoint objs sfpt
             return (lrads `deepseq` foldl (+) radiance0 lrads) 
           else return radiance0
+        -}
+        lrads <- V.forM lgts $ \lgt ->
+          if (radest lgt) == PhotonMap
+            then return Nothing
+            else do
+              lpoint <- randomPoint (lshape lgt)
+              return $ calcRadiance lgt objs sfpt lpoint
         let
-          di = di' + estimateRadiance radius scr pmap is
+          di = (lrads `deepseq` foldl (+) radiance0 $ V.catMaybes lrads) +
+               estimateRadiance radius filter pmap is
 
         -- L_spec
         nvec' <- microfacetNormal nvec vvec surf (metalness mate)
@@ -182,13 +192,13 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
         return (tc <**> (sr_half *> (emittance surf sfpt vvec) + rad))
 
 
-estimateRadiance :: Double -> Screen -> PhotonMap -> Intersection -> Radiance
-estimateRadiance rmax scr pmap (_, (pos, nvec), _, _)
+estimateRadiance :: Double -> PhotonFilter -> PhotonMap -> Intersection -> Radiance
+estimateRadiance rmax filter pmap (_, (pos, nvec), _, _)
   | V.null ps = radiance0
   | otherwise = (one_pi / rmax * (power pmap)) *> rad -- 半径は指定したものを使う
   where
     ps = inradius pmap $ photonDummy pos
-    f_wait = case (pfilter scr) of
+    f_wait = case filter of
       Nonfilter   -> filter_none rmax
       Conefilter  -> filter_cone rmax
       Gaussfilter -> filter_gauss rmax

@@ -34,7 +34,7 @@ main = do
   let
     power = (V.sum $ V.map flux lgts) / (fromIntegral $ nphoton scr)
     ns = V.map (calcN power) lgts
-    tracer = tracePhoton (useClassicForDirect scr) objs 0 mate_air mate_air
+    tracer = tracePhoton objs 0 mate_air mate_air
   putStrLn $ show $ nphoton scr
   putStrLn $ show power
   V.zipWithM_ (outputPhotons tracer) lgts ns
@@ -42,10 +42,10 @@ main = do
 calcN :: Double -> Light -> Int
 calcN pow lgt = round (flux lgt / pow)
 
-outputPhotons :: (Photon -> IO (V.Vector Photon)) -> Light -> Int -> IO ()
+outputPhotons :: ((Photon, RadEstimation) -> IO (V.Vector Photon)) -> Light -> Int -> IO ()
 outputPhotons tracer lgt n = V.mapM_ (outputPhoton tracer lgt) $ V.replicate n 1
 
-outputPhoton :: (Photon -> IO (V.Vector Photon)) -> Light -> Int -> IO ()
+outputPhoton :: ((Photon, RadEstimation) -> IO (V.Vector Photon)) -> Light -> Int -> IO ()
 outputPhoton tracer lgt _ =
   generatePhoton lgt >>= tracer >>= V.mapM_ (putStrLn.showPhoton)
 
