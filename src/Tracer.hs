@@ -138,14 +138,12 @@ traceRay !scr !uc !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
           tracer = traceRay scr uc objs lgts (l+1) pmap radius mate_air
 
         -- L_diffuse
-        di' <- if uc 
+        di' <- if uc
           then do
             lrads <- V.forM lgts $ \lgt -> do
-              --lpoints <- V.replicateM (nsample lgt) (randomPoint (lshape lgt))
-              lpoints <- V.replicateM (nsample lgt) (validPoint lgt sfpt)
-              return (lpoints `deepseq` getRadianceFromLight2 lgt lpoints objs sfpt)
+              lpoint <- randomPoint (lshape lgt)
+              return $ getRadianceFromLight2 lgt lpoint objs sfpt
             return (lrads `deepseq` foldl (+) radiance0 lrads) 
-            --return (foldl (+) radiance0 $ V.map (getRadianceFromLight objs pos nvec) (V.zip lgts lpos))
           else return radiance0
         let
           di = di' + estimateRadiance radius scr pmap is
@@ -237,23 +235,26 @@ filter_gauss rmax d = if e_r > e_beta then 0.0 else alpha * (1.0 - e_r / e_beta)
   where
     e_r = 1.0 - exp (-beta * d / (rmax * 2.0))
 
-getRadianceFromLight2 :: Light -> V.Vector SurfacePoint ->V.Vector Object
+getRadianceFromLight2 :: Light -> SurfacePoint ->V.Vector Object
   -> SurfacePoint -> Radiance
-getRadianceFromLight2 lgt lpoints objs sfpt
-  = (1.0 / (fromIntegral (length lpoints) :: Double)) *> (V.foldl (+) radiance0 rads)
-  where
-    rads = V.mapMaybe (calcRadiance lgt objs sfpt) lpoints
+getRadianceFromLight2 lgt lpoint objs sfpt
+  -- = (1.0 / (fromIntegral (length lpoints) :: Double)) *> (V.foldl (+) radiance0 rads)
+  = case (calcRadiance lgt objs sfpt lpoint) of
+    Nothing -> radiance0
+    Just r  -> r
+  --where
+    --rads = V.mapMaybe (calcRadiance lgt objs sfpt) lpoints
 
 calcRadiance :: Light -> V.Vector Object -> SurfacePoint -> SurfacePoint
   -> Maybe Radiance
 calcRadiance lgt objs (pos, nvec) (lpos, lnvec)
-  | ldir  == o3            = Nothing
-  | ldir <.> lnvec > 0.0   = Nothing
-  | lvec0 == Nothing       = Nothing
-  | cos <= 0.0             = Nothing
-  | is    == Nothing       = Nothing
-  | dist2  - t * t > 0.002 = trace ("T=" ++ show t) Nothing  -- 光源の手前に物体がある
-  | otherwise              = Just ((cos / dist2) *> rad)
+  | ldir  == o3           = Nothing  -- 光源上の点
+  | ldir <.> lnvec > 0.0  = Nothing  -- 光源が見えていない
+  | lvec0 == Nothing      = Nothing  -- 光源方向のベクトルが異常
+  | cos   <= 0.0          = Nothing  -- 光源が見えていない
+  | is    == Nothing      = Nothing  -- 光源オブジェクトが無い
+  | dist2 - t * t > 0.002 = Nothing  -- 光源の手前に物体がある
+  | otherwise             = Just ((cos / dist2) *> rad)
   where
     ldir = lpos - pos
     lvec0 = normalize ldir

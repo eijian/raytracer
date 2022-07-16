@@ -231,7 +231,8 @@ parseConfig conf = do
     -- emittanceは flux 5.0 / 半球 2π / ライト面積 1.34^2 = 0.4421。
     --   三原色それぞれがこの輝度を持つとした。
     mparal  = initMaterial black 0.0 0.0 black black Nothing
-    glass   = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 2.0 2.0 2.0) Nothing
+    glass   = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 1.467 1.460 1.455) Nothing
+    diamond = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 2.404 2.42364 2.44984) Nothing
     gold    = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.96 0.76 0.39))
     silver  = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.974 0.960 0.906))
     plastic = initMaterial (Color 0.5 0.30 0.1) 1.0 0.0 black (Color 2.0 2.0 2.0) Nothing
@@ -289,6 +290,7 @@ parseConfig conf = do
     --map_floor  = checkerMapper (plastic, sf_rough) (mwall, sf_rough)
 
     map_clearglass = uniMapper (glass, sf_polish)
+    map_cleardiamond = uniMapper (diamond, sf_polish)
     map_smokeglass = uniMapper (glass, sf_glossy05)
     map_polishgold = uniMapper (gold, sf_polish)
     map_glossygold = uniMapper (gold, sf_glossy05)
@@ -305,6 +307,7 @@ parseConfig conf = do
     frontwall = Object (Plain (Vector3 0.0 0.0 (-1.0)) 5.0) map_whwall
 
     ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_clearglass
+    ball_diamond = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_cleardiamond
     ball_gold = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_glossygold
     ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_polishsilver
     ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_smoothplastic
@@ -341,7 +344,8 @@ parseConfig conf = do
     os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall
         , ceiling_light
         --, ceiling_bulb1
-        , ball_glass
+        --, ball_glass
+        , ball_diamond
         --, ball_gold
         --, octahedron
         --, icosahedron

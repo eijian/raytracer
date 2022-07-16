@@ -7,15 +7,31 @@
 3.  work: update version number
 4.  command: git push --set-upstream origin _branch_name_
 5.  work: development
-6.  command: git checkout master
-7.  command: git merge _branch_name_
-8.  command: git push
-9.  command: git tag _version_
-10. command: git push origin _version_
+6.  work: push all changes
+7.  command: git checkout master
+8.  command: git merge _branch_name_
+9.  command: git push
+10. command: git tag _version_
+11. command: git push origin _version_
 
 
 ## Branches
 
+* 20220715-miniupdate
+    - version 2.7.4.0
+    - 小改善
+        - 各光源毎にuse classicパラメータを持つ
+        - 光源仕様をオブジェクトの一要素にし、光源リストはオブジェクトから生成
+        - kd-treeを分割し、フォトン数が多い場合の処理時間を短縮
+        - use classic 時に各光源からの輝度が無い場合はNothing
+        - use classic 時の光源方向ベクトルは、現状の方式と光源の法線方向へのベク
+          トルから求める方法の２つを実施、比率は光源の指向性による。
+
+* 20220704-bugfix
+    - version 2.7.3.1
+    - バグフィックス
+        - ○ use classic にすると異常に遅い
+        
 * 20220305-mapping
     - version 2.7.3.0
     - マッピングサポート
@@ -25,8 +41,8 @@
         - ○ マッピング用変換関数(Mapper)の導入
         - 入力は表面点+(U,V)、出力はMaterial, Surface、表面点'
         - ○ 関数による2Dテクスチャ（チェック、ストライプ、など）
-        - ノイズテクスチャ
-        - displacement mappingの考慮
+        - ×ノイズテクスチャ
+        - ×displacement mappingの考慮
 
 * 20220118-skylight
     - version 2.7.2.1
@@ -80,5 +96,8 @@
 - SkyLightのバグ取り（マダラ、影なし）
 - 簡易モデリング言語(Ruby)
 - 反射率(鏡面アルベド)は屈折率から求める（金属=複素数屈折率は後）
+- ノイズテクスチャ
+- displacement mappingの考慮
+- Material, Surfaceのリスト化
 
 ---

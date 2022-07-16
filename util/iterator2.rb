@@ -157,12 +157,12 @@ def iterate(n)
   loop do
     rad, i = next_radius
     break if rad == nil
-    msg = "(#{n}/#{i}) R=#{sprintf("%.4f", rad)}"
+    msg = "(#{i}/#{@niterate}) R=#{sprintf("%.4f", rad)}"
     elaps = Time.now - @tstart
     nite = @niterate - (i + 1)
     timeleft = if nite == 0 then 0 else (elaps.to_f / nite.to_f) * (i + 1).to_f end
     #STDERR.puts "#{Time.now.strftime("%Y%m%d-%H%M%S")}: #{msg}"
-    STDERR.puts "#{sprintf("%5d s / %5d s", elaps, timeleft)} : #{msg}"
+    STDERR.print "#{sprintf("%5d s / %5d s", elaps, timeleft)} : #{msg}\r"
     @logger.info(msg)
     tscrf = mk_tmpscreen(rad, n)
     mk_image(n, tscrf)
@@ -173,7 +173,7 @@ end
 def main
   init
 
-  STDERR.puts "ELAPSED / REMAIN  : (TH/ITE) RADIUS"
+  STDERR.puts "ELAPSED / REMAIN  : (NOW/ITE) RADIUS"
   threads = []
   NPARA.times do |p|
     threads.push(Thread.new {iterate(p)})

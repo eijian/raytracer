@@ -127,9 +127,11 @@ getRadiance lgt@(Light (Color r g b) f _ _ _ cpow _ _ _) lnvec lvec
 validPoint :: Light -> SurfacePoint -> IO SurfacePoint
 validPoint lgt (pos, nvec) = do
   sfpt@(lpos, lnvec) <- randomPoint (lshape lgt)
-  if lnvec <.> nvec >= 0.0
-    then validPoint lgt sfpt
-    else return sfpt
+  return sfpt
+--  if lnvec <.> nvec < 0.0  -- 面が光源を向いていない
+--    then return Nothing
+--    else return (Just sfpt)
+
 {-
     else do
       let
