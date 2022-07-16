@@ -7,7 +7,8 @@
 --
 
 module Ray.Geometry (
-  Ray
+  InOut (..)
+, Ray
 , Shape (Point, Plain, Sphere, Parallelogram, Mesh)
 , SurfacePoint
 , distance
@@ -59,6 +60,13 @@ one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
 sr_half :: Double
 sr_half = 1.0 / (2.0 * pi)  -- half of steradian
 
+-- common
+
+data InOut = In | Out
+  deriving (Eq, Show, Generic)
+
+instance NFData InOut where
+  rnf = genericRnf
 
 -- Ray
 

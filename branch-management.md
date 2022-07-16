@@ -39,7 +39,7 @@
         - ○ 交点計算で(U,V)を返す
         - × Material, Surfaceをリスト化する
         - ○ マッピング用変換関数(Mapper)の導入
-        - 入力は表面点+(U,V)、出力はMaterial, Surface、表面点'
+        - × 入力は表面点+(U,V)、出力はMaterial, Surface、表面点'
         - ○ 関数による2Dテクスチャ（チェック、ストライプ、など）
         - ×ノイズテクスチャ
         - ×displacement mappingの考慮
@@ -99,5 +99,6 @@
 - ノイズテクスチャ
 - displacement mappingの考慮
 - Material, Surfaceのリスト化
+- 入力は表面点+(U,V)、出力はMaterial, Surface、表面点'
 
 ---

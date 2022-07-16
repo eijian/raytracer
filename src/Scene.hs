@@ -179,15 +179,15 @@ parseConfig conf = do
       (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)
     --sh_ceiling_bulb1 = Sphere (Vector3 0.0 3.75 3.0) 0.2
     sh_ceiling_bulb1 = Sphere (Vector3 (-1.5) 0.2 1.5) 0.15
-    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 0.0 sh_ceiling_light True
+    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 0.0 sh_ceiling_light PhotonMap Out
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1 True
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_octahedron True
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_icosahedron True
 
     sh_sunlight = initParallelogram (Vector3 4.0 100.0 (-4.0)) (Vector3 4.0 100.0 4.0) (Vector3 (-4.0) 100.0 (-4.0)) 
     sh_skylight = Sphere (Vector3 0 0 0) 1000.0
-    lg_sunlight = initLight (initColorByKelvin 6500) 4000 1.0 sh_sunlight True
-    lg_skylight = initLight (initColorByKelvin 12000) 4000 0.0 sh_skylight False
+    lg_sunlight = initLight (initColorByKelvin 6500) 4000 1.0 sh_sunlight PhotonMap Out
+    lg_skylight = initLight (initColorByKelvin 12000) 4000 0.0 sh_skylight PhotonMap In
 
     ls = [
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)

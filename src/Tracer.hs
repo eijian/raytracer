@@ -271,7 +271,6 @@ calcRadiance lgt objs (pos, nvec) (lpos, lnvec)
 -- COMMON FUNCTIONS
 ---------------------------------
 
-data InOut = In | Out deriving (Eq, Show)
 type Intersection = (Double, SurfacePoint, SurfaceChar, InOut)
 
 calcIntersection :: Ray -> V.Vector Object -> Maybe Intersection

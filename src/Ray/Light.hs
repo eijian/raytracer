@@ -7,7 +7,8 @@
 --
 
 module Ray.Light (
-  Light (..)
+  RadEstimation (..)
+, Light (..)
 , generatePhoton
 , getDirection
 , getRadiance
@@ -53,12 +54,24 @@ Light: 光源型、物体形状と分離して光源の仕様のみとした。
 
 -}
 
+{-|
+  直接光の放射輝度推定方法 
+-}
+data RadEstimation =
+    Formula   -- 古典レイトレーシング=計算で求める
+  | PhotonMap -- フォトンマップから輝度推定する
+  deriving (Eq, Show, Generic)
+
+instance NFData RadEstimation where
+  rnf = genericRnf
+
 data Light = Light
-  { lcolor      :: !Color
-  , flux        :: !Flux
-  , directivity :: !Double
-  , lshape      :: !Shape
-  , dirflag     :: !Bool
+  { lcolor      :: !Color         -- RGBの比率、r+g+b = 1.0
+  , flux        :: !Flux          -- 光束 [W/?]
+  , directivity :: !Double        -- 指向性 (0.0:指向性なし - 1.0:平行光源)
+  , lshape      :: !Shape         -- 光源形状
+  , radest      :: !RadEstimation -- 直接光の輝度値計算方法
+  , dirflag     :: !InOut         -- 発光方向（通常光源=Out, ドーム光源等=In)
   -- calcuration when initializing
   , cospower    :: !Double
   , power       :: !Double
@@ -70,8 +83,9 @@ data Light = Light
 instance NFData Light where
   rnf = genericRnf
 
-initLight :: Color -> Flux -> Double -> Shape -> Bool -> Light
-initLight col lumen direct shape dirf = Light col flux direct shape dirf cpow pow em nsam
+initLight :: Color -> Flux -> Double -> Shape -> RadEstimation -> InOut -> Light
+initLight col lumen direct shape radest dirf =
+  Light col flux direct shape radest dirf cpow pow em nsam
   where
     flux = lumen / 683.0
     (cpow, pow)  = densityPower (direct ** 3)
@@ -82,25 +96,25 @@ initLight col lumen direct shape dirf = Light col flux direct shape dirf cpow po
     --nsam = if ns < 1 then 1 else ns
 
 lemittance :: Light -> SurfacePoint -> Direction3 -> Radiance
-lemittance (Light _ _ _ _ _ _ pow em _) (_, nvec) vvec = cos' *> em
+lemittance (Light _ _ _ _ _ _ _ pow em _) (_, nvec) vvec = cos' *> em
   where
     cos = nvec <.> vvec
     cos' = (-cos) ** (0.5 / pow)
 
 generatePhoton :: Light -> IO Photon
-generatePhoton (Light c _ _ s flag _ pow _ _) = do
+generatePhoton (Light c _ _ s _ dirf _ pow _ _) = do
   wl <- MT.randomIO :: IO Double
   (pos, nvec) <- randomPoint s
   let
     w = decideWavelength c wl
-    nvec2 = if flag == True
+    nvec2 = if dirf == Out
       then nvec
       else negate nvec
   nvec' <- blurredVector nvec2 pow
   return (w, initRay pos nvec')
 
 getDirection :: Light -> Position3 -> Position3 -> Maybe Direction3
-getDirection (Light _ _ _ shape _ _ _ _ _) lpos pos
+getDirection (Light _ _ _ shape _ _ _ _ _ _) lpos pos
   | nvec == Nothing = Nothing
   | cos > 0.0       = Nothing
   | otherwise       = Just lvec
@@ -114,7 +128,7 @@ getDirection (Light _ _ _ shape _ _ _ _ _) lpos pos
 -}
 
 getRadiance :: Light -> Direction3 -> Direction3 -> Radiance
-getRadiance lgt@(Light (Color r g b) f _ _ _ cpow _ _ _) lnvec lvec
+getRadiance lgt@(Light (Color r g b) f _ _ _ _ cpow _ _ _) lnvec lvec
   = Radiance (r * decay) (g * decay) (b * decay)
   where
     cos = lnvec <.> lvec
