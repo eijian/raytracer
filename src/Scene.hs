@@ -179,7 +179,7 @@ parseConfig conf = do
       (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)
     --sh_ceiling_bulb1 = Sphere (Vector3 0.0 3.75 3.0) 0.2
     sh_ceiling_bulb1 = Sphere (Vector3 (-1.5) 0.2 1.5) 0.15
-    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 0.0 sh_ceiling_light Formula Out
+    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 1.0 sh_ceiling_light PhotonMap Out
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1 True
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_octahedron True
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_icosahedron True
@@ -318,7 +318,7 @@ parseConfig conf = do
     --octahedron = Object sh_octahedron plastic sf_bulb1
 
     one_ball = Object (Sphere (Vector3 0.0 1.01 0.0) 1.0) map_roughplastic
-    icosahedron = Object sh_icosahedron map_clearglass
+    icosahedron = Object sh_icosahedron map_cleardiamond
     --icosahedron = Object sh_icosahedron silver sf_silver
 {-
     ball_01 = Object (Sphere (Vector3 (-1.6) 1.2 3.8) 0.4) ypla00
@@ -349,10 +349,10 @@ parseConfig conf = do
         --, ceiling_bulb1
         --, ball_glass
         --, ball_diamond
-        , ball_prism
+        --, ball_prism
         --, ball_gold
         --, octahedron
-        --, icosahedron
+        , icosahedron
         , ball_silver
         --, ball_plastic
         ]

@@ -128,35 +128,30 @@ nextDirection mate surf eta nvec (wl, (_, vvec)) = do
 -----
 
 traceRay :: PhotonFilter -> V.Vector Object -> V.Vector Light -> Int
-  -> PhotonMap -> Double -> Material -> Material -> Ray -> IO Radiance
-traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec) 
+  -> V.Vector PhotonMap -> Double -> Material -> Material -> Ray
+  -> IO Radiance
+traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec) 
   | l >= max_trace = return radiance0
   | otherwise     = do
     case (calcIntersection ray objs) of
       Nothing            -> return radiance0
       Just is@(t, sfpt@(pos, nvec), (mate, surf), io) -> do
         let
-          tracer = traceRay filter objs lgts (l+1) pmap radius mate_air
+          tracer = traceRay filter objs lgts (l+1) pmaps radius mate_air
 
         -- L_diffuse
         {-
-        di' <- if uc
-          then do
-            lrads <- V.forM lgts $ \lgt -> do
-              lpoint <- randomPoint (lshape lgt)
-              return $ getRadianceFromLight2 lgt lpoint objs sfpt
-            return (lrads `deepseq` foldl (+) radiance0 lrads) 
-          else return radiance0
-        -}
         lrads <- V.forM lgts $ \lgt ->
           if (radest lgt) == PhotonMap
             then return Nothing
             else do
               lpoint <- randomPoint (lshape lgt)
               return $ calcRadiance lgt objs sfpt lpoint
+        -}
+        lrads <- V.mapM (getRadianceFromLight2 objs sfpt) lgts
         let
           di = (lrads `deepseq` foldl (+) radiance0 $ V.catMaybes lrads) +
-               estimateRadiance radius filter pmap is
+               estimateRadiance radius filter pmaps is
 
         -- L_spec
         nvec' <- microfacetNormal nvec vvec surf (metalness mate)
@@ -192,10 +187,18 @@ traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !ray@(_, vvec)
         return (tc <**> (sr_half *> (emittance surf sfpt vvec) + rad))
 
 
-estimateRadiance :: Double -> PhotonFilter -> PhotonMap -> Intersection -> Radiance
-estimateRadiance rmax filter pmap (_, (pos, nvec), _, _)
+estimateRadiance :: Double -> PhotonFilter -> V.Vector PhotonMap -> Intersection
+  -> Radiance
+estimateRadiance rmax filter pmaps (_, (pos, nvec), _, _) = mag *> rad
+  where
+    mag = one_pi / rmax * (power (pmaps V.! 0))
+    rad = V.foldl (+) radiance0 $ V.map (estimateRadianceByMap rmax filter pos nvec) pmaps
+
+estimateRadianceByMap :: Double -> PhotonFilter -> Position3 -> Direction3 -> PhotonMap
+  -> Radiance
+estimateRadianceByMap rmax filter pos nvec pmap
   | V.null ps = radiance0
-  | otherwise = (one_pi / rmax * (power pmap)) *> rad -- 半径は指定したものを使う
+  | otherwise = V.foldl (+) radiance0 rads -- 半径は指定したものを使う
   where
     ps = inradius pmap $ photonDummy pos
     f_wait = case filter of
@@ -204,7 +207,6 @@ estimateRadiance rmax filter pmap (_, (pos, nvec), _, _)
       Gaussfilter -> filter_gauss rmax
     waits = ps `deepseq` V.map (\x -> f_wait (square (photonPos x - pos))) ps
     rads = V.zipWith (photonToRadiance nvec) waits ps
-    rad = V.foldl (+) radiance0 rads
 
 -- filtering:
 --   sumRadiance1  none filter
@@ -245,15 +247,13 @@ filter_gauss rmax d = if e_r > e_beta then 0.0 else alpha * (1.0 - e_r / e_beta)
   where
     e_r = 1.0 - exp (-beta * d / (rmax * 2.0))
 
-getRadianceFromLight2 :: Light -> SurfacePoint ->V.Vector Object
-  -> SurfacePoint -> Radiance
-getRadianceFromLight2 lgt lpoint objs sfpt
-  -- = (1.0 / (fromIntegral (length lpoints) :: Double)) *> (V.foldl (+) radiance0 rads)
-  = case (calcRadiance lgt objs sfpt lpoint) of
-    Nothing -> radiance0
-    Just r  -> r
-  --where
-    --rads = V.mapMaybe (calcRadiance lgt objs sfpt) lpoints
+getRadianceFromLight2 :: V.Vector Object -> SurfacePoint -> Light
+  -> IO (Maybe Radiance)
+getRadianceFromLight2 objs sfpt lgt = if (radest lgt) == PhotonMap
+  then return Nothing
+  else do
+    lpoint <- randomPoint (lshape lgt)
+    return $ calcRadiance lgt objs sfpt lpoint
 
 calcRadiance :: Light -> V.Vector Object -> SurfacePoint -> SurfacePoint
   -> Maybe Radiance

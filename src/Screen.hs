@@ -42,7 +42,7 @@ data Screen = Screen
   , yreso               :: Int
   , antialias           :: Bool
   , nSamplePhoton       :: Int
-  , useClassicForDirect :: Bool
+  , mapDivision         :: Int
   , radius              :: Double
   , pfilter             :: PhotonFilter
   , ambient             :: Radiance
@@ -74,7 +74,7 @@ defconf = M.fromList [
   , (rYresolution   , "256")
   , (rAntialias     , "True")
   , (rSamplePhoton  , "100")
-  , (rUseClassic    , "True")
+  , (rMapDivision   , "1")
   , (rEstimateRadius, "0.2")
   , (rAmbient       , "Radiance 0.001 0.001 0.001")
   , (rMaxRadiance   , "0.01")
@@ -102,7 +102,7 @@ readScreen file = do
     yres        = read (conf M.! rYresolution   ) :: Int
     antialias   = read (conf M.! rAntialias     ) :: Bool
     samphoton   = read (conf M.! rSamplePhoton  ) :: Int
-    useclassic  = read (conf M.! rUseClassic    ) :: Bool
+    mapdivision = read (conf M.! rMapDivision   ) :: Int
     radius      = read (conf M.! rEstimateRadius) :: Double
     amb         = read (conf M.! rAmbient       ) :: Radiance
     maxrad      = read (conf M.! rMaxRadiance   ) :: Double
@@ -129,7 +129,7 @@ readScreen file = do
       yres
       antialias    -- anti aliasing on/off
       samphoton    -- nSamplePhoton
-      useclassic   -- useClassicForDirect
+      mapdivision  -- photon map division number
       radius2      -- radius for radiance estimate
       pfilt        -- filter for photon gathering
       amb          -- ambient radiance

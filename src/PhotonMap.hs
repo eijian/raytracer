@@ -37,18 +37,25 @@ data PhotonMap = PhotonMap
   , inradius :: Photon -> V.Vector Photon
   }
 
-readMap :: Int -> Double -> IO (Int, PhotonMap)
-readMap nsample radius = do
+readMap :: Int -> Int -> Double -> IO (V.Vector (Int, PhotonMap))
+readMap mapdiv nsample radius = do
   _   <- T.getLine           -- discard infomation about the number of photon 
   pw0 <- T.getLine
   ps  <- T.getContents
   let
     pw = read (T.unpack pw0) :: Double
-    ls = V.fromList $ T.lines ps
-    pcs = V.toList $ V.map convertToInfo (V.map (readPhoton) ls)
-    pmap = pcs `deepseq` KT.buildWithDist photonToPointList squaredDistance pcs
-    msize = KT.size pmap
-  return (msize, PhotonMap pw (KT.kNearest pmap nsample) (KT.inRadius pmap $ sqrt radius))
+    lss0 = T.lines ps
+    nline = (length lss0 `div` mapdiv) + 1
+    lss = V.fromList $ splitEvery nline lss0
+  return $ V.map (buildMap pw nsample radius) lss
+
+buildMap :: Double -> Int -> Double -> [T.Text] -> (Int, PhotonMap)
+buildMap pw nsample radius ls = (msize, pmap)
+  where
+    pcs = map convertToInfo $ map readPhoton ls
+    kdt = pcs `deepseq` KT.buildWithDist photonToPointList squaredDistance pcs
+    msize = KT.size kdt
+    pmap = PhotonMap pw (KT.kNearest kdt nsample) (KT.inRadius kdt $ sqrt radius)
 
 readPhoton :: T.Text -> Photon
 readPhoton photon = (wl, (Vector3 px py pz, Vector3 dx dy dz))

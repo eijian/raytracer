@@ -7,8 +7,7 @@ yresolution   : 512
 antialias     : yes                # yes or no
 #antialias     : no                # yes or no
 samplephoton  : 500
-#useclassic    : yes                # yes or no
-useclassic    : no                # yes or no
+mapdivision   : 1
 estimateradius: 0.1
 ambient       : [ 0.001, 0.001, 0.001 ]
 maxradiance   : 0.01

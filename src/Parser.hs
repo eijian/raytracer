@@ -11,7 +11,7 @@ module Parser (
 , rYresolution
 , rAntialias
 , rSamplePhoton
-, rUseClassic
+, rMapDivision
 , rEstimateRadius
 , rAmbient
 , rMaxRadiance
@@ -92,6 +92,9 @@ rLdir = "ldir"
 
 rLight :: String
 rLight = "light"
+
+rMapDivision :: String
+rMapDivision = "mapdivision"
 
 rMaterial :: String
 rMaterial = "material"
@@ -176,9 +179,6 @@ rType = "type"
 
 rUpperDirection :: String
 rUpperDirection = "upperdirection"
-
-rUseClassic :: String
-rUseClassic = "useclassic"
 
 rVertex :: String
 rVertex = "vertex"
@@ -755,7 +755,7 @@ sline = do
        (try yreso)       <|>
        (try antialias)   <|>
        (try samphoton)   <|>
-       (try useclassic)  <|>
+       (try mapdivision) <|>
        (try estradius)   <|>
        (try ambient)     <|>
        (try maxrad)      <|>
@@ -853,13 +853,13 @@ samphoton = do
   _ <- blanc
   return (rSamplePhoton, show i)
 
-useclassic :: Parser Param
-useclassic = do
-  _ <- string rUseClassic
+mapdivision :: Parser Param
+mapdivision = do
+  _ <- string rMapDivision
   _ <- separator
-  b <- yesno
+  i <- integer
   _ <- blanc
-  return (rUseClassic, show b)
+  return (rMapDivision, show i)
 
 estradius :: Parser Param
 estradius = do
