@@ -232,7 +232,7 @@ removeComment (c:cs)
 -- SCENE
 --
 
-scene :: Parser ([Light], [(String, Object)])
+scene :: Parser ([LightSpec], [(String, Object)])
 scene = do
   _  <- spaces
   ls <- lightpart
@@ -255,7 +255,7 @@ scene = do
 Right [[[0.5,0.5,0.0],1.0,Vector3 (-1.0) 2.0 1.0]]
 -}
 
-lightpart :: Parser [Light]
+lightpart :: Parser [LightSpec]
 lightpart = do
   _ <- string "light:"
   _ <- eoline
@@ -273,7 +273,7 @@ unexpected end of input
 expecting space
 -}
 
-light :: Parser Light
+light :: Parser LightSpec
 light = do
   l <- (try pointlight)         <|>
        (try parallelogramlight) <|>
@@ -285,7 +285,7 @@ light = do
 Right [[0.5,0.5,0.0],5.0,Vector3 1.0 0.5 9.4]
 -}
 
-pointlight :: Parser Light
+pointlight :: Parser LightSpec
 pointlight = do
   _ <- many1 space
   _ <- char '-'
@@ -298,7 +298,7 @@ pointlight = do
   f <- doubleparam rFlux
   p <- vector3param rPosition
   --return $ PointLight (normalizeColor c) f p
-  return $ initLight (normalizeColor c) f 0.0 (Point o3) PhotonMap Out
+  return $ initLightSpec (normalizeColor c) f 0.0 PhotonMap Out
 
 {- |
 >>> parse parallelogramlight "rt parser" "  - type: parallelogram\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 0.0, 0.0, 1.0 ]\n"
@@ -307,7 +307,7 @@ Right [[0.5,0.5,0.0],5.0,Vector3 1.0 0.5 9.4,Vector3 0.0 (-1.0) 0.0,Vector3 1.0 
 *** Exception: Normal vector is zero.
 -}
 
-parallelogramlight :: Parser Light
+parallelogramlight :: Parser LightSpec
 parallelogramlight = do
   _ <- many1 space
   _ <- char '-'
@@ -326,14 +326,14 @@ parallelogramlight = do
   if n' == Nothing
     then error "Normal vector is zero."
     --else return $ ParallelogramLight (normalizeColor c) f p (fromJust n') d1 d2
-    else return $ initLight (normalizeColor c) f 0.0 (Point o3) PhotonMap Out
+    else return $ initLightSpec (normalizeColor c) f 0.0 PhotonMap Out
 
 {- |
 >>> parse sunlight "rt parser" "  - type: sun\n    color: [ 1.0, 1.0, 0.0 ]\n    flux: 5.0\n    position: [ 1.0, 0.5, 9.4 ]\n    dir1: [ 1.0, 0.0, 0.0 ]\n    dir2: [ 0.0, 0.0, 1.0 ]\n    ldir: [ 0.0, -1.0, 0.0 ]\n"
 Right [[0.5,0.5,0.0],5.0,Vector3 1.0 0.5 9.4,Vector3 0.0 (-1.0) 0.0,Vector3 1.0 0.0 0.0,Vector3 0.0 0.0 1.0,Vector3 0.0 (-1.0) 0.0]
 -}
 
-sunlight :: Parser Light
+sunlight :: Parser LightSpec
 sunlight = do
   _ <- many1 space
   _ <- char '-'
@@ -352,7 +352,7 @@ sunlight = do
   if n' == Nothing
     then error "Normal vector is zero."
     --else return $ SunLight (normalizeColor c) f p (fromJust n') d1 d2 ld
-    else return $ initLight (normalizeColor c) f 0.0 (Point o3) PhotonMap Out
+    else return $ initLightSpec (normalizeColor c) f 0.0 PhotonMap Out
 
 -- MATERIAL
 
@@ -558,7 +558,7 @@ plain mmap = do
   mt <- nameparam "material"
   let
     d = n <.> p
-    mapper = uniMapper ((mmap M.! mt), (initSurface Nothing 0.0))
+    mapper = Solid ((mmap M.! mt), (initSurface Nothing 0.0))
   --return (nm, initObject (Plain n (-d)) (mmap M.! mt))
   return (nm, initObject (Plain n (-d)) mapper)
 
@@ -578,7 +578,7 @@ sphere mmap = do
   r  <- doubleparam rRadius
   mt <- nameparam "material"
   let
-    mapper = uniMapper ((mmap M.! mt), (initSurface Nothing 0.0))
+    mapper = Solid ((mmap M.! mt), (initSurface Nothing 0.0))
   return (nm, initObject (Sphere c r) mapper)
 
 {- |
@@ -600,7 +600,7 @@ parallelogram mmap vmap = do
   p3 <- nameOrPos3 vmap rPos3
   mt <- nameparam "material"
   let
-    mapper = uniMapper ((mmap M.! mt), (initSurface Nothing 0.0))
+    mapper = Solid ((mmap M.! mt), (initSurface Nothing 0.0))
   return (nm, initObject (initParallelogram p1 p2 p3) mapper)
 
 {- |
@@ -622,7 +622,7 @@ polygon mmap vmap = do
   p3 <- nameOrPos3 vmap rPos3
   mt <- nameparam "material"
   let
-    mapper = uniMapper ((mmap M.! mt), (initSurface Nothing 0.0))
+    mapper = Solid ((mmap M.! mt), (initSurface Nothing 0.0))
   return (nm, initObject (initPolygon p1 p2 p3) mapper)
 
 {- |

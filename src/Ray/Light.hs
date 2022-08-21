@@ -8,13 +8,14 @@
 
 module Ray.Light (
   RadEstimation (..)
-, Light (..)
+, LightSpec (..)
+, decayEmittance
 , generatePhoton
-, getDirection
+--, getDirection
 , getRadiance
-, initLight
+, initLightSpec
 , lemittance
-, validPoint
+--, validPoint
 ) where
 
 --import System.Random
@@ -31,7 +32,7 @@ import Ray.Geometry
 import Ray.Optics
 import Ray.Physics
 
-type Flux = Double
+type Radiosity = Double
 
 {-
 Light: 光源型、物体形状と分離して光源の仕様のみとした。
@@ -52,6 +53,13 @@ Light: 光源型、物体形状と分離して光源の仕様のみとした。
     30W     32W     40W
     2100lm  2480lm  3230lm
 
+
+  Panasonic 丸型LED 95mm
+  LDG11L-G/95/W  1370lm -> 46,320 lx (lm/m^2)
+
+  Panasonic 円環30形 (225-167,29mm)
+  FCL30EDW28MF3  2100lm -> 74,868 lx (lm/m^2)
+
 -}
 
 {-|
@@ -65,54 +73,85 @@ data RadEstimation =
 instance NFData RadEstimation where
   rnf = genericRnf
 
-data Light = Light
+data LightSpec = LightSpec
   { lcolor      :: !Color         -- RGBの比率、r+g+b = 1.0
-  , flux        :: !Flux          -- 光束 [W/?]
+  , radiosity   :: !Radiosity     -- 放射発散度 [W/m^2]
   , directivity :: !Double        -- 指向性 (0.0:指向性なし - 1.0:平行光源)
-  , lshape      :: !Shape         -- 光源形状
   , radest      :: !RadEstimation -- 直接光の輝度値計算方法
   , dirflag     :: !InOut         -- 発光方向（通常光源=Out, ドーム光源等=In)
   -- calcuration when initializing
   , cospower    :: !Double
   , power       :: !Double
-  , emittance0  :: !Radiance
-  , nsample     :: Int
+  , emittance0  :: !Radiance      -- 放射輝度（面法線方向）
+  }
+  deriving (Eq, Show, Generic)
+
+instance NFData LightSpec where
+  rnf = genericRnf
+
+{-}
+data Light = Light
+  { spec       :: !LightSpec     -- RGBの比率、r+g+b = 1.0
+  , lshape     :: !Shape         -- 光源形状
+  , nsample    :: Int
   }
   deriving (Eq, Show, Generic)
 
 instance NFData Light where
   rnf = genericRnf
+-}
 
-initLight :: Color -> Flux -> Double -> Shape -> RadEstimation -> InOut -> Light
-initLight col lumen direct shape radest dirf =
-  Light col flux direct shape radest dirf cpow pow em nsam
+initLightSpec :: Color -> Radiosity -> Double -> RadEstimation -> InOut
+  -> LightSpec
+initLightSpec col lux direct radest dirf =
+  LightSpec col radiosity direct radest dirf cpow pow em
   where
-    flux = lumen / 683.0
+    radiosity = lux / 683.0   -- flux [W] = lumen / 683.0, lux = lumen / S [lumen/m^2]
     (cpow, pow)  = densityPower (direct ** 3)
-    e0   = sr_half * flux / surfaceArea shape
-    em   = (3.0 * e0) *> col <**> radiance1
-    ns   = truncate (1.5 ** (direct * 10))
-    nsam = if ns < 1 then nSurface shape else ns * nSurface shape
-    --nsam = if ns < 1 then 1 else ns
+    em0 = sr_half * radiosity
+    em  = em0 *> col <**> radiance1
 
-lemittance :: Light -> SurfacePoint -> Direction3 -> Radiance
-lemittance (Light _ _ _ _ _ _ _ pow em _) (_, nvec) vvec = cos' *> em
+{-
+initLight :: LightSpec -> Shape -> Light
+initLight spec@(LightSpec _ _ direct _ _ _ _ _) shape = Light spec shape nsam
+  where
+    mag  = truncate (1.5 ** (direct * 10))
+    n    = nSurface shape
+    nsam = if mag < 1 then n else mag * n
+    --nsam = if ns < 1 then 1 else ns
+-}
+
+lemittance :: LightSpec -> SurfacePoint -> Direction3 -> Radiance
+lemittance (LightSpec _ _ _ _ _ _ pow em) (_, nvec) vvec = cos' *> em
   where
     cos = nvec <.> vvec
     cos' = (-cos) ** (0.5 / pow)
 
-generatePhoton :: Light -> IO (Photon, RadEstimation)
-generatePhoton (Light c _ _ s radest dirf _ pow _ _) = do
+generatePhoton :: LightSpec -> SurfacePoint -> IO (Photon, RadEstimation)
+generatePhoton (LightSpec col _ _ radest dirf _ pow _) (pos, nvec) = do
   wl <- MT.randomIO :: IO Double
-  (pos, nvec) <- randomPoint s
   let
-    w = decideWavelength c wl
+    nvec2 = if dirf == Out
+      then nvec
+      else negate nvec
+  nvec' <- blurredVector nvec2 pow
+  return ((decideWavelength col wl, initRay pos nvec'), radest)
+
+{-
+generatePhoton :: Light -> IO (Photon, RadEstimation)
+generatePhoton (Light (LightSpec col _ _ radest dirf _ pow _) shp _) = do
+  wl <- MT.randomIO :: IO Double
+  (pos, nvec) <- randomPoint shp
+  let
+    w = decideWavelength col wl
     nvec2 = if dirf == Out
       then nvec
       else negate nvec
   nvec' <- blurredVector nvec2 pow
   return ((w, initRay pos nvec'), radest)
+-}
 
+{-
 getDirection :: Light -> Position3 -> Position3 -> Maybe Direction3
 getDirection (Light _ _ _ shape _ _ _ _ _ _) lpos pos
   | nvec == Nothing = Nothing
@@ -122,22 +161,29 @@ getDirection (Light _ _ _ shape _ _ _ _ _ _) lpos pos
     nvec = getNormal lpos shape
     lvec = lpos - pos
     cos = (fromJust nvec) <.> lvec
+-}
 
 {-
 光源までの距離は二乗された状態で入力される。1/4πd となっているがdは実際はd^2。
 -}
 
-getRadiance :: Light -> Direction3 -> Direction3 -> Radiance
-getRadiance lgt@(Light (Color r g b) f _ _ _ _ cpow _ _ _) lnvec lvec
+getRadiance :: LightSpec -> Direction3 -> Direction3 -> Radiance
+getRadiance (LightSpec (Color r g b) radiosity _ _ _ cpow _ _) lnvec lvec
   = Radiance (r * decay) (g * decay) (b * decay)
   where
     cos = lnvec <.> lvec
-    decay = f * (cos ** cpow) * (cpow + 1.0) / pi2
+    decay = sr_half * radiosity * (cos ** cpow) * (cpow + 1.0)
+
+decayEmittance :: LightSpec -> Double -> Radiance
+decayEmittance (LightSpec _ _ _ _ _ cpow _ em) cos = decay *> em
+  where
+    decay =  (cpow + 1.0) * (cos ** cpow)
 
 {-
 
 -}
 
+{-
 validPoint :: Light -> SurfacePoint -> IO SurfacePoint
 validPoint lgt (pos, nvec) = do
   sfpt@(lpos, lnvec) <- randomPoint (lshape lgt)
@@ -145,6 +191,7 @@ validPoint lgt (pos, nvec) = do
 --  if lnvec <.> nvec < 0.0  -- 面が光源を向いていない
 --    then return Nothing
 --    else return (Just sfpt)
+-}
 
 {-
     else do

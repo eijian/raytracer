@@ -127,7 +127,7 @@ nextDirection mate surf eta nvec (wl, (_, vvec)) = do
 -- RAY TRACING WITH PHOTON MAP
 -----
 
-traceRay :: PhotonFilter -> V.Vector Object -> V.Vector Light -> Int
+traceRay :: PhotonFilter -> V.Vector Object -> V.Vector LightObject -> Int
   -> V.Vector PhotonMap -> Double -> Material -> Material -> Ray
   -> IO Radiance
 traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec) 
@@ -183,8 +183,8 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
 
         let
           tc = expColor (transmittance mate0) t
-          rad = bsdf mate cos1 di si ti
-        return (tc <**> (sr_half *> (emittance surf sfpt vvec) + rad))
+          rad = bsdf mate surf cos1 di si ti
+        return (tc <**> (emittance surf sfpt vvec) + rad)
 
 
 estimateRadiance :: Double -> PhotonFilter -> V.Vector PhotonMap -> Intersection
@@ -247,24 +247,30 @@ filter_gauss rmax d = if e_r > e_beta then 0.0 else alpha * (1.0 - e_r / e_beta)
   where
     e_r = 1.0 - exp (-beta * d / (rmax * 2.0))
 
-getRadianceFromLight2 :: V.Vector Object -> SurfacePoint -> Light
+getRadianceFromLight2 :: V.Vector Object -> SurfacePoint -> LightObject
   -> IO (Maybe Radiance)
-getRadianceFromLight2 objs sfpt lgt = if (radest lgt) == PhotonMap
-  then return Nothing
-  else do
-    lpoint <- randomPoint (lshape lgt)
-    return $ calcRadiance lgt objs sfpt lpoint
+getRadianceFromLight2 objs sfpt (Object shp mp) =
+  case lightSpecOnPoint mp sfpt (0.0, 0.0) of
+    Nothing   -> return Nothing
+    Just spec ->
+      if (radest spec) == PhotonMap
+        then return Nothing
+        else do
+          lpoint <- randomPoint shp
+          let
+            area = surfaceArea shp
+          return $ calcRadiance spec objs sfpt lpoint area
 
-calcRadiance :: Light -> V.Vector Object -> SurfacePoint -> SurfacePoint
-  -> Maybe Radiance
-calcRadiance lgt objs (pos, nvec) (lpos, lnvec)
+calcRadiance :: LightSpec -> V.Vector Object -> SurfacePoint -> SurfacePoint
+  -> Double -> Maybe Radiance
+calcRadiance lgtspec objs (pos, nvec) (lpos, lnvec) area
   | ldir  == o3           = Nothing  -- 光源上の点
   | ldir <.> lnvec > 0.0  = Nothing  -- 光源が見えていない
   | lvec0 == Nothing      = Nothing  -- 光源方向のベクトルが異常
   | cos   <= 0.0          = Nothing  -- 光源が見えていない
   | is    == Nothing      = Nothing  -- 光源オブジェクトが無い
   | dist2 - t * t > 0.002 = Nothing  -- 光源の手前に物体がある
-  | otherwise             = Just ((cos / dist2) *> rad)
+  | otherwise             = Just ((area * cos / dist2) *> rad)
   where
     ldir = lpos - pos
     lvec0 = normalize ldir
@@ -273,7 +279,7 @@ calcRadiance lgt objs (pos, nvec) (lpos, lnvec)
     is = calcIntersection (initRay pos lvec) objs
     dist2 = square ldir
     (t, _, _, _) = fromJust is
-    rad = getRadiance lgt lnvec (negate lvec)
+    rad = decayEmittance lgtspec (lnvec <.> (negate lvec))
 
   
 
@@ -285,18 +291,19 @@ type Intersection = (Double, SurfacePoint, SurfaceChar, InOut)
 
 calcIntersection :: Ray -> V.Vector Object -> Maybe Intersection
 calcIntersection ray@(_, vvec) objs
-  | length iss == 0 = Nothing
-  | otherwise       =
-    case nvec of
-      Just nvec -> if nvec <.> vvec > 0.0
-        then Just (t, (pos, negate nvec), mapper (pos, negate nvec) uv, Out)
-        else Just (t, (pos, nvec)       , mapper (pos, nvec)        uv, In)
-      Nothing   -> Nothing
+  | length iss == 0  = Nothing
+  | nvec0 == Nothing = Nothing
+  | otherwise        = Just (t, sfpt, surfaceCharOnPoint mapper sfpt uv, io)
   where
     iss = V.mapMaybe (calcDistance ray) objs
     (t, uv, (Object shape mapper)) = V.foldl' nearer (V.head iss) (V.tail iss)
     pos = target t ray
-    nvec = getNormal pos shape
+    nvec0 = getNormal pos shape
+    nvec = fromJust nvec0
+    cos = nvec <.> vvec
+    nvec' = if cos > 0.0 then negate nvec else nvec
+    io = if cos > 0.0 then Out else In
+    sfpt = (pos, nvec')
     nearer :: (Double, Vector2, Object) -> (Double, Vector2, Object)
       -> (Double, Vector2, Object)
     nearer d1@(t1, _, _) d2@(t2, _, _) = if t1 <= t2
@@ -316,8 +323,9 @@ calcDistance ray obj@(Object shape _) =
 bsdf: BSDF
 -}
 
-bsdf :: Material -> Double -> Radiance -> Radiance -> Radiance -> Radiance
-bsdf (Material aldiff scat metal _ _ alspec) cos di si ti =
+bsdf :: Material -> Surface -> Double -> Radiance -> Radiance -> Radiance
+  -> Radiance
+bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos di si ti =
   i_de + i_mt
   where
     f = fresnelReflectanceColor alspec cos
@@ -326,7 +334,10 @@ bsdf (Material aldiff scat metal _ _ alspec) cos di si ti =
       then radiance0
       else ((1.0 - metal) *> (aldiff * f2)) <**>
            ((scat * one_pi) *> di + (1.0 - scat) *> ti)
-    i_mt = f <**> si
+    --i_mt = f <**> si
+    i_mt = if metal == 1.0
+      then f <**> si
+      else (1.0 - rough) *> f <**> si
 
 {-
 schlickG: 幾何減衰Gの計算で用いるschlick近似式

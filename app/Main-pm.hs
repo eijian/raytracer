@@ -13,8 +13,10 @@ import qualified Data.Vector as V
 import           System.Environment
 
 import Ray.Algebra
+import Ray.Geometry
 import Ray.Light
---import Ray.Object
+import Ray.Mapper
+import Ray.Object
 import Ray.Optics
 import Scene
 import Screen
@@ -32,22 +34,23 @@ main = do
   scr <- readScreen fn1
   (mate_air, lgts, objs) <- readScene fn2
   let
-    power = (V.sum $ V.map flux lgts) / (fromIntegral $ nphoton scr)
-    ns = V.map (calcN power) lgts
+    (ns, power) = calcNumPhotons lgts (nphoton scr)
+    --power = (V.sum $ V.map flux lgts) / (fromIntegral $ nphoton scr)
+    --ns = V.map (calcNumPhotons power) lgts
     tracer = tracePhoton objs 0 mate_air mate_air
   putStrLn $ show $ nphoton scr
   putStrLn $ show power
   V.zipWithM_ (outputPhotons tracer) lgts ns
-  
-calcN :: Double -> Light -> Int
-calcN pow lgt = round (flux lgt / pow)
 
-outputPhotons :: ((Photon, RadEstimation) -> IO (V.Vector Photon)) -> Light -> Int -> IO ()
+outputPhotons :: ((Photon, RadEstimation) -> IO (V.Vector Photon)) -> LightObject -> Int -> IO ()
 outputPhotons tracer lgt n = V.mapM_ (outputPhoton tracer lgt) $ V.replicate n 1
 
-outputPhoton :: ((Photon, RadEstimation) -> IO (V.Vector Photon)) -> Light -> Int -> IO ()
-outputPhoton tracer lgt _ =
-  generatePhoton lgt >>= tracer >>= V.mapM_ (putStrLn.showPhoton)
+outputPhoton :: ((Photon, RadEstimation) -> IO (V.Vector Photon)) -> LightObject -> Int -> IO ()
+outputPhoton tracer lgt _ = do
+  (lgtspec, sfpt) <- validLightSpec lgt
+  photon <- generatePhoton lgtspec sfpt
+  pmap <- tracer photon
+  V.mapM_ (putStrLn.showPhoton) pmap
 
 showPhoton :: Photon -> String
 showPhoton (wl, (Vector3 px py pz, Vector3 dx dy dz)) = show wl ++ " " 

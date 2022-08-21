@@ -8,10 +8,10 @@ module Scene (
   readScene
 ) where
 
-import           Data.List
 import           Data.Array.Unboxed
+import           Data.List
+import qualified Data.Map.Strict as M
 import           Data.Maybe
---import qualified Data.Map.Strict as M
 import qualified Data.Vector as V
 import           NumericPrelude
 
@@ -39,7 +39,7 @@ m_air = initMaterial white 0.0 0.0 white (Color 1.0 1.0 1.0) Nothing
 -- PUBLIC
 --
 
-readScene :: String -> IO (Material, V.Vector Light, V.Vector Object)
+readScene :: String -> IO (Material, V.Vector LightObject, V.Vector Object)
 readScene file = do
   lines <- readConfig file
   (lgts, objs) <- parseConfig ((intercalate "\n" lines) ++ "\n")
@@ -54,9 +54,15 @@ readConfig file = do
   f <- readFile file
   return $ map removeComment $ lines f
 
-parseConfig :: String -> IO (V.Vector Light, V.Vector Object)
+parseConfig :: String -> IO (V.Vector LightObject, V.Vector Object)
 parseConfig conf = do
   let
+    {-
+    (ls, os0) = case (parse scene "rt scene file parse error" conf) of
+      Left e -> error (show e)
+      Right (l', o') -> (l', o')
+    (n, os) = unzip os0
+    -}
 {-
     vtxs = listArray (0, 5)
       [ Vector3 1.0 1.4 2.6
@@ -144,62 +150,56 @@ parseConfig conf = do
       , Vector3 0.05545773479574966 (-0.8002118147111317) (-0.597147796820889)
       , Vector3 (-0.8285553509596624) (-0.05843676049787637) (-0.5568493291893462)
       ]
-    
-    sh_icosahedron = Mesh (V.fromList
-      [ ((1, 1), (2, 1), (6, 1))
-      , ((1, 2), (7, 2), (2, 2))
-      , ((3, 3), (4, 3), (5, 3))
-      , ((4, 4), (3, 4), (8, 4))
-      , ((6, 5), (5, 5), (11, 5))
-      , ((5, 6), (6, 6), (10, 6))
-      , ((9, 7), (10, 7), (2, 7))
-      , ((10, 8), (9, 8), (3, 8))
-      , ((7, 9), (8, 9), (9, 9))
-      , ((8, 10), (7, 10), (0, 10))
-      , ((11, 11), (0, 11), (1, 11))
-      , ((0, 12), (11, 12), (4, 12))
-      , ((6, 13), (2, 13), (10, 13))
-      , ((1, 14), (6, 14), (11, 14))
-      , ((3, 15), (5, 15), (10, 15))
-      , ((5, 16), (4, 16), (11, 16))
-      , ((2, 17), (7, 17), (9, 17))
-      , ((7, 18), (1, 18), (0, 18))
-      , ((3, 19), (9, 19), (8, 19))
-      , ((4, 20), (8, 20), (0, 20))
-      ]) vtxs_icosahedron norms_icosahedron
 
+    shapes = M.fromList
+      [ ("icosahedron", Mesh (V.fromList
+        [ ((1, 1), (2, 1), (6, 1))
+        , ((1, 2), (7, 2), (2, 2))
+        , ((3, 3), (4, 3), (5, 3))
+        , ((4, 4), (3, 4), (8, 4))
+        , ((6, 5), (5, 5), (11, 5))
+        , ((5, 6), (6, 6), (10, 6))
+        , ((9, 7), (10, 7), (2, 7))
+        , ((10, 8), (9, 8), (3, 8))
+        , ((7, 9), (8, 9), (9, 9))
+        , ((8, 10), (7, 10), (0, 10))
+        , ((11, 11), (0, 11), (1, 11))
+        , ((0, 12), (11, 12), (4, 12))
+        , ((6, 13), (2, 13), (10, 13))
+        , ((1, 14), (6, 14), (11, 14))
+        , ((3, 15), (5, 15), (10, 15))
+        , ((5, 16), (4, 16), (11, 16))
+        , ((2, 17), (7, 17), (9, 17))
+        , ((7, 18), (1, 18), (0, 18))
+        , ((3, 19), (9, 19), (8, 19))
+        , ((4, 20), (8, 20), (0, 20))
+        ]) vtxs_icosahedron norms_icosahedron)
+      , ("ceiling_light", initParallelogram (Vector3 (-0.67) 3.99 2.33)
+          (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67))
+      , ("ceiling_bulb0", Sphere (Vector3 (-1.5) 0.2 1.5) 0.15)
+      , ("ceiling_bulb1", Sphere (Vector3 0.0 3.75 3.0) 0.045)
+      , ("ceiling_bulb2", Sphere (Vector3 (-1.0) 3.75 3.0) 0.045)
+      , ("ceiling_bulb3", Sphere (Vector3 1.0 3.75 3.0) 0.045)
+      , ("sun", initParallelogramWithNormal (Vector3 (-0.67) 3.99 2.33) (Vector3 0.67 3.99 2.33)
+         (Vector3 (-0.67) 3.99 3.67) (Vector3 0.0 (-1.0) 0.0))
+      , ("sky", Sphere (Vector3 0 0 0) 1000.0)
+      , ("floor", initParallelogram (Vector3 (-2.0) 0.0 (-6.0))
+         (Vector3 (-2.0) 0.0 5.0) (Vector3 2.0 0.0 (-6.0)))
+      ]
 
-    {-
-    (ls, os0) = case (parse scene "rt scene file parse error" conf) of
-      Left e -> error (show e)
-      Right (l', o') -> (l', o')
-    (n, os) = unzip os0
-    -}
-    sh_ceiling_light = initParallelogram (Vector3 (-0.67) 3.99 2.33) 
-      (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67)
-    --sh_ceiling_bulb1 = Sphere (Vector3 0.0 3.75 3.0) 0.2
-    sh_ceiling_bulb1 = Sphere (Vector3 (-1.5) 0.2 1.5) 0.15
-    lg_ceiling_light = initLight (initColorByKelvin 6500) 3500 1.0 sh_ceiling_light PhotonMap Out
-    --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_ceiling_bulb1 True
+    -- flux of ceiling light : 3500 lumen (1950 = 3500 / 1.34^2)
+    --lg_ceiling_light = initLightSpec (initColorByKelvin 6500) 1950 0.0 PhotonMap Out
+    lg_ceiling_light = initLightSpec (initColorByKelvin 6500) 1950 0.0 Formula Out
+    -- flux of bulb light : 1370 lumen (4845 = 1370 / (4π x 0.15^2))
+    --lg_ceiling_bulb1 = initLightSpec (initColorByKelvin 2700) 48320 0.0 Formula Out
+    lg_ceiling_bulb1 = initLightSpec (initColorByKelvin 5000) 48320 0.0 Formula Out
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_octahedron True
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_icosahedron True
 
-    sh_sunlight = initParallelogram (Vector3 4.0 100.0 (-4.0)) (Vector3 4.0 100.0 4.0) (Vector3 (-4.0) 100.0 (-4.0)) 
-    sh_skylight = Sphere (Vector3 0 0 0) 1000.0
-    lg_sunlight = initLight (initColorByKelvin 6500) 4000 1.0 sh_sunlight PhotonMap Out
-    lg_skylight = initLight (initColorByKelvin 12000) 4000 0.0 sh_skylight PhotonMap In
-
-    ls = [
-      --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
-      --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
-      --ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
-      --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
-      lg_ceiling_light
-      --, lg_ceiling_bulb1
-      --  lg_sunlight
-      -- lg_skylight
-      ]
     
+    lg_sunlight = initLightSpec (initColorByKelvin 6500) 5000 1.0 PhotonMap Out
+    lg_skylight = initLightSpec (initColorByKelvin 12000) 10000 0.0 PhotonMap In
+
     {-
     ls = [
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
@@ -212,7 +212,8 @@ parseConfig conf = do
     -}
 
     sf_paral   = initSurface (Just lg_ceiling_light) 0.0
-    --sf_bulb1   = initSurface (Just lg_ceiling_bulb1) 1.0
+    sf_bulb1   = initSurface (Just lg_ceiling_bulb1) 0.0
+    sf_sun     = initSurface (Just lg_sunlight) 0.0
     sf_rough    = initSurface Nothing 1.0
     sf_polish   = initSurface Nothing 0.0
     sf_glossy05 = initSurface Nothing 0.5
@@ -221,6 +222,12 @@ parseConfig conf = do
     sf_metal2 = initSurface Nothing 0.0
     sf_plastic = initSurface Nothing 0.0
     sf_plastic2 = initSurface Nothing 1.0
+
+    --
+    -- RGB波長：700, 546.1, 435.8[nm]
+    --
+    -- 物質の屈折率表： https://www.filmetricsinc.jp/refractive-index-database/
+
     --mball = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.0 1.0 1.0)
     --  (initSurfaceSimple (Color 0.5 0.5 0.5) (Color 0.0 0.0 0.0) 0.5 0.0 0.0)
     mwall  = initMaterial (Color 0.5 0.5 0.5) 1.0 0.0 black (Color 1.534 1.534 1.534) Nothing
@@ -232,11 +239,15 @@ parseConfig conf = do
     --   三原色それぞれがこの輝度を持つとした。
     mparal  = initMaterial black 0.0 0.0 black black Nothing
     glass   = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 1.467 1.460 1.455) Nothing
+    glass2  = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 2.0 2.0 2.0) Nothing
+    quartz  = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 1.541 1.546 1.554) Nothing
     diamond = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 2.404 2.42364 2.44984) Nothing
     prism_f2 = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 1.61259 1.623655 1.643454) Nothing
     gold    = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.96 0.76 0.39))
     silver  = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.974 0.960 0.906))
     plastic = initMaterial (Color 0.5 0.30 0.1) 1.0 0.0 black (Color 2.0 2.0 2.0) Nothing
+    stucco  = initMaterial (Color 0.75 0.75 0.75) 1.0 0.0 black (Color 2.0 2.0 2.0) Nothing  -- 漆喰
+    sun     = initMaterial black 0.0 0.0 black black Nothing
     sky     = initMaterial black 0.0 0.0 black black Nothing
 {-
     ypla00 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
@@ -283,42 +294,51 @@ parseConfig conf = do
       (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 1.0)
 -}
 
-    map_whwall = uniMapper (mwall, sf_rough)
-    map_rdwall = uniMapper (mwallr, sf_rough)
-    map_blwall = uniMapper (mwallb, sf_rough)
-    map_floor  = uniMapper (mwall, sf_rough)
-    --map_floor  = checkerMapper (mwall, sf_rough) (gold, sf_polish)
-    --map_floor  = checkerMapper (plastic, sf_rough) (mwall, sf_rough)
+    map_whwall = Solid (mwall, sf_rough)
+    map_rdwall = Solid (mwallr, sf_rough)
+    map_blwall = Solid (mwallb, sf_rough)
+    map_floor  = Solid (mwall, sf_rough)
+    --map_floor  = Solid (mparal, sf_paral)
+    --map_floor  = Checker (mwall, sf_rough) (mparal, sf_paral) 2.5
+    --map_floor  = Checker (mwall, sf_rough) (gold, sf_polish) 2.5
+    --map_floor  = Checker (plastic, sf_rough) (mwall, sf_rough)
 
-    map_clearglass = uniMapper (glass, sf_polish)
-    map_cleardiamond = uniMapper (diamond, sf_polish)
-    map_clearprism = uniMapper (prism_f2, sf_polish)
-    map_smokeglass = uniMapper (glass, sf_glossy05)
-    map_polishgold = uniMapper (gold, sf_polish)
-    map_glossygold = uniMapper (gold, sf_glossy05)
-    map_polishsilver = uniMapper (silver, sf_polish)
-    map_smoothplastic = uniMapper (plastic, sf_polish)
-    map_roughplastic  = uniMapper (plastic, sf_rough)
+    map_clearglass = Solid (glass, sf_polish)
+    map_clearglass2 = Solid (glass2, sf_polish)
+    map_cleardiamond = Solid (diamond, sf_polish)
+    map_clearprism = Solid (prism_f2, sf_polish)
+    map_smokeglass = Solid (glass, sf_glossy05)
+    map_polishgold = Solid (gold, sf_polish)
+    map_glossygold = Solid (gold, sf_glossy05)
+    map_polishsilver = Solid (silver, sf_polish)
+    map_smoothplastic = Solid (plastic, sf_polish)
+    map_roughplastic  = Solid (plastic, sf_rough)
+    map_glossyplastic  = Solid (plastic, sf_glossy05)
+    map_roughstucco = Solid (stucco, sf_rough)
 
 
     floor = Object (Plain (Vector3 0.0 1.0 0.0) 0.0) map_floor
+    --floor = Object (fromJust $ M.lookup "floor" shapes) map_floor
     ceil  = Object (Plain (Vector3 0.0 (-1.0) 0.0) 4.0) map_whwall
     rsidewall = Object (Plain (Vector3 (-1.0) 0.0 0.0) 2.0) map_blwall
     lsidewall = Object (Plain (Vector3 1.0 0.0 0.0) 2.0) map_rdwall
     backwall = Object (Plain (Vector3 0.0 0.0 1.0) 6.0) map_whwall
     frontwall = Object (Plain (Vector3 0.0 0.0 (-1.0)) 5.0) map_whwall
 
-    ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_clearglass
+    ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_clearglass2
     ball_diamond = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_cleardiamond
     ball_prism = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_clearprism
     ball_gold = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_glossygold
     ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_polishsilver
     ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_smoothplastic
+    --ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_roughplastic
+    --ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_glossyplastic
+    ball_stucco = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_roughstucco
     --octahedron = Object sh_octahedron plastic sf_plastic
     --octahedron = Object sh_octahedron plastic sf_bulb1
 
     one_ball = Object (Sphere (Vector3 0.0 1.01 0.0) 1.0) map_roughplastic
-    icosahedron = Object sh_icosahedron map_cleardiamond
+    icosahedron = Object (fromJust $ M.lookup "icosahedron" shapes) map_cleardiamond
     --icosahedron = Object sh_icosahedron silver sf_silver
 {-
     ball_01 = Object (Sphere (Vector3 (-1.6) 1.2 3.8) 0.4) ypla00
@@ -334,26 +354,34 @@ parseConfig conf = do
 -}
     --ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) mirror
 
-    map_paral = uniMapper (mparal, sf_paral)
-    map_skyl  = uniMapper (sky, sf_paral)
+    map_paral = Solid (mparal, sf_paral)
+    map_bulb1 = Solid (mparal, sf_bulb1)
+    map_skyl  = Solid (sky, sf_paral)
+    map_sun   = Solid (sun, sf_sun)
 
-    ceiling_light = Object sh_ceiling_light map_paral
-    --ceiling_bulb1 = Object sh_ceiling_bulb1 mparal sf_bulb1
+    ceiling_light = Object (fromJust $ M.lookup "ceiling_light" shapes) map_paral
+    ceiling_bulb1 = Object (fromJust $ M.lookup "ceiling_bulb1" shapes) map_bulb1
+    ceiling_bulb2 = Object (fromJust $ M.lookup "ceiling_bulb2" shapes) map_bulb1
+    ceiling_bulb3 = Object (fromJust $ M.lookup "ceiling_bulb3" shapes) map_bulb1
     --ceiling_bulb1 = Object sh_octahedron mparal sf_bulb1
     --ceiling_bulb1 = Object sh_icosahedron mparal sf_bulb1
-    sunlight = Object sh_sunlight map_paral
-    skylight = Object sh_skylight map_skyl
+    sunlight = Object (fromJust $ M.lookup "sun" shapes) map_sun
+    skylight = Object (fromJust $ M.lookup "sky" shapes) map_skyl
 
     os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall
-        , ceiling_light
+        --, ceiling_light
         --, ceiling_bulb1
+        --, ceiling_bulb2
+        --, ceiling_bulb3
+        , sunlight
         --, ball_glass
-        --, ball_diamond
+        , ball_diamond
         --, ball_prism
         --, ball_gold
         --, octahedron
-        , icosahedron
+        --, icosahedron
         , ball_silver
+        --, ball_stucco
         --, ball_plastic
         ]
 --          ball_01, ball_02, ball_03, ball_04, ball_05,
@@ -365,6 +393,19 @@ parseConfig conf = do
          , skylight
          ]
     -}
-      
-
+  
+    ls0 = filter (\(x, y) -> x > 0) $ zip (map (length.lightSpecs.mapper) os) os
+    (_, ls) = unzip ls0
+      --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
+      --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
+      --ParallelogramLight (initColorByKelvin 6500) 5.0 (Vector3 (-0.67) 3.99 2.33)
+      --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
+      --lg_ceiling_light
+      --, lg_ceiling_bulb1
+      --  lg_sunlight
+      -- lg_skylight
+      --]
+    
+  --putStrLn ("light: " ++ show lg_ceiling_light)
+  --putStrLn ("bulb1: " ++ show lg_ceiling_bulb1)
   return (V.fromList ls, V.fromList os)

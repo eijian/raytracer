@@ -16,6 +16,7 @@ module Ray.Geometry (
 , getNormal
 , getPos
 , initParallelogram
+, initParallelogramWithNormal
 , initPolygon
 , initRay
 , initRayFromElem
@@ -159,6 +160,14 @@ initParallelogram p0 p1 p2 = Parallelogram p0 nvec d1 d2
     d2 = p2 - p0
     nvec  = fromJust (normalize (d1 <*> d2))
 
+initParallelogramWithNormal :: Position3 -> Position3 -> Position3 -> Direction3
+  -> Shape
+initParallelogramWithNormal p0 p1 p2 nvec = Parallelogram p0 nvec' d1 d2
+  where
+    d1 = p1 - p0
+    d2 = p2 - p0
+    nvec'  = fromJust $ normalize nvec
+
 getNormal :: Position3 -> Shape -> Maybe Direction3
 -- Plain
 getNormal _ (Plain nvec _) = Just nvec
@@ -300,6 +309,17 @@ randomPoint (Mesh ps vtxs norms) = do
         else (m, (1.0 - n))
       else (m, n)
   return (vtxs UA.! p0 + m' *> d1 + n' *> d2, norms UA.! nvec)
+
+getDirection :: Shape -> Position3 -> Position3 -> Maybe Direction3
+getDirection shp destpos srcpos
+  | nvec == Nothing = Nothing
+  | cos > 0.0       = Nothing
+  | otherwise       = Just dir
+  where
+    nvec = getNormal destpos shp
+    dir = destpos - srcpos
+    cos = (fromJust nvec) <.> dir
+
 
 --
 -- UTILS

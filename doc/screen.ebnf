@@ -1,4 +1,4 @@
-EBNF for Screen configuration of raytracer
+(* EBNF for Screen configuration of raytracer *)
 
 {
   config = line , { line } ;
@@ -24,7 +24,7 @@ EBNF for Screen configuration of raytracer
 
   yesno  = "yes" | "no" ;
   filter = "none" | "cone" | "gauss" ;
-  float3 = "[" , { space } , float , {space} , "," , space , float , {space} , "," , space , float , {space} , "]"
+  float3 = "[" , { space } , float , { space } , "," , { space } , float , { space } , "," , { space } , float , { space } , "]"
   float  = [ "-" ] , number , [ "." , { digit } ] ; 
   number = [ digit1 ] , { digit } , digit ;
   digit  = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
@@ -32,6 +32,6 @@ EBNF for Screen configuration of raytracer
 
   space = whitespace , { whitespace } ;
   whitespace = '\x20' | '\x09' ;
-  linefeed = '\0xa' | ( '\x0d' , '\0xa' ) ;
+  linefeed = '\x0a' | ( '\x0d' , '\x0a' ) ;
 
 }

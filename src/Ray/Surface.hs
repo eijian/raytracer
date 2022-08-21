@@ -45,7 +45,7 @@ import Ray.Optics
 -}
 
 data Surface = Surface
-  { elight     :: !(Maybe Light)
+  { elight     :: !(Maybe LightSpec)
   , roughness  :: !Double
     -- calculate values
   , densityPow :: !Double
@@ -58,9 +58,9 @@ instance NFData Surface where
 
 -- PUBLIC FUNCTIONS
 
-initSurface :: Maybe Light -> Double -> Surface
-initSurface lgt rough =
-  Surface lgt rough pow alpha
+initSurface :: Maybe LightSpec -> Double -> Surface
+initSurface lgtspec rough =
+  Surface lgtspec rough pow alpha
   where
     alpha = rough * rough * rough * rough
     (_, pow) = densityPower (1.0 - sqrt rough)
@@ -115,7 +115,7 @@ emittance
 
 emittance :: Surface -> SurfacePoint -> Direction3 -> Radiance
 emittance (Surface Nothing _ _ _) _ _ = radiance0
-emittance (Surface (Just lgt) _ _ _) sfpt vvec = lemittance lgt sfpt vvec
+emittance (Surface (Just lgtspec) _ _ _) sfpt vvec = lemittance lgtspec sfpt vvec
 
 
 -- PRIVATE FUNCTIONS

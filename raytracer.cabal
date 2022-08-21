@@ -239,20 +239,95 @@ executable light_dist
   default-language: Haskell2010
 
 
-test-suite raytracer-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
+library
+  exposed-modules:
+    Parser
   other-modules:
-      VectorTest
-      VectorTest2
-      VectorTest3
-      VectorTest4
-      Paths_raytracer
+    Ray.Algebra
+    Ray.Geometry
+    Ray.Light
+    Ray.Mapper
+    Ray.Material
+    Ray.Object
+    Ray.Optics
+    Ray.Physics
+    Ray.Surface
   hs-source-dirs:
       test
+    , src
+  build-depends:
+      array
+    , base >=4.8 && <5
+    , containers
+    , deepseq >=1.3
+    , deepseq-generics >=0.1.1.1      
+    , doctest
+    , heap
+    , mersenne-random    
+    , numeric-prelude >=0.4.2
+    , parsec
+    , parsec-numbers
+    , QuickCheck    
+    , random
+    , split
+    , text
+    , time
+    , vector
+  default-language: Haskell2010
+
+
+--test-suite raytracer-test
+--  type: exitcode-stdio-1.0
+--  main-is: Spec.hs
+--  other-modules:
+--      VectorTest
+--      VectorTest2
+--      VectorTest3
+--      VectorTest4
+--      Paths_raytracer
+--  hs-source-dirs:
+--      test
+--  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+--  build-depends:
+--      base >=4.8 && <5
+--    , raytracer
+--    , numeric-prelude
+--  default-language: Haskell2010
+
+test-suite parser-test
+  type: exitcode-stdio-1.0
+  main-is: ParserTest.hs
+  other-modules:
+    Ray.Algebra
+    Ray.Geometry
+    Ray.Light
+    Ray.Mapper
+    Ray.Material
+    Ray.Object
+    Ray.Optics
+    Ray.Physics
+    Ray.Surface
+    Parser
+  hs-source-dirs:
+      test
+    , src
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.8 && <5
-    , raytracer
-    , numeric-prelude
+      array
+    , base >=4.8 && <5
+    , containers
+    , deepseq >=1.3
+    , deepseq-generics >=0.1.1.1      
+    , doctest
+    , heap
+    , mersenne-random    
+    , numeric-prelude >=0.4.2
+    , parsec
+    , parsec-numbers
+    , QuickCheck    
+    , random
+    , split
+    , text
+    , time
+    , vector
   default-language: Haskell2010
