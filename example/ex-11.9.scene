@@ -300,19 +300,19 @@ object:
   ceiling_bulb1:
     type    : sphere
     center  : [ 0.0, 3.75, 3.0 ]
-    radius  : 0.045
+    radius  : 0.0475
     mapper  : bulb
 
   ceiling_bulb2:
     type    : sphere
     center  : [ -1.0, 3.75, 3.0 ]
-    radius  : 0.045
+    radius  : 0.0475
     mapper  : bulb
 
   ceiling_bulb3:
     type    : sphere
     center  : [ 1.0, 3.75, 3.0 ]
-    radius  : 0.045
+    radius  : 0.0475
     mapper  : bulb
 
   ball_glass:
