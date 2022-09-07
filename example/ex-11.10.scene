@@ -1,0 +1,175 @@
+#
+
+lightspec:
+  sun:
+    temperature: 3500
+    radiosity  : 2000
+    directivity: 0.0
+    rad_est    : formula
+    direction  : out
+
+  sky:
+    temperature: 40000
+    radiosity  : 20
+    directivity: 0.0
+    rad_est    : formula
+    direction  : in
+
+material:
+  whitecarpet:
+    albedo_diff  : [ 0.5, 0.5, 0.5 ]
+    scatterness  : 1.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 1.534, 1.534, 1.534 ]
+    albedo_spec  :
+
+  graycarpet:
+    albedo_diff  : [ 0.2, 0.2, 0.2 ]
+    scatterness  : 1.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 1.534, 1.534, 1.534 ]
+    albedo_spec  :
+
+  glass2:
+    albedo_diff  : [ 1.0, 1.0, 1.0 ]
+    scatterness  : 0.0
+    metalness    : 0.0
+    transmittance: [ 1.0, 1.0, 1.0 ]
+    ior          : [ 2.0, 2.0, 2.0 ]
+    albedo_spec  :
+
+  plastic:
+    albedo_diff  : [ 0.5, 0.3, 0.1 ]
+    scatterness  : 1.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 2.0, 2.0, 2.0 ]
+    albedo_spec  :
+
+  coral:
+    albedo_diff  : [ 0.6, 0.3, 0.3 ]
+    scatterness  : 1.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 2.0, 2.0, 2.0 ]
+    albedo_spec  :
+
+  copper:
+    albedo_diff  : [ 0.0, 0.0, 0.0 ]
+    scatterness  : 0.0
+    metalness    : 1.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 0.216, 0.959, 1.173 ]
+    albedo_spec  : [ 0.980, 0.645, 0.543 ]
+
+  light:
+    albedo_diff  : [ 0.0, 0.0, 0.0 ]
+    scatterness  : 0.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 0.0, 0.0, 0.0 ]
+    albedo_spec  :
+
+surface:
+  sun:
+    roughness: 0.0
+    light    : sun
+
+  sky:
+    roughness: 1.0
+    light    : sky
+
+  rough:
+    roughness: 1.0
+    light    :
+
+  polish:
+    roughness: 0.0
+    light    :
+
+  glossy05:
+    roughness: 0.5
+    light    :
+
+mapper:
+  floor:
+    type    : checker
+    map1    : [ whitecarpet, rough ]
+    map2    : [ graycarpet, rough ]
+    scale   : 5
+
+  sunlight:
+    type    : solid
+    map     : [ light, sun ]
+
+  skylight:
+    type    : solid
+    map     : [ light, sky ]
+
+  clearglass2:
+    type    : solid
+    map     : [ glass2, polish ]
+
+  polishplastic:
+    type    : solid
+    map     : [ plastic, polish ]
+
+  glossycoral:
+    type    : solid
+    map     : [ coral, glossy05 ]
+
+  glossycopper:
+    type    : solid
+    map     : [ copper, glossy05 ]
+
+object:
+  floor:
+    type    : parallelogram
+    pos1    : [ -1.3, 0.0, -1.3 ]
+    pos2    : [ -1.3, 0.0,  1.3 ]
+    pos3    : [  1.3, 0.0, -1.3 ]
+    mapper  : floor
+
+  sunlight:
+    type    : parallelogram
+    pos1    : [ -0.67, 4.0, 0.0 ]
+    pos2    : [  0.67, 4.0, 0.0 ]
+    pos3    : [ -0.67, 4.0, 1.34 ]
+    mapper  : sunlight
+
+  skydome:
+    type    : sphere
+    center  : [ 0.0, 0.0, 0.0 ]
+    radius  : 10.0
+    mapper  : skylight
+
+  ball:
+    type    : sphere
+    center  : [ 0.0, 0.4, 0.0 ]
+    radius  : 0.2
+    mapper  : clearglass2
+
+  ball2:
+    type    : sphere
+    center  : [ 0.4, 0.4, -0.3 ]
+    radius  : 0.2
+    mapper  : polishplastic
+
+  ball3:
+    type    : sphere
+    center  : [ -0.4, 0.4, 0.3 ]
+    radius  : 0.2
+    mapper  : glossycopper
+
+scene:
+  - floor
+  #- ball
+  #- ball2
+  #- ball3
+  #- sunlight
+  - skydome
+
+
+

@@ -56,13 +56,12 @@ readConfig file = do
 
 parseConfig :: String -> IO (V.Vector LightObject, V.Vector Object)
 parseConfig conf = do
+  --putStrLn conf
+  --error "STOP"
   let
-    {-
-    (ls, os0) = case (parse scene "rt scene file parse error" conf) of
+    objs = case (parse world "rt scene file parse error" conf) of
       Left e -> error (show e)
-      Right (l', o') -> (l', o')
-    (n, os) = unzip os0
-    -}
+      Right o' -> o'
 {-
     vtxs = listArray (0, 5)
       [ Vector3 1.0 1.4 2.6
@@ -151,29 +150,34 @@ parseConfig conf = do
       , Vector3 (-0.8285553509596624) (-0.05843676049787637) (-0.5568493291893462)
       ]
 
+    uvmaps = listArray (0, 1)
+      [ (0.0, 0.0)
+      , (1.0, 1.0)
+      ]
+
     shapes = M.fromList
       [ ("icosahedron", Mesh (V.fromList
-        [ ((1, 1), (2, 1), (6, 1))
-        , ((1, 2), (7, 2), (2, 2))
-        , ((3, 3), (4, 3), (5, 3))
-        , ((4, 4), (3, 4), (8, 4))
-        , ((6, 5), (5, 5), (11, 5))
-        , ((5, 6), (6, 6), (10, 6))
-        , ((9, 7), (10, 7), (2, 7))
-        , ((10, 8), (9, 8), (3, 8))
-        , ((7, 9), (8, 9), (9, 9))
-        , ((8, 10), (7, 10), (0, 10))
-        , ((11, 11), (0, 11), (1, 11))
-        , ((0, 12), (11, 12), (4, 12))
-        , ((6, 13), (2, 13), (10, 13))
-        , ((1, 14), (6, 14), (11, 14))
-        , ((3, 15), (5, 15), (10, 15))
-        , ((5, 16), (4, 16), (11, 16))
-        , ((2, 17), (7, 17), (9, 17))
-        , ((7, 18), (1, 18), (0, 18))
-        , ((3, 19), (9, 19), (8, 19))
-        , ((4, 20), (8, 20), (0, 20))
-        ]) vtxs_icosahedron norms_icosahedron)
+        [ ((1, 1, 0), (2, 1, 0), (6, 1, 0))
+        , ((1, 2, 0), (7, 2, 0), (2, 2, 0))
+        , ((3, 3, 0), (4, 3, 0), (5, 3, 0))
+        , ((4, 4, 0), (3, 4, 0), (8, 4, 0))
+        , ((6, 5, 0), (5, 5, 0), (11, 5, 0))
+        , ((5, 6, 0), (6, 6, 0), (10, 6, 0))
+        , ((9, 7, 0), (10, 7, 0), (2, 7, 0))
+        , ((10, 8, 0), (9, 8, 0), (3, 8, 0))
+        , ((7, 9, 0), (8, 9, 0), (9, 9, 0))
+        , ((8, 10, 0), (7, 10, 0), (0, 10, 0))
+        , ((11, 11, 0), (0, 11, 0), (1, 11, 0))
+        , ((0, 12, 0), (11, 12, 0), (4, 12, 0))
+        , ((6, 13, 0), (2, 13, 0), (10, 13, 0))
+        , ((1, 14, 0), (6, 14, 0), (11, 14, 0))
+        , ((3, 15, 0), (5, 15, 0), (10, 15, 0))
+        , ((5, 16, 0), (4, 16, 0), (11, 16, 0))
+        , ((2, 17, 0), (7, 17, 0), (9, 17, 0))
+        , ((7, 18, 0), (1, 18, 0), (0, 18, 0))
+        , ((3, 19, 0), (9, 19, 0), (8, 19, 0))
+        , ((4, 20, 0), (8, 20, 0), (0, 20, 0))
+        ]) vtxs_icosahedron norms_icosahedron uvmaps)
       , ("ceiling_light", initParallelogram (Vector3 (-0.67) 3.99 2.33)
           (Vector3 0.67 3.99 2.33) (Vector3 (-0.67) 3.99 3.67))
       , ("ceiling_bulb0", Sphere (Vector3 (-1.5) 0.2 1.5) 0.15)
@@ -243,8 +247,9 @@ parseConfig conf = do
     quartz  = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 1.541 1.546 1.554) Nothing
     diamond = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 2.404 2.42364 2.44984) Nothing
     prism_f2 = initMaterial (Color 1.0 1.0 1.0) 0.0 0.0 (Color 1.0 1.0 1.0) (Color 1.61259 1.623655 1.643454) Nothing
-    gold    = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.96 0.76 0.39))
-    silver  = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.974 0.960 0.906))
+    gold    = initMaterial black 0.0 1.0 black (Color 0.161 0.346 1.562) (Just (Color 0.964 0.851 0.392))
+    silver  = initMaterial black 0.0 1.0 black (Color 0.144 0.124 0.159) (Just (Color 0.974 0.960 0.906))
+    copper  = initMaterial black 0.0 1.0 black (Color 0.216 0.959 1.173) (Just (Color 0.980 0.645 0.543))
     plastic = initMaterial (Color 0.5 0.30 0.1) 1.0 0.0 black (Color 2.0 2.0 2.0) Nothing
     stucco  = initMaterial (Color 0.75 0.75 0.75) 1.0 0.0 black (Color 2.0 2.0 2.0) Nothing  -- 漆喰
     sun     = initMaterial black 0.0 0.0 black black Nothing
@@ -311,6 +316,7 @@ parseConfig conf = do
     map_polishgold = Solid (gold, sf_polish)
     map_glossygold = Solid (gold, sf_glossy05)
     map_polishsilver = Solid (silver, sf_polish)
+    map_glossycopper = Solid (copper, sf_glossy05)
     map_smoothplastic = Solid (plastic, sf_polish)
     map_roughplastic  = Solid (plastic, sf_rough)
     map_glossyplastic  = Solid (plastic, sf_glossy05)
@@ -328,8 +334,10 @@ parseConfig conf = do
     ball_glass = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_clearglass2
     ball_diamond = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_cleardiamond
     ball_prism = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_clearprism
-    ball_gold = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_glossygold
+    --ball_gold = Object (Sphere (Vector3 1.0 0.7 2.6) 0.7) map_polishgold
+    ball_gold = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_glossygold
     ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_polishsilver
+    ball_copper = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_glossycopper
     ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_smoothplastic
     --ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_roughplastic
     --ball_plastic = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) map_glossyplastic
@@ -369,18 +377,20 @@ parseConfig conf = do
     skylight = Object (fromJust $ M.lookup "sky" shapes) map_skyl
 
     os = [floor, ceil, rsidewall, lsidewall, backwall, frontwall
-        --, ceiling_light
+        , ceiling_light
         --, ceiling_bulb1
         --, ceiling_bulb2
         --, ceiling_bulb3
-        , sunlight
+        --, sunlight
         --, ball_glass
         , ball_diamond
         --, ball_prism
         --, ball_gold
         --, octahedron
         --, icosahedron
-        , ball_silver
+        --, ball_gold
+        --, ball_silver
+        , ball_copper
         --, ball_stucco
         --, ball_plastic
         ]
@@ -394,7 +404,7 @@ parseConfig conf = do
          ]
     -}
   
-    ls0 = filter (\(x, y) -> x > 0) $ zip (map (length.lightSpecs.mapper) os) os
+    ls0 = filter (\(x, y) -> x > 0) $ zip (map (length.lightSpecs.mapper) objs) objs
     (_, ls) = unzip ls0
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)
@@ -408,4 +418,6 @@ parseConfig conf = do
     
   --putStrLn ("light: " ++ show lg_ceiling_light)
   --putStrLn ("bulb1: " ++ show lg_ceiling_bulb1)
-  return (V.fromList ls, V.fromList os)
+  --putStrLn ("#LGT: " ++ show (length ls))
+  --putStrLn ("#OBJ: " ++ show (length objs))
+  return (V.fromList ls, V.fromList objs)

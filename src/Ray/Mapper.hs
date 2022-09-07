@@ -38,8 +38,19 @@ data Mapper =
   , sfchar2 :: !SurfaceChar
   , mag     :: !Double
   }
+  deriving (Eq)
+
+instance Show Mapper where
+  show (Solid sfchar) = "Solid " ++ (show sfchar)
+  show (Checker sfchar1 sfchar2 mag) = "Checker " ++ (show sfchar1) ++ ", " ++ (show sfchar2) ++ ", " ++ show mag
 
 -- mapping functions
+initSolid :: SurfaceChar -> Mapper
+initSolid sc = Solid sc
+
+initChecker :: SurfaceChar -> SurfaceChar -> Double -> Mapper
+initChecker sc1 sc2 scale = Checker sc1 sc2 scale
+
 
 surfaceCharOnPoint :: Mapper -> SurfacePoint -> Vector2 -> SurfaceChar
 surfaceCharOnPoint (Solid sc) _ _ = sc

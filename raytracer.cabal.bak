@@ -108,7 +108,6 @@ executable pm2img
     Ray.KdTree
     Ray.Light
     Ray.Material
-    Ray.Mapper
     Ray.Object
     Ray.Optics
     Ray.Physics
@@ -322,9 +321,8 @@ test-suite parser-test
     , doctest
     , heap
     , mersenne-random    
-    , numeric-prelude >=0.4.3
+    , numeric-prelude >=0.4.2
     , parsec
-    --, parsec-numbers >=0.1.0
     , parsec-numbers
     , QuickCheck    
     , random

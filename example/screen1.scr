@@ -1,17 +1,22 @@
 #
 
 nphoton       : 100000
-progressive   : no
+progressive   : yes
 xresolution   : 256
 yresolution   : 256
 antialias     : yes                # yes or no
-samplephoton  : 100
-useclassic    : yes                # yes or no
-estimateradius: 0.3
+#antialias     : no                # yes or no
+samplephoton  : 500
+mapdivision   : 8
+estimateradius: 0.1
 ambient       : [ 0.001, 0.001, 0.001 ]
 maxradiance   : 0.01
-eyeposition   : [ 0.0, 2.0, -4.5 ]
-targetposition: [ 0.0, 1.0, 0.0 ]
+#eyeposition   : [ 0.3, 2.0, -1.0 ]
+#targetposition: [ 0.0, 0.0, 0.0 ]
+eyeposition   : [ 0.45, 1.5, -1.5 ]
+targetposition: [ 0.0, 0.4, 0.0 ]
 upperdirection: [ 0.0, 1.0, 0.0 ]
-focus         : 2.7
-photonfilter  : none               # cone, gauss
+focus         : 7.0
+#photonfilter  : gauss               # none, cone, gauss
+#photonfilter  : none               # none, cone, gauss
+photonfilter  : cone               # none, cone, gauss

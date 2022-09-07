@@ -7,7 +7,7 @@ module Main where
 import Test.DocTest
 
 main :: IO ()
-main = doctest ["src/Parser.hs"]
+main = doctest ["--optghc=-isrc", "src/Parser.hs"]
 
 
 

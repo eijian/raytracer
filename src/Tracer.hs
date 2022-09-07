@@ -17,7 +17,7 @@ import           Control.DeepSeq
 --import           Control.DeepSeq.Generics (genericRnf)
 import           Control.Monad
 --import qualified Data.Map.Strict as Map
-import           Data.Maybe
+import           Data.Maybe hiding (catMaybes)
 import           Data.List hiding (sum)
 import           Data.Ord
 import           Debug.Trace
@@ -256,10 +256,11 @@ getRadianceFromLight2 objs sfpt (Object shp mp) =
       if (radest spec) == PhotonMap
         then return Nothing
         else do
-          lpoint <- randomPoint shp
+          (lpos, lnvec) <- randomPoint shp
           let
+            lnvec' = if dirflag spec == Out then lnvec else negate lnvec
             area = surfaceArea shp
-          return $ calcRadiance spec objs sfpt lpoint area
+          return $ calcRadiance spec objs sfpt (lpos, lnvec') area
 
 calcRadiance :: LightSpec -> V.Vector Object -> SurfacePoint -> SurfacePoint
   -> Double -> Maybe Radiance

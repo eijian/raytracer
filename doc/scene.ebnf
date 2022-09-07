@@ -3,7 +3,7 @@
 
 {
 
-  world = { blankline } , light-spec-list ,
+  world = { blankline } , lightspec-list ,
           { blankline } , material-list   ,
           { blankline } , surface-list    ,
           { blankline } , mapper-list     ,
@@ -14,63 +14,68 @@
           { blankline } ;
 
 
-  light-spec-list = "light-spec" , separator , linefeed ,
-                    light-spec , { { linefeed } , light-spec } ;
+  lightspec-list = "lightspec" , separator , linefeed ,
+                    lightspec-elem , { { linefeed } , lightspec-elem } ;
 
-  light-spec = elem-name           ,
-               color | temperature ,
-               radiosity           ,
-               directivity         ,
-               direction           ;
+  lightspec-elem = elem-name           ,
+                   color | temperature ,
+                   radiosity           ,
+                   directivity         ,
+                   rad-est             ,
+                   direction           ;
 
-  color       = indent2 , "color"       , separator , float3 , linefeed ;
-  temperature = indent2 , "temperature" , separator , float  , linefeed ;
-  lux         = indent2 , "radiosity"   , separator , float  , linefeed ;
-  directivity = indent2 , "directivity" , separator , float  , linefeed ;
-  dir-flag    = indent2 , "direction"   , separator , inout  , linefeed ;
+  color       = indent2 , "color"       , separator , float3    , linefeed ;
+  temperature = indent2 , "temperature" , separator , float     , linefeed ;
+  radiosity   = indent2 , "radiosity"   , separator , float     , linefeed ;
+  directivity = indent2 , "directivity" , separator , float     , linefeed ;
+  rad-est     = indent2 , "rad_est"     , separator , radestval , linefeed ;
+  dir-flag    = indent2 , "direction"   , separator , inout     , linefeed ;
+
+  radestval = "photon" | "formula" ;
 
   material-list = "material" , separator , linefeed ,
                   material , { { linefeed } , material } ;
 
-  material = elem-name     ,
-             albedo_diff   ,
-             scatterness   ,
-             metalness     ,
-             transmittance ,
-             ior           ,
-             { ior_im }    ;
+  material-elem = elem-name     ,
+                  albedo_diff   ,
+                  scatterness   ,
+                  metalness     ,
+                  transmittance ,
+                  ior           ,
+                  albedo_spec   ;
 
-  albedo_diff   = indent2 , "albedo_diff"   , separator , float3 , linefeed ;
-  scatterness   = indent2 , "scatterness"   , separator , float  , linefeed ;
-  metalness     = indent2 , "metalness"     , separator , float  , linefeed ;
-  transmittance = indent2 , "transmittance" , separator , float3 , linefeed ;
-  ior           = indent2 , "ior"           , separator , float3 , linefeed ;
-  ior_im        = indent2 , "ior_im"        , separator , float3 , linefeed ;
+  albedo_diff   = indent2 , "albedo_diff"   , separator , float3     , linefeed ;
+  scatterness   = indent2 , "scatterness"   , separator , float      , linefeed ;
+  metalness     = indent2 , "metalness"     , separator , float      , linefeed ;
+  transmittance = indent2 , "transmittance" , separator , float3     , linefeed ;
+  ior           = indent2 , "ior"           , separator , float3     , linefeed ;
+  albedo_spec   = indent2 , "albedo_spec"   , separator , { float3 } , linefeed ;
 
-  surface-list = "surface" , separator , linefeed ,
-                 surface , { { linefeed } , surface } ;
+  surface-list = "surface"    , separator , linefeed ,
+                 surface-elem , { { linefeed } , surface-elem } ;
 
-  surface = elem-name ,
-            roughness ,
-            { light } ;
+  surface-elem = elem-name  ,
+                 roughness  ,
+                 lightparam ;
 
-  roughness = ident2 , "roughness" , separator , float , linefeed ;
-  light     = ident2 , "light"     , separator , identifier , linefeed ;
+  roughness = indent2 , "roughness" , separator , float          , linefeed ;
+  light     = indent2 , "light"     , separator , { identifier } , linefeed ;
 
   mapper-list = "mapper" , separator , linefeed ,
                 mapper , { { linefeed } , mapper } ;
 
-  mapper = elem-name ,
-           mappertype | { { linefeed } , mappertype } ;
+  mapper-elem = elem-name ,
+                mappertype | { { linefeed } , mappertype } ;
 
   mappertype = solid | checker
 
-  solid = ident2 , "type" , separator , "solid" , linefeed ,
-          ident2 , "map"  , separator , maptuple , linefeed ;
+  solid = indent2 , "type" , separator , "solid" , linefeed ,
+          indent2 , "map"  , separator , maptuple , linefeed ;
 
-  checker = ident2 , "type" , separator , "checker" , linefeed ,
-            ident2 , "map1" , separator , maptuple  , linefeed ,
-            ident2 , "map2" , separator , maptuple  , linefeed ;
+  checker = indent2 , "type"  , separator , "checker" , linefeed ,
+            indent2 , "map1"  , separator , maptuple  , linefeed ,
+            indent2 , "map2"  , separator , maptuple  , linefeed ,
+            indent2 , "scale" , separator , float     , linefeed ;
 
   maptuple = "[" , { space } , identifier , { space } , "," ,
                    { space } , identifier , { space } , "]" ;
@@ -81,53 +86,53 @@
   normal-vec-list = "normalvec" , separator , linefeed ,
                     vector-elem , { vector-elem }      ;
 
-  vector-elem = ident2 , "-" , { space } , float3 , linefeed ;
+  vector-elem = indent2 , "-" , { space } , float3 , linefeed ;
 
   object-list = "object" , separator , linefeed ,
                 object , { { linefeed } , object } ;
 
   object = elem-name ,
-           shape     ,
-           mapper-elem   ;
+           oshape    ,
+           omapper   ;
 
-  shape = plain | sphere | polygon | parallelogram | mesh ;
+  oshape = plain | sphere | polygon | parallelogram | mesh ;
 
-  plain = ident2 , "type"     , separator , "plain" , linefeed ,
-          ident2 , "normal"   , separator , float3  , linefeed ,
-          ident2 , "position" , separator , float3  , linefeed ;
+  plain = indent2 , "type"     , separator , "plain" , linefeed ,
+          indent2 , "normal"   , separator , vector3 , linefeed ,
+          indent2 , "position" , separator , vector3 , linefeed ;
 
-  sphere = ident2 , "type"   , separator , "sphere" , linefeed ,
-           ident2 , "center" , separator , float3   , linefeed ,
-           ident2 , "radius" , separator , float    , linefeed ;
+  sphere = indent2 , "type"   , separator , "sphere" , linefeed ,
+           indent2 , "center" , separator , vector3  , linefeed ,
+           indent2 , "radius" , separator , float    , linefeed ;
   
-  polygon = ident2 , "type" , separator , "polygon" , linefeed ,
-            ident2 , "pos0" , separator , float3    , linefeed ,
-            ident2 , "pos1" , separator , float3    , linefeed ,
-            ident2 , "pos2" , separator , float3    , linefeed ;
+  polygon = indent2 , "type" , separator , "polygon" , linefeed ,
+            indent2 , "pos1" , separator , vector3   , linefeed ,
+            indent2 , "pos2" , separator , vector3   , linefeed ,
+            indent2 , "pos3" , separator , vector3   , linefeed ,
 
-  parallelogram = ident2 , "type" , separator , "parallelogram" , linefeed ,
-                  ident2 , "pos0" , separator , float3          , linefeed ,
-                  ident2 , "pos1" , separator , float3          , linefeed ,
-                  ident2 , "pos2" , separator , float3          , linefeed ;
+  parallelogram = indent2 , "type" , separator , "parallelogram" , linefeed ,
+                  indent2 , "pos1" , separator , vector3         , linefeed ,
+                  indent2 , "pos2" , separator , vector3         , linefeed ,
+                  indent2 , "pos3" , separator , vector3         , linefeed ;
 
-  mesh = ident2 , "type"    , separator , "mesh"   , linefeed ,
-         ident2 , "polygon" , separator ,            linefeed ,
+  mesh = indent2 , "type"    , separator , "mesh"   , linefeed ,
+         indent2 , "polygon" , separator ,            linefeed ,
          polygon-elem , { polygon-elem }                      ;
 
-  polygon-elem = ident2 , ident2 , "-" , { space } , "[" , { space } ,
-                 vertex-info , { space } , "," ,
-                 vertex-info , { space } , "," ,
+  polygon-elem = indent2 , indent2 , "-" , { space } , "[" , { space } ,
+                 vertex-info , { space } , "," , { space } ,
+                 vertex-info , { space } , "," , { space } ,
                  vertex-info , { space } ,
                  "]" , linefeed ;
   
-  vertex-info = "(" , { space } , posint , { space } , "," { space } , posint , { space } , ")" ;
+  vertex-info = "[" , { space } , posint , { space } , "," , { space } , posint , { space } , "," , { space } , posint , { space } , "]" ;
  
-  mapper-elem = ident2 , "mapper" , separator , identifier , linefeed ;
+  omapper = indent2 , "mapper" , separator , identifier , linefeed ;
 
   scene = "scene" , separator , linefeed ,
           scene-elem , { scene-elem }    ;
 
-  scene-elem = ident , "- " , identifier , linefeed ;
+  scene-elem = indent , "- " , identifier , linefeed ;
 
   elem-name = indent , identifier, separator , linefeed ;
   identifier = ( "_" } , letter , { "_" | "-" | letter | digit }
@@ -138,6 +143,7 @@
   inout  = "in" | "out" ;
   yesno  = "yes" | "no" ;
   filter = "none" | "cone" | "gauss" ;
+  vector3 = float3 ;
   float3 = "[" , { space } , float , { space } , "," , { space } , float , {space} , "," , { space } , float , { space } , "]"
   float  = ( digit1 , { digit } ) | ( "-" , { digit } , digit) , [ "." , { digit } ] ;
   posint = digit , { digit } ;
@@ -151,6 +157,7 @@
            "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" |
            "U" | "V" | "W" | "X" | "Y" | "Z" ;
 
+  blankline = linefeed ;
   space = whitespace , { whitespace } ;
   whitespace = '\x20' | '\x09' ;
   linefeed = { whitespace } , '\x0a' | ( '\x0d' , '\x0a' ) ;

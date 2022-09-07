@@ -11,6 +11,7 @@ module Ray.Geometry (
 , Ray
 , Shape (Point, Plain, Sphere, Parallelogram, Mesh)
 , SurfacePoint
+, Vertex
 , distance
 , getDir
 , getNormal
@@ -103,7 +104,7 @@ type SurfacePoint = (Position3, Direction3)
 -- Shapes
 -----------------------
 
-type Vertex = (Int, Int)   -- 頂点型：頂点座標の番号＋法線ベクトルの番号
+type Vertex = (Int, Int, Int)   -- 頂点型：頂点座標番号＋法線ベクトル番号＋マッピング座標番号
 type Patch = (Vertex, Vertex, Vertex)
 
 data Shape =
@@ -139,6 +140,7 @@ data Shape =
   { patches  :: !(V.Vector Patch)
   , vertexes :: !(UA.Array Int Position3)
   , normals  :: !(UA.Array Int Direction3)
+  , uvmaps   :: !(UA.Array Int Vector2)
   }
   deriving (Eq, Show, Generic)
 
@@ -177,10 +179,10 @@ getNormal pos (Sphere center _) = normalize (pos - center)
 getNormal _ (Polygon _ nvec _ _) = Just nvec
 -- Parallelogram
 getNormal _ (Parallelogram _ nvec _ _) = Just nvec
+-- Mesh
+getNormal _ (Mesh ps _ _ _) = Nothing
 -- Point
 getNormal _ _ = Nothing
--- Mesh
-getNormal _ (Mesh ps _ _) = Nothing
 
 distance :: Ray -> Shape -> Maybe (Vector2, Double, Shape)
 -- Plain
@@ -224,7 +226,7 @@ distance (pos, dir) shape@(Parallelogram pos0 _ dir1 dir2)
     res = methodMoller 2.0 pos0 dir1 dir2 pos dir
     (uv, t) = fromJust res
 -- Mesh
-distance ray (Mesh ps vs ns) = if t >= infinity
+distance ray (Mesh ps vs ns _) = if t >= infinity
   then Nothing
   else if t >= nearly0
     then Just d
@@ -244,7 +246,7 @@ nSurface (Plain _ _) = 1
 nSurface (Sphere _ _) = 1
 nSurface (Polygon _ _ _ _) = 1
 nSurface (Parallelogram _ _ _ _) = 1
-nSurface (Mesh ps _ _) = V.length ps
+nSurface (Mesh ps _ _ _) = V.length ps
 
 {- |
 surfaceArea 表面積
@@ -256,10 +258,10 @@ surfaceArea (Plain _ _) = 0.0
 surfaceArea (Sphere _ radius) = 4 * pi * radius * radius
 surfaceArea (Polygon _ _ dir1 dir2) = norm (dir1 <*> dir2) / 2.0
 surfaceArea (Parallelogram _ _ dir1 dir2) = norm (dir1 <*> dir2)
-surfaceArea (Mesh ps vtxs _) = foldl' (sumPatchArea) 0.0 ps
+surfaceArea (Mesh ps vtxs _ _) = foldl' (sumPatchArea) 0.0 ps
   where
     sumPatchArea :: Double -> Patch -> Double
-    sumPatchArea s ((p0, _), (p1, _), (p2, _)) = s + (norm (d1 <*> d2) / 2.0)
+    sumPatchArea s ((p0, _, _), (p1, _, _), (p2, _, _)) = s + (norm (d1 <*> d2) / 2.0)
       where
         d1 = vtxs UA.! p1 - vtxs UA.! p0
         d2 = vtxs UA.! p2 - vtxs UA.! p0
@@ -291,13 +293,13 @@ randomPoint (Parallelogram pos nvec dir1 dir2) = do
   m <- MT.randomIO :: IO Double
   n <- MT.randomIO :: IO Double
   return (pos + m *> dir1 + n *> dir2, nvec)
-randomPoint (Mesh ps vtxs norms) = do
+randomPoint (Mesh ps vtxs norms _) = do
   ri <- MT.randomIO :: IO Double
   let
     len = fromIntegral $ V.length ps
     ri' = len * ri
     i = if ri' == len then truncate (len - 1) else truncate ri'
-    ((p0, nvec), (p1, _), (p2, _)) = ps V.! i
+    ((p0, nvec, _), (p1, _, _), (p2, _, _)) = ps V.! i
     d1 = vtxs UA.! p1 - vtxs UA.! p0
     d2 = vtxs UA.! p2 - vtxs UA.! p0
   m  <- MT.randomIO :: IO Double
@@ -351,7 +353,7 @@ methodMoller l pos0 dir1 dir2 pos dir
 
 compPolygon :: Ray -> UA.Array Int Position3 -> UA.Array Int Position3
   -> (Vector2, Double, Shape) -> Patch -> (Vector2, Double, Shape)
-compPolygon (pos, dir) vtxs norms d@(uv, t, shape) ((p0, n0), (p1, n1), (p2, n2)) =
+compPolygon (pos, dir) vtxs norms d@(uv, t, shape) ((p0, n0, _), (p1, n1, _), (p2, n2, _)) =
   case res of
     Just (uv', t') -> if t' < t
       then (uv', t', Polygon (vtxs UA.! p0) (fromJust (normalize (d1 <*> d2))) d1 d2)

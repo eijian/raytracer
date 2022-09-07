@@ -56,6 +56,9 @@ initMaterial aldiff scat metal tran ior@(Color ir ig ib) alspec =
     alspec' = case alspec of
       Nothing -> Color (eta ir) (eta ig) (eta ib)
       Just as -> as
+    -- eta: 反射率を求める。物体の屈折率をn、真空の屈折率をn0(=1.0)0とした時
+    --  反射率r = {(n0 - n)/(n0 + n)}^2
+    --  が成り立つ。
     eta :: Double -> Double
     eta x = n * n
       where

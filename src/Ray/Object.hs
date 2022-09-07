@@ -20,7 +20,7 @@ data Object = Object
   { shape  :: !Shape
   , mapper :: !Mapper
   }
-  --deriving (Eq, Show)
+  deriving (Eq, Show)
 
 type LightObject = Object
 

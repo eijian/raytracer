@@ -12,7 +12,7 @@ module Ray.Algebra (
   BasicMatrix
 , Direction3
 , Position3
-, Vector2(..)
+, Vector2
 , Vector3(..)
 --, module NumericPrelude
 , blurredVector
@@ -232,8 +232,9 @@ ey2 = (0.0, 1.0)
 {- |
 russianRoulette
 
->>> russianRoulette [0.5]
-0
+>>> p <- russianRoulette [0.5]
+>>> if p == 0 || p == 1 then True else False
+True
 
 -}
 
