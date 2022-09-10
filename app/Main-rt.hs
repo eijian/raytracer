@@ -56,7 +56,7 @@ main = do
   -- progressive mode is default
   --if (progressive scr) == True
   --    then
-  
+
   V.mapM_ (putStrLn.radianceToString) image
   
   --  else do

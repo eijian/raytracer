@@ -289,6 +289,7 @@ object:
     pos1    : [ -0.67, 3.99, 2.33 ]
     pos2    : [  0.67, 3.99, 2.33 ]
     pos3    : [ -0.67, 3.99, 3.67 ]
+    normal  :
     mapper  : paralight
 
   ceiling_bulb1:

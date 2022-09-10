@@ -634,8 +634,6 @@ lightspec_list = do
   ls <- many1 (try lightspec_elem)
   return ls
 
-
-
 {- |
 >>> parse lightspec_elem pname "   \n  ceiling:\n    color: [ 1.0, 0.7, 0.4 ]\n    radiosity: 1950\n    directivity: 0.0\n    rad_est: formula\n    direction: out\n"
 Right ("ceiling",LightSpec {lcolor = [0.47619047619047616,0.3333333333333333,0.19047619047619047], radiosity = 2.8550512445095166, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.21637881825921765 0.15146517278145236 8.655152730368706e-2})
@@ -1205,9 +1203,9 @@ object_elem mm = do
 Right (Plain {nvec = Vector3 0.0 1.0 0.0, dist = 1.0})
 >>> parse sphere pname "    type: sphere\n    center: [ 0.0, 5.0, 3.0 ]\n    radius: 0.8\n"
 Right (Sphere {center = Vector3 0.0 5.0 3.0, radius = 0.8})
->>> parse polygon pname "    type: polygon\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n"
+>>> parse polygon pname "    type: polygon\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n    normal:\n"
 Right (Polygon {position = Vector3 0.0 0.0 0.0, nvec = Vector3 0.0 (-1.0) 0.0, dir1 = Vector3 2.0 0.0 0.0, dir2 = Vector3 0.0 0.0 2.0})
->>> parse parallelogram pname "    type: parallelogram\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n"
+>>> parse parallelogram pname "    type: parallelogram\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n    normal:\n"
 Right (Parallelogram {position = Vector3 0.0 0.0 0.0, nvec = Vector3 0.0 (-1.0) 0.0, dir1 = Vector3 2.0 0.0 0.0, dir2 = Vector3 0.0 0.0 2.0})
 -}
 
@@ -1247,8 +1245,10 @@ sphere = do
   return $ Sphere c r
 
 {- |
->>> parse polygon pname "    type: polygon\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n"
+>>> parse polygon pname "    type: polygon\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n    normal:\n"
 Right (Polygon {position = Vector3 0.0 0.0 0.0, nvec = Vector3 0.0 (-1.0) 0.0, dir1 = Vector3 2.0 0.0 0.0, dir2 = Vector3 0.0 0.0 2.0})
+>>> parse polygon pname "    type: polygon\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n    normal: [ 1.0, 1.0, 0.0 ]\n"
+Right (Polygon {position = Vector3 0.0 0.0 0.0, nvec = Vector3 0.7071067811865475 0.7071067811865475 0.0, dir1 = Vector3 2.0 0.0 0.0, dir2 = Vector3 0.0 0.0 2.0})
 -}
 
 polygon :: Parser Shape
@@ -1257,11 +1257,16 @@ polygon = do
   p1 <- vector3param rPos1
   p2 <- vector3param rPos2
   p3 <- vector3param rPos3
-  return $ initPolygon p1 p2 p3
+  n  <- try (vector3param rNormal) <|> noparam rNormal o3
+  if n == o3
+    then return $ initPolygon p1 p2 p3
+    else return $ initPolygonWithNormal p1 p2 p3 n
 
 {- |
->>> parse parallelogram pname "    type: parallelogram\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n"
+>>> parse parallelogram pname "    type: parallelogram\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n    normal:\n"
 Right (Parallelogram {position = Vector3 0.0 0.0 0.0, nvec = Vector3 0.0 (-1.0) 0.0, dir1 = Vector3 2.0 0.0 0.0, dir2 = Vector3 0.0 0.0 2.0})
+>>> parse parallelogram pname "    type: parallelogram\n    pos1: [ 0.0, 0.0, 0.0 ]\n    pos2: [ 2.0, 0.0, 0.0 ]\n    pos3: [ 0.0, 0.0, 2.0 ]\n    normal: [ 1.0, 1.0, 0.0 ]\n"
+Right (Parallelogram {position = Vector3 0.0 0.0 0.0, nvec = Vector3 0.7071067811865475 0.7071067811865475 0.0, dir1 = Vector3 2.0 0.0 0.0, dir2 = Vector3 0.0 0.0 2.0})
 -}
 
 parallelogram :: Parser Shape
@@ -1270,7 +1275,10 @@ parallelogram = do
   p1 <- vector3param rPos1
   p2 <- vector3param rPos2
   p3 <- vector3param rPos3
-  return $ initParallelogram p1 p2 p3
+  n  <- try (vector3param rNormal) <|> noparam rNormal o3
+  if n == o3
+    then return $ initParallelogram p1 p2 p3
+    else return $ initParallelogramWithNormal p1 p2 p3 n
 
 {- |
 >>> parse mesh pname "    type: mesh\n    vertex:\n      - [ 0.0, 0.0, 0.0 ]\n      - [ 1.0, 0.0, 0.0 ]\n      - [ 0.0, 0.0, 1.0 ]\n    normal:\n      - [ 0.0, 1.0, 0.0 ]\n    uvmap:\n      - [ 0.0, 0.0 ]\n      - [ 1.0, 1.0 ]\n    polygon:\n      - [ [0, 0, 0], [1, 0, 0], [2, 0, 1] ]\n"
@@ -1461,7 +1469,7 @@ expecting "  "
 >>> parse scene_elem pname "- ball1\n"
 Left "rt parser" (line 1, column 1):
 unexpected "-"
-expecting "  "
+expecting lf new-line, "\r\n" or "  "
 >>> parse scene_elem pname "  - ball1:\n"
 Left "rt parser" (line 1, column 10):
 unexpected ":"

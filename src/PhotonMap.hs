@@ -45,9 +45,13 @@ readMap mapdiv nsample radius = do
   let
     pw = read (T.unpack pw0) :: Double
     lss0 = T.lines ps
+  let
     nline = (length lss0 `div` mapdiv) + 1
-    lss = V.fromList $ splitEvery nline lss0
-  return $ V.map (buildMap pw nsample radius) lss
+    lss = V.fromList $ filter (\x -> length x > 0) $ splitEvery nline lss0
+  -- フォトンマップを分割しようとしたが、ごく少数のフォトンの場合に
+  -- うまく機能しないため１つのフォトンマップになるように戻した。
+  --return $ V.map (buildMap pw nsample radius) lss
+  return $ V.map (buildMap pw nsample radius) (V.fromList [lss0])
 
 buildMap :: Double -> Int -> Double -> [T.Text] -> (Int, PhotonMap)
 buildMap pw nsample radius ls = (msize, pmap)

@@ -186,7 +186,6 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
           rad = bsdf mate surf cos1 di si ti
         return (tc <**> (emittance surf sfpt vvec) + rad)
 
-
 estimateRadiance :: Double -> PhotonFilter -> V.Vector PhotonMap -> Intersection
   -> Radiance
 estimateRadiance rmax filter pmaps (_, (pos, nvec), _, _) = mag *> rad

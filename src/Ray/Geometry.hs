@@ -19,6 +19,7 @@ module Ray.Geometry (
 , initParallelogram
 , initParallelogramWithNormal
 , initPolygon
+, initPolygonWithNormal
 , initRay
 , initRayFromElem
 , methodMoller
@@ -154,6 +155,14 @@ initPolygon p0 p1 p2 = Polygon p0 nvec d1 d2
     d1 = p1 - p0
     d2 = p2 - p0
     nvec  = fromJust (normalize (d1 <*> d2))
+
+initPolygonWithNormal :: Position3 -> Position3 -> Position3 -> Direction3
+  -> Shape
+initPolygonWithNormal p0 p1 p2 nvec = Polygon p0 nvec' d1 d2
+  where
+    d1 = p1 - p0
+    d2 = p2 - p0
+    nvec'  = fromJust $ normalize nvec
 
 initParallelogram :: Position3 -> Position3 -> Position3 -> Shape
 initParallelogram p0 p1 p2 = Parallelogram p0 nvec d1 d2
