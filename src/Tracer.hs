@@ -138,7 +138,6 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
       Just is@(t, sfpt@(pos, nvec), (mate, surf), io) -> do
         let
           tracer = traceRay filter objs lgts (l+1) pmaps radius mate_air
-
         -- L_diffuse
         {-
         lrads <- V.forM lgts $ \lgt ->
@@ -182,9 +181,12 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
             return (si, rvec, ti, tvec, cos1, eta)
 
         let
-          tc = expColor (transmittance mate0) t
+          tc@(Color tr tg tb) = expColor (transmittance mate0) t
           rad = bsdf mate surf cos1 di si ti
-        return (tc <**> (emittance surf sfpt vvec) + rad)
+        --if tr < 1.0
+        --  then putStrLn ("TR: " ++ show tr ++ ", T: " ++ show t)
+        --  else putStr ""
+        return (tc <**> (emittance surf sfpt vvec + rad))
 
 estimateRadiance :: Double -> PhotonFilter -> V.Vector PhotonMap -> Intersection
   -> Radiance
@@ -320,7 +322,7 @@ calcDistance ray obj@(Object shape _) =
     toDistance (uv, t, shape) (Object _ mapper) = (t, uv, (Object shape mapper))
 
 {-
-bsdf: BSDF
+bsdf: BSDF (双方向散乱分布関数) = BRDF + BTDF
 -}
 
 bsdf :: Material -> Surface -> Double -> Radiance -> Radiance -> Radiance

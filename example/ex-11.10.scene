@@ -3,11 +3,11 @@
 lightspec:
   sun:
     # 12:00
-    temperature: 5500
-    radiosity  : 3500
-    # 15:00
-    #temperature: 5000
+    #temperature: 5500
     #radiosity  : 3500
+    # 15:00
+    temperature: 5000
+    radiosity  : 3500
     # 17:00
     #temperature: 3500
     #radiosity  : 3500
@@ -20,17 +20,20 @@ lightspec:
 
   sky:
     # 12:00
-    temperature: 25000
-    radiosity  : 40
+    #temperature: 25000
+    #radiosity  : 40
     # 15:00
-    #temperature: 18000
-    #radiosity  : 30
+    temperature: 18000
+    radiosity  : 30
     # 17:00
     #temperature: 3500
     #radiosity  : 15
     # 17:30
     #temperature: 2500
     #radiosity  : 5
+    # 曇天
+    #temperature : 6500
+    #radiosity   : 80
     directivity: 0.0
     rad_est    : formula
     direction  : in
@@ -56,8 +59,8 @@ material:
     albedo_diff  : [ 1.0, 1.0, 1.0 ]
     scatterness  : 0.0
     metalness    : 0.0
-    transmittance: [ 1.0, 1.0, 1.0 ]
-    ior          : [ 2.0, 2.0, 2.0 ]
+    transmittance: [ 0.01, 0.2, 1.00 ]
+    ior          : [ 1.541, 1.546, 1.554 ]
     albedo_spec  :
 
   plastic:
@@ -118,7 +121,7 @@ mapper:
     type    : checker
     map1    : [ whitecarpet, rough ]
     map2    : [ graycarpet, rough ]
-    scale   : 5
+    scale   : 4.5
 
   sunlight:
     type    : solid
@@ -161,13 +164,13 @@ object:
     #pos2    : [  0.5,  0.5, 4.0 ]
     #pos3    : [ -0.5, -0.5, 4.0 ]
     # 9/23 12:00 (54.93, -3.27)
-    pos1    : [ -0.391,  3.561, 1.915 ]
-    pos2    : [  0.607,  3.561, 1.857 ]
-    pos3    : [ -0.345, 2.987, 2.732 ]
+    #pos1    : [ -0.391,  3.561, 1.915 ]
+    #pos2    : [  0.607,  3.561, 1.857 ]
+    #pos3    : [ -0.345, 2.987, 2.732 ]
     # 9/23 15:00 (34.01, -61.70)
-    #pos1    : [ 2.436, 2.652, 1.880 ]
-    #pos2    : [ 2.910, 2.652, 0.999 ]
-    #pos3    : [ 2.929, 1.823, 2.145 ]
+    pos1    : [ 2.436, 2.652, 1.880 ]
+    pos2    : [ 2.910, 2.652, 0.999 ]
+    pos3    : [ 2.929, 1.823, 2.145 ]
     # 9/23 17:00 (10.72, -82.30)
     #pos1    : [ 3.736, 1.235, 1.010 ]
     #pos2    : [ 3.870, 1.235, 0.019 ]
