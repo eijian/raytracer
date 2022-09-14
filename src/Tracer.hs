@@ -181,11 +181,8 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
             return (si, rvec, ti, tvec, cos1, eta)
 
         let
-          tc@(Color tr tg tb) = expColor (transmittance mate0) t
+          tc = expColor (transmittance mate0) t
           rad = bsdf mate surf cos1 di si ti
-        --if tr < 1.0
-        --  then putStrLn ("TR: " ++ show tr ++ ", T: " ++ show t)
-        --  else putStr ""
         return (tc <**> (emittance surf sfpt vvec + rad))
 
 estimateRadiance :: Double -> PhotonFilter -> V.Vector PhotonMap -> Intersection
