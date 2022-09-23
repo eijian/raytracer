@@ -142,11 +142,16 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
     case (calcIntersection ray objs) of
       Nothing            -> return radiance0
       Just is@(t, sfpt@(pos, nvec), (mate, surf), io) -> do
-        -- L_diffuse
-        ed <- if metalness mate /= 1.0 && scatter mate
+        let metal = metalness mate
+
+        -- E_diffuse
+        ed <- if metal /= 1.0 && scatter mate
           then do
             lrads <- V.mapM (getRadianceFromLight2 objs sfpt) lgts
-            return ((lrads `deepseq` foldl (+) radiance0 $ V.catMaybes lrads) + estimateRadiance radius filter pmaps is)
+            let
+              ed_f = lrads `deepseq` foldl (+) radiance0 $ V.catMaybes lrads  -- 計算による放射照度
+              ed_p = estimateRadiance radius filter pmaps is                  -- 放射輝度推定による放射照度
+            return (ed_f + ed_p)
           else return radiance0
 
         -- preparation for L_spec and L_trans
@@ -159,7 +164,8 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
             Just nvec' -> specularReflection nvec' vvec
 
         -- L_spec
-        ls <- if nvec' /= Nothing && roughness surf /= 1.0 && (fromJust nvec') <.> nvec > 0.0
+        ls <- if nvec' /= Nothing && rvec <.> nvec > 0.0 &&
+                 (metal == 1.0 || (metal /= 1.0 && roughness surf /= 1.0))
           then tracer mate0 (pos, rvec)
           else return radiance0
 
@@ -336,11 +342,10 @@ bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos1 cos2 eta
       -}
       else (1.0 - rough) *> fr <**> ls +
            ((1.0 - metal) *> (aldiff * nfr)) <**>
-           ((scat * one_pi) *> ed + ((1.0 - scat) * ft) *> lt)
+           ((scat * one_pi) *> ed + ((1.0 - scat) * eta * eta) *> lt)
   where
     fr = fresnelReflectanceColor alspec cos1  -- Fr
     nfr = negate fr                           -- (1 - Fr)
-    ft = eta * eta
 
 {-
 schlickG: 幾何減衰Gの計算で用いるschlick近似式
