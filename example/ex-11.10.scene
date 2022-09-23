@@ -60,8 +60,8 @@ material:
     scatterness  : 0.0
     metalness    : 0.0
     transmittance: [ 1.0, 1.0, 1.0 ]
-    #ior          : [ 1.541, 1.546, 1.554 ]      # crystal
-    ior          : [ 2.404, 2.42364, 2.44984 ]  # diamond
+    ior          : [ 1.541, 1.546, 1.554 ]      # crystal
+    #ior          : [ 2.404, 2.42364, 2.44984 ]  # diamond
     albedo_spec  :
 
   plastic:

@@ -143,7 +143,7 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
       Nothing            -> return radiance0
       Just is@(t, sfpt@(pos, nvec), (mate, surf), io) -> do
         -- L_diffuse
-        ld <- if metalness mate /= 1.0 && scatter mate
+        ed <- if metalness mate /= 1.0 && scatter mate
           then do
             lrads <- V.mapM (getRadianceFromLight2 objs sfpt) lgts
             return ((lrads `deepseq` foldl (+) radiance0 $ V.catMaybes lrads) + estimateRadiance radius filter pmaps is)
@@ -182,8 +182,9 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
 
         let
           tc = expColor (transmittance mate0) t
-          rad = bsdf mate surf cos1 cos2 eta ld ls lt
-        return (tc <**> (emittance surf sfpt vvec + rad))
+          li = bsdf mate surf cos1 cos2 eta ed ls lt
+          le = emittance surf sfpt vvec
+        return (tc <**> (le + li))
 
 estimateRadiance :: Double -> PhotonFilter -> V.Vector PhotonMap -> Intersection
   -> Radiance
@@ -325,7 +326,7 @@ bsdf: BSDF (双方向散乱分布関数) = BRDF + BTDF
 bsdf :: Material -> Surface -> Double -> Double -> Double
   -> Radiance -> Radiance -> Radiance
   -> Radiance
-bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos1 cos2 eta ld ls lt =
+bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos1 cos2 eta ed ls lt =
   if metal == 1.0
       then fr <**> ls
       {-
@@ -335,7 +336,7 @@ bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos1 cos2 eta
       -}
       else (1.0 - rough) *> fr <**> ls +
            ((1.0 - metal) *> (aldiff * nfr)) <**>
-           ((scat * one_pi) *> ld + ((1.0 - scat) * ft) *> lt)
+           ((scat * one_pi) *> ed + ((1.0 - scat) * ft) *> lt)
   where
     fr = fresnelReflectanceColor alspec cos1  -- Fr
     nfr = negate fr                           -- (1 - Fr)
