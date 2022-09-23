@@ -170,7 +170,6 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
               mate' = if io == In then mate else mate_air
               eta' = relativeIorAverage (ior mate0) (ior mate')
               (tvec, cos2') = specularRefraction (fromJust nvec') vvec eta' cos1
-            --putStrLn ("ETA=" ++ show eta' ++ "/ M0=" ++ show mate0 ++ "/ M=" ++ show mate')
             case tvec of
               Nothing   -> return (radiance0, eta', cos2')
               Just tvec -> do
@@ -340,7 +339,7 @@ bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos1 cos2 eta
   where
     fr = fresnelReflectanceColor alspec cos1  -- Fr
     nfr = negate fr                           -- (1 - Fr)
-    ft = 1.0 / (eta * eta)
+    ft = eta * eta
 
 {-
 schlickG: 幾何減衰Gの計算で用いるschlick近似式
