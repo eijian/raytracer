@@ -154,8 +154,8 @@ material:
     albedo_diff  : [ 0.0, 0.0, 0.0 ]
     scatterness  : 0.0
     metalness    : 0.0
-    transmittance: [ 0.0, 0.0, 0.0 ]
-    ior          : [ 0.0, 0.0, 0.0 ]
+    transmittance: [ 1.0, 1.0, 1.0 ]
+    ior          : [ 1.0, 1.0, 1.0 ]
     albedo_spec  :
 
 surface:
@@ -217,7 +217,7 @@ mapper:
 
   clearprism:
     type    : solid
-    map     : [ diamond, polish ]
+    map     : [ prism_f2, polish ]
 
   polishgold:
     type    : solid
@@ -314,7 +314,8 @@ object:
     type    : sphere
     center  : [ 1.0, 0.7, 2.6 ]
     radius  : 0.7
-    mapper  : clearglass2
+    #mapper  : clearglass
+    mapper  : clearprism
 
   ball_diamond:
     type    : sphere
@@ -413,15 +414,15 @@ scene:
   - backwall
   - frontwall
 
-  #- ceiling_light
-  - ceiling_bulb1
-  - ceiling_bulb2
-  - ceiling_bulb3
+  - ceiling_light
+  #- ceiling_bulb1
+  #- ceiling_bulb2
+  #- ceiling_bulb3
   #- sunlight
 
-  #- ball_glass
+  - ball_glass
   #- ball_diamond
-  - icosahedron
+  #- icosahedron
   - ball_silver
   #- ball_stucco
   #- ball_plastic

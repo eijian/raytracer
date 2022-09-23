@@ -59,8 +59,9 @@ material:
     albedo_diff  : [ 1.0, 1.0, 1.0 ]
     scatterness  : 0.0
     metalness    : 0.0
-    transmittance: [ 0.01, 0.2, 1.00 ]
-    ior          : [ 1.541, 1.546, 1.554 ]
+    transmittance: [ 1.0, 1.0, 1.0 ]
+    #ior          : [ 1.541, 1.546, 1.554 ]      # crystal
+    ior          : [ 2.404, 2.42364, 2.44984 ]  # diamond
     albedo_spec  :
 
   plastic:
@@ -88,7 +89,7 @@ material:
     albedo_spec  : [ 0.980, 0.645, 0.543 ]
 
   light:
-    albedo_diff  : [ 0.0, 0.0, 0.0 ]
+    albedo_diff  : [ 1.0, 1.0, 1.0 ]
     scatterness  : 0.0
     metalness    : 0.0
     transmittance: [ 1.0, 1.0, 1.0 ]
@@ -114,6 +115,10 @@ surface:
 
   glossy05:
     roughness: 0.5
+    light    :
+
+  glossy03:
+    roughness: 0.3
     light    :
 
 mapper:
@@ -212,7 +217,7 @@ scene:
   - ball2
   - ball3
   - sunlight
-  #- skydome
+  - skydome
 
 
 

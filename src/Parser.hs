@@ -1229,8 +1229,8 @@ plain = do
   n <- vector3param rNormal
   p <- vector3param rPosition
   let
-    d = n <.> p
-  return $ Plain n (-d)
+    d = -(n <.> p)
+  return $ Plain n d
 
 {- |
 >>> parse sphere pname "    type: sphere\n    center: [ 0.0, 5.0, 3.0 ]\n    radius: 0.8\n"

@@ -244,16 +244,22 @@ specularReflection nvec vvec
     rvec = normalize (vvec + (2.0 * cos) *> nvec)
 
 {-
-  T = 1/n {L + (c - g) N}
 
-    c = cos θ1 = - (L . N)
+  http://kanamori.cs.tsukuba.ac.jp/jikken/inner/reflection_refraction.pdf
+
+  T = 1/η {L + (c - g) N}
+
+    c = cos θ1 = -(L.N)
     g = √(η^2 + c^2 - 1)
     η = η2 / η1 
 
     N      <- nvec
     L      <- vvec
     η      <- eta
-    cos θ1 <- cos1 (-L.N)
+    cos θ1 <- cos1 (=-(L.N))
+
+  OUT: tvec = T
+       cos2 = (T.-N)
 
 -}
 

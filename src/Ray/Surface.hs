@@ -50,8 +50,7 @@ data Surface = Surface
     -- calculate values
   , densityPow :: !Double
   , alpha      :: !Double
-  }
-  deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 instance NFData Surface where
   rnf = genericRnf
@@ -99,14 +98,17 @@ microfacetNormal nvec vvec surf retry
   | roughness surf == 0.0 = return $ Just nvec    -- 完全平滑面ならマクロ法線を返す
   | otherwise             = do
     nvec' <- blurredVector nvec (densityPow surf)
-    if nvec' <.> vvec < 0.0   -- 有効な法線ベクトルが得られた
+    if nvec' <.> vvec < 0.0 && nvec' <.> nvec > 0.0  -- 有効な法線ベクトルが得られた
       then return $ Just nvec'
+      else return Nothing
+      {- 
       else do
+        --金属なら再度N'を求める
         r <- russianRouletteBinary retry
         if r == True
           then microfacetNormal nvec vvec surf retry
           else return Nothing
-
+      -}
 {- |
 emittance
 

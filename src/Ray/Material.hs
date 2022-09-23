@@ -17,6 +17,7 @@ module Ray.Material (
 , photonBehavior
 , reflect
 , refract
+, scatter
 , storePhoton
 , transmittance
 ) where
@@ -41,7 +42,6 @@ data Material = Material
   , metalness     :: !Double
   , transmittance :: !Color
   , ior           :: !Color      -- index of refraction
-  -- calculated value
   , albedoSpec    :: !Color
   } deriving (Eq, Show, Generic)
 
@@ -79,6 +79,9 @@ refract (Material aldiff scat metal _ _ _) = if metal /= 1.0
       else False
     else False
 
+scatter :: Material -> Bool
+scatter (Material _ scat _ _ _ _) = scat /= 0.0
+
 -- PhotonBehavior
 
 data PhotonBehavior =
@@ -97,6 +100,16 @@ photonBehavior (Material aldiff scat _ _ _ alspec) cos wl = do
   if r1 == True
     then return SpecularReflection
     else do
+      {-
+      r2<- russianRouletteBinary scat
+      if r2 == False
+        then return SpecularTransmission
+        else do
+          r3 <- russianRouletteBinary (selectWavelength wl aldiff)
+          if r3 == False
+            then return Absorption
+            else return DiffuseReflection
+      -}
       r2 <- russianRouletteBinary (selectWavelength wl aldiff)
       --putStrLn ("r2=" ++ show r2 ++ ", diff=" ++ show aldiff)
       if r2 == False
