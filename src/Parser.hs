@@ -791,7 +791,7 @@ material_elem :: Parser (String, Material)
 material_elem = do
   n <- elem_name
   ad <- albedo_diff
-  s <- scatterness
+  s <- scatternessP
   m <- metalnessP
   t <- transmittanceP
   i <- iorP
@@ -870,8 +870,8 @@ albedo_diff = do
   b' <- checkRatio b ("blue of albedo_diff is out of range: " ++ show b)
   return (Color r' g' b')
 
-scatterness :: Parser Double
-scatterness = do
+scatternessP :: Parser Double
+scatternessP = do
   s <- floatparam rScatterness
   s' <- checkRatio s ("scatterness (0.0 - 1.0) is out of range: " ++ show s)
   return s'

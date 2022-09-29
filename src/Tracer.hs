@@ -45,7 +45,7 @@ import Screen
 --
 
 max_trace :: Int
-max_trace = 10
+max_trace = 30
 
 --
 
@@ -68,7 +68,7 @@ tracePhoton !objs !l !mate_air !mate0 (!photon@(wl, ray@(_, vvec)), !radest)
     case (calcIntersection ray objs) of
       Just is -> do
         let
-          (t, (pos, nvec), (mate, surf), io) = is
+          (t, (pos, nvec), (mate, surf), io, _) = is
           tracer = tracePhoton objs (l+1) mate_air
         ref <- do
             -- フォトンが物体に到達するまでに透過率が低く吸収される場合あり
@@ -82,7 +82,7 @@ tracePhoton !objs !l !mate_air !mate0 (!photon@(wl, ray@(_, vvec)), !radest)
                 let
                   mate' = if io == In then mate else mate_air
                   eta = relativeIorWavelength (ior mate0) (ior mate') wl
-                nextdir <- nextDirection mate surf eta nvec photon
+                nextdir <- nextDirection mate surf eta nvec photon io
                 case nextdir of
                   Just (dir, mf) -> do
                     let mate'' = if mf == True then mate0 else mate'
@@ -102,9 +102,9 @@ nextDirection
 --      T/F  true = reflection, false = rafraction
 -}
 
-nextDirection :: Material -> Surface -> Double -> Direction3 -> Photon
+nextDirection :: Material -> Surface -> Double -> Direction3 -> Photon -> InOut
   -> IO (Maybe (Direction3, Bool))
-nextDirection mate surf eta nvec (wl, (_, vvec)) = do
+nextDirection mate surf eta nvec (wl, (_, vvec)) io = do
   nvec' <- microfacetNormal nvec vvec surf (metalness mate)
   case nvec' of
     Nothing    -> return Nothing
@@ -113,7 +113,10 @@ nextDirection mate surf eta nvec (wl, (_, vvec)) = do
       if rdir <.> nvec < 0.0
         then return Nothing
         else do
-          pb <- photonBehavior mate cos1 wl
+          let
+            (tdir, cos2) = specularRefraction nvec' vvec eta cos1
+            cos = if io == In then cos1 else cos2
+          pb <- photonBehavior mate cos wl
           case pb of
             SpecularReflection -> return $ Just (rdir, True)   -- 鏡面反射
             Absorption         -> return Nothing               -- 吸収
@@ -121,7 +124,6 @@ nextDirection mate surf eta nvec (wl, (_, vvec)) = do
               df <- diffuseReflection nvec
               return $ Just (df, True)                         -- 拡散反射
             SpecularTransmission -> do                         -- 鏡面透過
-              let (tdir, _) = specularRefraction nvec' vvec eta cos1
               case tdir of
                 Just tdir -> do
                   if tdir <.> nvec > 0.0
@@ -141,7 +143,7 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
   | otherwise     = do
     case (calcIntersection ray objs) of
       Nothing            -> return radiance0
-      Just is@(t, sfpt@(pos, nvec), (mate, surf), io) -> do
+      Just is@(t, sfpt@(pos, nvec), (mate, surf), io, obj) -> do
         let metal = metalness mate
 
         -- E_diffuse
@@ -187,14 +189,15 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
           else return (radiance0, 1.0, 0.0)
 
         let
+          cos = if io == In then cos1 else cos2
           tc = expColor (transmittance mate0) t
-          li = bsdf mate surf cos1 cos2 eta ed ls lt
+          li = bsdf mate surf cos eta ed ls lt
           le = emittance surf sfpt vvec
         return (tc <**> (le + li))
 
 estimateRadiance :: Double -> PhotonFilter -> V.Vector PhotonMap -> Intersection
   -> Radiance
-estimateRadiance rmax filter pmaps (_, (pos, nvec), _, _) = mag *> rad
+estimateRadiance rmax filter pmaps (_, (pos, nvec), _, _, _) = mag *> rad
   where
     mag = one_pi / rmax * (power (pmaps V.! 0))
     rad = V.foldl (+) radiance0 $ V.map (estimateRadianceByMap rmax filter pos nvec) pmaps
@@ -284,7 +287,7 @@ calcRadiance lgtspec objs (pos, nvec) (lpos, lnvec) area
     cos = nvec <.> lvec
     is = calcIntersection (initRay pos lvec) objs
     dist2 = square ldir
-    (t, _, _, _) = fromJust is
+    (t, _, _, _, _) = fromJust is
     rad = decayEmittance lgtspec (lnvec <.> (negate lvec))
 
   
@@ -293,16 +296,16 @@ calcRadiance lgtspec objs (pos, nvec) (lpos, lnvec) area
 -- COMMON FUNCTIONS
 ---------------------------------
 
-type Intersection = (Double, SurfacePoint, SurfaceChar, InOut)
+type Intersection = (Double, SurfacePoint, SurfaceChar, InOut, Object)
 
 calcIntersection :: Ray -> V.Vector Object -> Maybe Intersection
 calcIntersection ray@(_, vvec) objs
   | length iss == 0  = Nothing
   | nvec0 == Nothing = Nothing
-  | otherwise        = Just (t, sfpt, surfaceCharOnPoint mapper sfpt uv, io)
+  | otherwise        = Just (t, sfpt, surfaceCharOnPoint mapper sfpt uv, io, obj)
   where
     iss = V.mapMaybe (calcDistance ray) objs
-    (t, uv, (Object shape mapper)) = V.foldl' nearer (V.head iss) (V.tail iss)
+    (t, uv, obj@(Object shape mapper)) = V.foldl' nearer (V.head iss) (V.tail iss)
     pos = target t ray
     nvec0 = getNormal pos shape
     nvec = fromJust nvec0
@@ -329,10 +332,9 @@ calcDistance ray obj@(Object shape _) =
 bsdf: BSDF (双方向散乱分布関数) = BRDF + BTDF
 -}
 
-bsdf :: Material -> Surface -> Double -> Double -> Double
-  -> Radiance -> Radiance -> Radiance
+bsdf :: Material -> Surface -> Double ->  Double -> Radiance -> Radiance -> Radiance
   -> Radiance
-bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos1 cos2 eta ed ls lt =
+bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos eta ed ls lt =
   if metal == 1.0
       then fr <**> ls
       {-
@@ -342,10 +344,11 @@ bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos1 cos2 eta
       -}
       else (1.0 - rough) *> fr <**> ls +
            ((1.0 - metal) *> (aldiff * nfr)) <**>
-           ((scat * one_pi) *> ed + ((1.0 - scat) * eta * eta) *> lt)
+           ((scat * one_pi) *> ed + ((1.0 - scat) * ft) *> lt)
   where
-    fr = fresnelReflectanceColor alspec cos1  -- Fr
-    nfr = negate fr                           -- (1 - Fr)
+    fr = fresnelReflectanceColor alspec cos  -- Fr
+    nfr = negate fr                          -- (1 - Fr)
+    ft = 1.0 / (eta * eta)
 
 {-
 schlickG: 幾何減衰Gの計算で用いるschlick近似式

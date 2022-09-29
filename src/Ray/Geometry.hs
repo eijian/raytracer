@@ -40,6 +40,7 @@ import Data.Array.Unboxed as UA
 import Data.Int
 import Data.Maybe
 import Data.Vector as V
+import Debug.Trace
 import GHC.Generics
 import NumericPrelude
 import System.Random.Mersenne as MT
@@ -364,9 +365,8 @@ compPolygon :: Ray -> UA.Array Int Position3 -> UA.Array Int Position3
   -> (Vector2, Double, Shape) -> Patch -> (Vector2, Double, Shape)
 compPolygon (pos, dir) vtxs norms d@(uv, t, shape) ((p0, n0, _), (p1, n1, _), (p2, n2, _)) =
   case res of
-    Just (uv', t') -> if t' < t
-      then (uv', t', Polygon (vtxs UA.! p0) (fromJust (normalize (d1 <*> d2))) d1 d2)
-      -- initPolygon (vtxs UA.! p0) (vtxs UA.! p1) (vtxs UA.! p2))
+    Just (uv', t') -> if nearly0 <= t' && t' < t
+      then (uv', t', Polygon (vtxs UA.! p0) (norms UA.! n0) d1 d2)
       else d
     Nothing        -> d
   where

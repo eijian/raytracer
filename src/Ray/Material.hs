@@ -18,6 +18,7 @@ module Ray.Material (
 , reflect
 , refract
 , scatter
+, scatterness
 , storePhoton
 , transmittance
 ) where

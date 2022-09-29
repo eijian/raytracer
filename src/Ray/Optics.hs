@@ -266,9 +266,10 @@ specularReflection nvec vvec
 specularRefraction :: Direction3 -> Direction3 -> Double -> Double
                    -> (Maybe Direction3, Double)
 specularRefraction nvec vvec eta cos
-  | cos < 0.0       = (Nothing, 0.0) 
-  | g0 <  0.0       = (Nothing, 0.0)  -- 全反射
-  | tvec == Nothing = (Nothing, 0.0)
+  | cos < 0.0       = (Nothing, (-1.0))  -- 入力値範囲エラー
+  | eta <= 0.0      = (Nothing, (-1.0))  -- 入力値範囲エラー
+  | g0 <  0.0       = (Nothing, 0.0)     -- 全反射
+  | tvec == Nothing = (Nothing, (-1.0))
   | otherwise       = (tvec, g / eta)
   where
     g0 = eta * eta + cos * cos - 1.0

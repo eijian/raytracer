@@ -404,7 +404,7 @@ object:
       - [ [ 7, 18, 0 ], [ 1, 18, 0 ], [ 0, 18, 0 ] ]
       - [ [ 3, 19, 0 ], [ 9, 19, 0 ], [ 8, 19, 0 ] ]
       - [ [ 4, 20, 0 ], [ 8, 20, 0 ], [ 0, 20, 0 ] ]
-    mapper  : glossycopper
+    mapper  : clearglass
 
 scene:
   - floor
@@ -420,9 +420,9 @@ scene:
   #- ceiling_bulb3
   #- sunlight
 
-  - ball_glass
+  #- ball_glass
   #- ball_diamond
-  #- icosahedron
+  - icosahedron
   - ball_silver
   #- ball_stucco
   #- ball_plastic
