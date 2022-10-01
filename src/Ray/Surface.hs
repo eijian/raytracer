@@ -15,8 +15,6 @@ module Ray.Surface (
 
 import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
---import           Data.Maybe
---import           Debug.Trace
 import           GHC.Generics
 import           NumericPrelude
 

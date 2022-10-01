@@ -19,7 +19,6 @@ module PhotonMap (
 ) where
 
 import           Control.DeepSeq
---import           Control.DeepSeq.Generics (genericRnf)
 import           Data.List.Split
 import qualified Data.Text as T
 import qualified Data.Text.IO as T

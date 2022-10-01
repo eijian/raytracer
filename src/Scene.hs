@@ -8,22 +8,15 @@ module Scene (
   readScene
 ) where
 
-import           Data.Array.Unboxed
 import           Data.List
-import qualified Data.Map.Strict as M
 import           Data.Maybe
 import qualified Data.Vector as V
 import           NumericPrelude
 
-import Ray.Algebra
-import Ray.Geometry
-import Ray.Light
 import Ray.Mapper
 import Ray.Material
---import Ray.Optics
 import Ray.Object
 import Ray.Physics
-import Ray.Surface
 
 import Parser
 
@@ -111,6 +104,7 @@ parseConfig conf = do
       ]
 -}
 
+{-
     vtxs_icosahedron = listArray (0, 11)
       [ Vector3 0.21789934754047335 1.756260369022299 2.0172422684389995
       , Vector3 1.1696347222230137 2.2630668564800875 2.6215690656931017
@@ -254,6 +248,7 @@ parseConfig conf = do
     stucco  = initMaterial (Color 0.75 0.75 0.75) 1.0 0.0 black (Color 2.0 2.0 2.0) Nothing  -- 漆喰
     sun     = initMaterial black 0.0 0.0 black black Nothing
     sky     = initMaterial black 0.0 0.0 black black Nothing
+    -}
 {-
     ypla00 = Material radiance0 (Color 0.0 0.0 0.0) (Color 1.6 1.6 1.6)
       (initSurfaceTS (Color 0.5 0.35 0.1) (Color 0.053 0.053 0.053) 1.0 0.0 0.0)
@@ -299,6 +294,7 @@ parseConfig conf = do
       (initSurfaceTS (Color 1.0 1.0 1.0) (Color 0.053 0.053 0.053) 0.0 0.0 1.0)
 -}
 
+{-
     map_whwall = Solid (mwall, sf_rough)
     map_rdwall = Solid (mwallr, sf_rough)
     map_blwall = Solid (mwallb, sf_rough)
@@ -348,6 +344,7 @@ parseConfig conf = do
     one_ball = Object (Sphere (Vector3 0.0 1.01 0.0) 1.0) map_roughplastic
     icosahedron = Object (fromJust $ M.lookup "icosahedron" shapes) map_cleardiamond
     --icosahedron = Object sh_icosahedron silver sf_silver
+-}
 {-
     ball_01 = Object (Sphere (Vector3 (-1.6) 1.2 3.8) 0.4) ypla00
     ball_02 = Object (Sphere (Vector3 (-0.8) 1.2 3.8) 0.4) ypla01
@@ -361,7 +358,7 @@ parseConfig conf = do
     ball_10 = Object (Sphere (Vector3 ( 1.6) 0.4 2.8) 0.4) ypla10
 -}
     --ball_silver = Object (Sphere (Vector3 (-0.9) 0.7 3.8) 0.7) mirror
-
+{-
     map_paral = Solid (mparal, sf_paral)
     map_bulb1 = Solid (mparal, sf_bulb1)
     map_skyl  = Solid (sky, sf_paral)
@@ -396,15 +393,15 @@ parseConfig conf = do
         ]
 --          ball_01, ball_02, ball_03, ball_04, ball_05,
 --          ball_06, ball_07, ball_08, ball_09, ball_10]
-    
+-}    
     {-
     os = [floor, one_ball
          --, sunlight
          , skylight
          ]
     -}
-  
-    ls0 = filter (\(x, y) -> x > 0) $ zip (map (length.lightSpecs.mapper) objs) objs
+
+    ls0 = filter (\(x, _) -> x > 0) $ zip (map (length.lightSpecs.mapper) objs) objs
     (_, ls) = unzip ls0
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)

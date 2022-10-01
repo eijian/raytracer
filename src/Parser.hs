@@ -32,7 +32,7 @@ import qualified Data.Map.Strict                      as M
 import           Data.Maybe
 import qualified Data.Vector                          as V
 import           Text.ParserCombinators.Parsec
-import qualified Text.ParserCombinators.Parsec.Char   as PC
+import           Text.ParserCombinators.Parsec.Char   as PC
 import qualified Text.ParserCombinators.Parsec.Number as PN
 --import           Text.Parsec
 --import qualified Text.Parsec.Char   as PC
@@ -74,23 +74,11 @@ rChecker = "checker"
 rColor :: String
 rColor = "color"
 
-rDiffuseness :: String
-rDiffuseness = "diffuseness"
-
-rDir1 :: String
-rDir1 = "dir1"
-
-rDir2 :: String
-rDir2 = "dir2"
-
 rDirection :: String
 rDirection = "direction"
 
 rDirectivity :: String
 rDirectivity = "directivity"
-
-rEmittance :: String
-rEmittance = "emittance"
 
 rEstimateRadius :: String
 rEstimateRadius = "estimateradius"
@@ -98,17 +86,11 @@ rEstimateRadius = "estimateradius"
 rEyePosition :: String
 rEyePosition = "eyeposition"
 
-rFlux :: String
-rFlux = "flux"
-
 rFocus :: String
 rFocus = "focus"
 
 rIor :: String
 rIor = "ior"
-
-rLdir :: String
-rLdir = "ldir"
 
 rLight :: String
 rLight = "light"
@@ -143,9 +125,6 @@ rMesh = "mesh"
 rMetalness :: String
 rMetalness = "metalness"
 
-rName :: String
-rName = "name"
-
 rNormal :: String
 rNormal = "normal"
 
@@ -160,9 +139,6 @@ rPhotonFilter = "photonfilter"
 
 rPlain :: String
 rPlain = "plain"
-
-rPoint :: String
-rPoint = "point"
 
 rPolygon :: String
 rPolygon = "polygon"
@@ -179,9 +155,6 @@ rPos3 = "pos3"
 rPosition :: String
 rPosition = "position"
 
-rPower :: String
-rPower = "power"
-
 rProgressive :: String
 rProgressive = "progressive"
 
@@ -193,9 +166,6 @@ rRadiosity = "radiosity"
 
 rRadius :: String
 rRadius = "radius"
-
-rReflectance :: String
-rReflectance = "reflectance"
 
 rRoughness :: String
 rRoughness = "roughness"
@@ -209,20 +179,11 @@ rScale = "scale"
 rScatterness :: String
 rScatterness = "scatterness"
 
-rSmoothness :: String
-rSmoothness = "smoothness"
-
 rSolid :: String
 rSolid = "solid"
 
-rSpecularRefl :: String
-rSpecularRefl = "specularrefl"
-
 rSphere :: String
 rSphere = "sphere"
-
-rSun :: String
-rSun = "sun"
 
 rSurface :: String
 rSurface = "surface"
@@ -241,19 +202,6 @@ rType = "type"
 
 rUpperDirection :: String
 rUpperDirection = "upperdirection"
-
-rVertex :: String
-rVertex = "vertex"
-
-rVertex1 :: String
-rVertex1 = "vertex1"
-
-rVertex2 :: String
-rVertex2 = "vertex2"
-
-rVertex3 :: String
-rVertex3 = "vertex3"
-
 
 rXresolution :: String
 rXresolution = "xresolution"
@@ -1080,7 +1028,7 @@ solid mm sm = do
   sf <- case M.lookup s sm of
     Nothing  -> unexpected ("surface not found (" ++ s ++ ")")
     Just sf' -> return sf'
-  return $ Solid (mt, sf)
+  return $ initSolid (mt, sf)
 
 {- |
 >>> let smat = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.974 0.960 0.906))
@@ -1133,7 +1081,7 @@ checker mm sm = do
   sf2 <- case M.lookup s2 sm of
     Nothing   -> unexpected ("surface not found (" ++ s2 ++ ")")
     Just sf2' -> return sf2'
-  return (Checker (mt1, sf1) (mt2, sf2) sc)
+  return $ initChecker (mt1, sf1) (mt2, sf2) sc
 
 {- |
 >>> parse maptuple pname "[ gold, polish ]"
@@ -2023,6 +1971,7 @@ pfilter = do
     "none"  -> return Nonfilter
     "cone"  -> return Conefilter
     "gauss" -> return Gaussfilter
+    _       -> return Nonfilter
 
 {- |
 >>> parse name pname "yes"

@@ -13,9 +13,7 @@ import qualified Data.Vector as V
 import           System.Environment
 
 import Ray.Algebra
-import Ray.Geometry
 import Ray.Light
-import Ray.Mapper
 import Ray.Object
 import Ray.Optics
 import Scene

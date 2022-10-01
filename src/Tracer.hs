@@ -14,18 +14,13 @@ module Tracer (
 ) where
 
 import           Control.DeepSeq
---import           Control.DeepSeq.Generics (genericRnf)
 import           Control.Monad
---import qualified Data.Map.Strict as Map
 import           Data.Maybe hiding (catMaybes)
 import           Data.List hiding (sum)
 import           Data.Ord
-import           Debug.Trace
+--import           Debug.Trace
 import qualified Data.Vector as V
---import qualified Data.Vector.Unboxed as VU
 import           NumericPrelude
-import           System.IO
---import           System.Random.Mersenne as MT
 
 import Ray.Algebra
 import Ray.Geometry
@@ -38,14 +33,16 @@ import Ray.Physics
 import Ray.Surface hiding (alpha)
 
 import PhotonMap
-import Screen
 
 --
 -- CONSTANTS
 --
 
 max_trace :: Int
-max_trace = 30
+max_trace = 500
+
+min_color :: Color
+min_color = Color 1.0e-4 1.0e-4 1.0e-4
 
 --
 
@@ -136,14 +133,19 @@ nextDirection mate surf eta nvec (wl, (_, vvec)) io = do
 -----
 
 traceRay :: PhotonFilter -> V.Vector Object -> V.Vector LightObject -> Int
-  -> V.Vector PhotonMap -> Double -> Material -> Material -> Ray
+  -> V.Vector PhotonMap -> Double -> Material -> Material -> Color -> Ray
   -> IO Radiance
-traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec) 
-  | l >= max_trace = return radiance0
-  | otherwise     = do
+traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !fr0 !ray@(_, vvec)
+  | l >= max_trace          = do
+    --putStrLn ("MAXTRACE:" ++ show fr0)
+    return radiance0
+  | lowerThan fr0 min_color = do
+    --putStrLn ("LOWER:" ++ show l ++ "/" ++ show fr0)
+    return radiance0
+  | otherwise               = do
     case (calcIntersection ray objs) of
       Nothing            -> return radiance0
-      Just is@(t, sfpt@(pos, nvec), (mate, surf), io, obj) -> do
+      Just is@(t, sfpt@(pos, nvec), (mate, surf), io, _obj) -> do
         let metal = metalness mate
 
         -- E_diffuse
@@ -157,41 +159,41 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !ray@(_, vvec)
           else return radiance0
 
         -- preparation for L_spec and L_trans
+        nvec2 <- microfacetNormal nvec vvec surf (metalness mate)
         let
           tracer = traceRay filter objs lgts (l+1) pmaps radius mate_air
-        nvec' <- microfacetNormal nvec vvec surf (metalness mate)
-        let
-          (rvec, cos1) = case nvec' of
-            Nothing    -> specularReflection nvec vvec
-            Just nvec' -> specularReflection nvec' vvec
+          mate' = if io == In then mate else mate_air
+          eta = relativeIorAverage (ior mate0) (ior mate')
+          nvec' = case nvec2 of
+            Just nvec2 -> nvec2
+            Nothing    -> nvec
+          (rvec, cos1) = specularReflection nvec' vvec
+          (tvec, cos2) = specularRefraction nvec' vvec eta cos1
+          cos = if io == In then cos1 else cos2
+          fr = fresnelReflectanceColor (albedoSpec mate) cos  -- Fr
+          nfr = negate fr                                     -- (1 - Fr)
+
 
         -- L_spec
-        ls <- if nvec' /= Nothing && rvec <.> nvec > 0.0 &&
+        ls <- if rvec <.> nvec > 0.0 &&
                  (metal == 1.0 || (metal /= 1.0 && roughness surf /= 1.0))
-          then tracer mate0 (pos, rvec)
+          then tracer mate0 (fr0 * fr) (pos, rvec)
           else return radiance0
 
         -- L_trans
-        (lt, eta, cos2) <- if nvec' /= Nothing && refract mate
+        lt <- if refract mate
           then do
-            let
-              mate' = if io == In then mate else mate_air
-              eta' = relativeIorAverage (ior mate0) (ior mate')
-              (tvec, cos2') = specularRefraction (fromJust nvec') vvec eta' cos1
             case tvec of
-              Nothing   -> return (radiance0, eta', cos2')
+              Nothing   -> return radiance0
               Just tvec -> do
                 if tvec <.> nvec <= 0.0
-                  then do
-                    lt' <- tracer mate' (pos, tvec)
-                    return (lt', eta', cos2')
-                  else return (radiance0, 1.0, 0.0)
-          else return (radiance0, 1.0, 0.0)
+                  then tracer mate' (fr0 * nfr) (pos, tvec)
+                  else return radiance0
+          else return radiance0
 
         let
-          cos = if io == In then cos1 else cos2
           tc = expColor (transmittance mate0) t
-          li = bsdf mate surf cos eta ed ls lt
+          li = bsdf mate surf fr nfr eta ed ls lt
           le = emittance surf sfpt vvec
         return (tc <**> (le + li))
 
@@ -332,9 +334,9 @@ calcDistance ray obj@(Object shape _) =
 bsdf: BSDF (双方向散乱分布関数) = BRDF + BTDF
 -}
 
-bsdf :: Material -> Surface -> Double ->  Double -> Radiance -> Radiance -> Radiance
+bsdf :: Material -> Surface -> Color -> Color ->  Double -> Radiance -> Radiance -> Radiance
   -> Radiance
-bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos eta ed ls lt =
+bsdf (Material aldiff scat metal _ _ _) (Surface _ rough _ _) fr nfr eta ed ls lt =
   if metal == 1.0
       then fr <**> ls
       {-
@@ -346,8 +348,6 @@ bsdf (Material aldiff scat metal _ _ alspec) (Surface _ rough _ _) cos eta ed ls
            ((1.0 - metal) *> (aldiff * nfr)) <**>
            ((scat * one_pi) *> ed + ((1.0 - scat) * ft) *> lt)
   where
-    fr = fresnelReflectanceColor alspec cos  -- Fr
-    nfr = negate fr                          -- (1 - Fr)
     ft = 1.0 / (eta * eta)
 
 {-

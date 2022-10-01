@@ -194,6 +194,10 @@ getNormal _ (Mesh ps _ _ _) = Nothing
 -- Point
 getNormal _ _ = Nothing
 
+
+dammypatch :: Patch
+dammypatch = ((0, 0, 0), (0, 0, 0), (0, 0, 0))
+
 distance :: Ray -> Shape -> Maybe (Vector2, Double, Shape)
 -- Plain
 distance (pos, dir) shape@(Plain nvec d)
@@ -239,10 +243,14 @@ distance (pos, dir) shape@(Parallelogram pos0 _ dir1 dir2)
 distance ray (Mesh ps vs ns _) = if t >= infinity
   then Nothing
   else if t >= nearly0
-    then Just d
+    then Just (uv, t, buildPoly p d1 d2)
     else Nothing
   where
-    d@(uv, t, shape) = foldl' (compPolygon ray vs ns) (o2, infinity, Point o3) ps
+    dampat = ((0, 0, 0), (0, 0, 0), (0, 0, 0))
+    (uv, t, p, d1, d2) = foldl' (compPolygon ray vs) (o2, infinity, dammypatch, o3, o3) ps
+    buildPoly :: Patch -> Direction3 -> Direction3 -> Shape
+    buildPoly ((p0, n0, _), _, _) d1' d2' = Polygon (vs UA.! p0) (ns UA.! n0) d1' d2'
+
 -- Point
 distance _ _ = Nothing
 
@@ -361,12 +369,13 @@ methodMoller l pos0 dir1 dir2 pos dir
 -- PRIVATE
 --
 
-compPolygon :: Ray -> UA.Array Int Position3 -> UA.Array Int Position3
-  -> (Vector2, Double, Shape) -> Patch -> (Vector2, Double, Shape)
-compPolygon (pos, dir) vtxs norms d@(uv, t, shape) ((p0, n0, _), (p1, n1, _), (p2, n2, _)) =
+compPolygon :: Ray -> UA.Array Int Position3
+  -> (Vector2, Double, Patch, Direction3, Direction3) -> Patch
+  -> (Vector2, Double, Patch, Direction3, Direction3)
+compPolygon (pos, dir) vtxs d@(_, t, _, _, _) p@((p0, _, _), (p1, _, _), (p2, _, _)) =
   case res of
     Just (uv', t') -> if nearly0 <= t' && t' < t
-      then (uv', t', Polygon (vtxs UA.! p0) (norms UA.! n0) d1 d2)
+      then (uv', t', p, d1, d2)
       else d
     Nothing        -> d
   where

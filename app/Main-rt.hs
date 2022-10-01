@@ -6,15 +6,11 @@
 
 module Main where
 
---import Data.List
---import           Control.Monad
 --import qualified Data.Time    as TM
---import qualified Data.Text    as T
---import qualified Data.Text.IO as TIO
 import qualified Data.Vector as V
 import           System.Environment
---import           System.IO
 
+import Ray.Physics
 import PhotonMap
 import Scene
 import Screen
@@ -47,7 +43,7 @@ main = do
     (_, maps) = V.unzip maps0
     filter = pfilter scr
     r = radius scr
-    tracer = traceRay filter objs lgts 0 maps r mate_air mate_air
+    tracer = traceRay filter objs lgts 0 maps r mate_air mate_air white
   rays <- V.mapM (generateRay scr) $ screenMap scr
   image <- V.mapM tracer rays
 

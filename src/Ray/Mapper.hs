@@ -11,6 +11,8 @@
 module Ray.Mapper (
   Mapper (..)
 , SurfaceChar
+, initChecker
+, initSolid
 , lightSpecOnPoint
 , lightSpecs
 , surfaceCharOnPoint

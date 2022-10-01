@@ -71,12 +71,6 @@ import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
 import           Debug.Trace
 import           Data.Maybe
---import qualified Data.Text as T
---import qualified Data.Text.IO as T
---import qualified Data.Vector as V
---import           Data.Vector.Generic.Base
---import           Data.Vector.Generic.Mutable  hiding (read)
---import qualified Data.Vector.Unboxed as VU
 import           GHC.Generics 
 import           NumericPrelude
 import           Test.QuickCheck
