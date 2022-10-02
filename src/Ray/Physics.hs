@@ -16,6 +16,7 @@ module Ray.Physics (
 , expColor
 , initColor
 , initColorByKelvin
+, initColorByKelvin2
 , lowerThan
 , minColor
 , normalizeColor
@@ -131,6 +132,16 @@ initColorByKelvin t = normalizeColor (Color (clip r) (clip g) (clip b))
       then 1.0
       else c / 255.0
 
+initColorByKelvin2 :: Double -> Color
+initColorByKelvin2 t = normalizeColor $ kelvinTable !! t1
+  where
+    t' = if t < 0.0
+      then 0.0
+      else if t > 12000.0
+        then 12000.0
+        else t
+    t1 = ceiling (t' / 100.0)
+
 normalizeColor :: Color -> Color
 normalizeColor (Color r g b)
   | mag == 0  = Color (1/3) (1/3) (1/3)
@@ -223,3 +234,133 @@ snellLow r_ior nvec vvec
     a = -c1 - sqrt g
     t = fromJust $ normalize (r_ior *> (vvec + a *> nvec))
     c2 = sqrt (1.0 - n * (1.0 - c1 * c1))
+
+--
+-- PRIVATE
+--
+
+-- URL: https://andi-siess.de/rgb-to-color-temperature/
+kelvinTable :: [Color]
+kelvinTable = [
+    Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000
+  , Color 1.000 0.220 0.000    -- 1000 K
+  , Color 1.000 0.278 0.000
+  , Color 1.000 0.325 0.000
+  , Color 1.000 0.365 0.000
+  , Color 1.000 0.396 0.000
+  , Color 1.000 0.427 0.000
+  , Color 1.000 0.451 0.000
+  , Color 1.000 0.475 0.000
+  , Color 1.000 0.494 0.000
+  , Color 1.000 0.514 0.000
+  , Color 1.000 0.541 0.071   -- 2000 K
+  , Color 1.000 0.557 0.129
+  , Color 1.000 0.576 0.173
+  , Color 1.000 0.596 0.212
+  , Color 1.000 0.616 0.247
+  , Color 1.000 0.631 0.282
+  , Color 1.000 0.647 0.310
+  , Color 1.000 0.663 0.341
+  , Color 1.000 0.678 0.369
+  , Color 1.000 0.694 0.396
+  , Color 1.000 0.706 0.420   -- 3000 K
+  , Color 1.000 0.722 0.447
+  , Color 1.000 0.733 0.471
+  , Color 1.000 0.745 0.494
+  , Color 1.000 0.757 0.518
+  , Color 1.000 0.769 0.537
+  , Color 1.000 0.780 0.561
+  , Color 1.000 0.788 0.580
+  , Color 1.000 0.800 0.600
+  , Color 1.000 0.808 0.624
+  , Color 1.000 0.820 0.639   -- 4000 K
+  , Color 1.000 0.827 0.659
+  , Color 1.000 0.835 0.678
+  , Color 1.000 0.843 0.694
+  , Color 1.000 0.851 0.714
+  , Color 1.000 0.859 0.729
+  , Color 1.000 0.867 0.745
+  , Color 1.000 0.875 0.761
+  , Color 1.000 0.882 0.776
+  , Color 1.000 0.890 0.792
+  , Color 1.000 0.894 0.808   -- 5000 K
+  , Color 1.000 0.902 0.824
+  , Color 1.000 0.910 0.835
+  , Color 1.000 0.914 0.851
+  , Color 1.000 0.922 0.863
+  , Color 1.000 0.925 0.878
+  , Color 1.000 0.933 0.890
+  , Color 1.000 0.937 0.902
+  , Color 1.000 0.941 0.914
+  , Color 1.000 0.949 0.925
+  , Color 1.000 0.953 0.937  --- 6000 K
+  , Color 1.000 0.957 0.949
+  , Color 1.000 0.961 0.961
+  , Color 1.000 0.965 0.969
+  , Color 1.000 0.973 0.984
+  , Color 1.000 0.976 0.992
+  , Color 0.996 0.976 1.000
+  , Color 0.988 0.969 1.000
+  , Color 0.976 0.965 1.000
+  , Color 0.969 0.961 1.000
+  , Color 0.961 0.953 1.000  --- 7000 K
+  , Color 0.953 0.949 1.000
+  , Color 0.941 0.945 1.000
+  , Color 0.937 0.941 1.000
+  , Color 0.929 0.937 1.000
+  , Color 0.922 0.933 1.000
+  , Color 0.914 0.929 1.000
+  , Color 0.906 0.925 1.000
+  , Color 0.902 0.922 1.000
+  , Color 0.894 0.918 1.000
+  , Color 0.890 0.914 1.000  -- 8000 K
+  , Color 0.882 0.910 1.000
+  , Color 0.878 0.906 1.000
+  , Color 0.871 0.902 1.000
+  , Color 0.867 0.902 1.000
+  , Color 0.863 0.898 1.000
+  , Color 0.855 0.898 1.000
+  , Color 0.851 0.890 1.000
+  , Color 0.847 0.890 1.000
+  , Color 0.843 0.886 1.000
+  , Color 0.839 0.882 1.000  -- 9000 K
+  , Color 0.831 0.882 1.000
+  , Color 0.827 0.878 1.000
+  , Color 0.824 0.875 1.000
+  , Color 0.820 0.875 1.000
+  , Color 0.816 0.871 1.000
+  , Color 0.812 0.867 1.000
+  , Color 0.812 0.867 1.000
+  , Color 0.808 0.863 1.000
+  , Color 0.804 0.863 1.000
+  , Color 0.812 0.855 1.000  -- 10000 K 
+  , Color 0.812 0.855 1.000
+  , Color 0.808 0.851 1.000
+  , Color 0.804 0.851 1.000
+  , Color 0.800 0.847 1.000
+  , Color 0.800 0.847 1.000
+  , Color 0.796 0.843 1.000
+  , Color 0.792 0.843 1.000
+  , Color 0.792 0.839 1.000
+  , Color 0.788 0.839 1.000
+  , Color 0.784 0.835 1.000  -- 11000 K
+  , Color 0.784 0.835 1.000
+  , Color 0.780 0.831 1.000
+  , Color 0.776 0.831 1.000
+  , Color 0.776 0.831 1.000
+  , Color 0.773 0.827 1.000
+  , Color 0.773 0.827 1.000
+  , Color 0.773 0.824 1.000
+  , Color 0.769 0.824 1.000
+  , Color 0.765 0.824 1.000
+  , Color 0.765 0.820 1.000  -- 12000 K
+  ]
