@@ -33,17 +33,16 @@ main = do
 
   -- read photon map
   --t0 <- TM.getCurrentTime
-  maps0 <- readMap (mapDivision scr) (nSamplePhoton scr) (radius scr)
+  (_msize, photonmap) <- readMap (nSamplePhoton scr) (radius scr)
   --hPutStr   stderr ("finished reading map:" ++ (show msize) ++ " photons, ")
   --t1 <- TM.getCurrentTime
   --hPutStrLn stderr (show (TM.diffUTCTime t1 t0))
 
   -- tracing image
   let
-    (_, maps) = V.unzip maps0
     filter = pfilter scr
     r = radius scr
-    tracer = traceRay filter objs lgts 0 maps r mate_air mate_air white
+    tracer = traceRay filter objs lgts 0 photonmap r mate_air mate_air white
   rays <- V.mapM (generateRay scr) $ screenMap scr
   image <- V.mapM tracer rays
 

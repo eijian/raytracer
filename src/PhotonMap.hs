@@ -12,6 +12,7 @@
 
 module PhotonMap (
   PhotonMap
+, buildMap
 , inradius
 , nearest
 , power
@@ -36,27 +37,21 @@ data PhotonMap = PhotonMap
   , inradius :: Photon -> V.Vector Photon
   }
 
-readMap :: Int -> Int -> Double -> IO (V.Vector (Int, PhotonMap))
-readMap mapdiv nsample radius = do
+readMap :: Int -> Double -> IO (Int, PhotonMap)
+readMap nsample radius = do
   _   <- T.getLine           -- discard infomation about the number of photon 
   pw0 <- T.getLine
   ps  <- T.getContents
   let
     pw = read (T.unpack pw0) :: Double
-    lss0 = T.lines ps
-  let
-    nline = (length lss0 `div` mapdiv) + 1
-    lss = V.fromList $ filter (\x -> length x > 0) $ splitEvery nline lss0
-  -- フォトンマップを分割しようとしたが、ごく少数のフォトンの場合に
-  -- うまく機能しないため１つのフォトンマップになるように戻した。
-  --return $ V.map (buildMap pw nsample radius) lss
-  return $ V.map (buildMap pw nsample radius) (V.fromList [lss0])
+    pcs = map readPhoton $ T.lines ps
+  return $ buildMap pw nsample radius pcs
 
-buildMap :: Double -> Int -> Double -> [T.Text] -> (Int, PhotonMap)
-buildMap pw nsample radius ls = (msize, pmap)
+buildMap :: Double -> Int -> Double -> [Photon] -> (Int, PhotonMap)
+buildMap pw nsample radius pcs = (msize, pmap)
   where
-    pcs = map convertToInfo $ map readPhoton ls
-    kdt = pcs `deepseq` KT.buildWithDist photonToPointList squaredDistance pcs
+    pcs' = map convertToInfo pcs
+    kdt = pcs' `deepseq` KT.buildWithDist photonToPointList squaredDistance pcs'
     msize = KT.size kdt
     pmap = PhotonMap pw (KT.kNearest kdt nsample) (KT.inRadius kdt $ sqrt radius)
 

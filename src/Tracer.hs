@@ -18,7 +18,7 @@ import           Control.Monad
 import           Data.Maybe hiding (catMaybes)
 import           Data.List hiding (sum)
 import           Data.Ord
---import           Debug.Trace
+import           Debug.Trace
 import qualified Data.Vector as V
 import           NumericPrelude
 
@@ -133,15 +133,11 @@ nextDirection mate surf eta nvec (wl, (_, vvec)) io = do
 -----
 
 traceRay :: PhotonFilter -> V.Vector Object -> V.Vector LightObject -> Int
-  -> V.Vector PhotonMap -> Double -> Material -> Material -> Color -> Ray
+  -> PhotonMap -> Double -> Material -> Material -> Color -> Ray
   -> IO Radiance
-traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !fr0 !ray@(_, vvec)
-  | l >= max_trace          = do
-    --putStrLn ("MAXTRACE:" ++ show fr0)
-    return radiance0
-  | lowerThan fr0 min_color = do
-    --putStrLn ("LOWER:" ++ show l ++ "/" ++ show fr0)
-    return radiance0
+traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !fr0 !ray@(_, vvec)
+  | l >= max_trace          = return radiance0
+  | lowerThan fr0 min_color = return radiance0
   | otherwise               = do
     case (calcIntersection ray objs) of
       Nothing            -> return radiance0
@@ -154,14 +150,14 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !fr0 !ray@(_, vv
             lrads <- V.mapM (getRadianceFromLight2 objs sfpt) lgts
             let
               ed_f = lrads `deepseq` foldl (+) radiance0 $ V.catMaybes lrads  -- 計算による放射照度
-              ed_p = estimateRadiance radius filter pmaps is                  -- 放射輝度推定による放射照度
+              ed_p = estimateRadiance radius filter pmap is                  -- 放射輝度推定による放射照度
             return (ed_f + ed_p)
           else return radiance0
 
         -- preparation for L_spec and L_trans
         nvec2 <- microfacetNormal nvec vvec surf (metalness mate)
         let
-          tracer = traceRay filter objs lgts (l+1) pmaps radius mate_air
+          tracer = traceRay filter objs lgts (l+1) pmap radius mate_air
           mate' = if io == In then mate else mate_air
           eta = relativeIorAverage (ior mate0) (ior mate')
           nvec' = case nvec2 of
@@ -197,12 +193,12 @@ traceRay !filter !objs !lgts !l !pmaps !radius !mate_air !mate0 !fr0 !ray@(_, vv
           le = emittance surf sfpt vvec
         return (tc <**> (le + li))
 
-estimateRadiance :: Double -> PhotonFilter -> V.Vector PhotonMap -> Intersection
+estimateRadiance :: Double -> PhotonFilter -> PhotonMap -> Intersection
   -> Radiance
-estimateRadiance rmax filter pmaps (_, (pos, nvec), _, _, _) = mag *> rad
+estimateRadiance rmax filter pmap (_, (pos, nvec), _, _, _) = mag *> rad
   where
-    mag = one_pi / rmax * (power (pmaps V.! 0))
-    rad = V.foldl (+) radiance0 $ V.map (estimateRadianceByMap rmax filter pos nvec) pmaps
+    mag = one_pi / rmax * (power pmap)
+    rad = estimateRadianceByMap rmax filter pos nvec pmap
 
 estimateRadianceByMap :: Double -> PhotonFilter -> Position3 -> Direction3 -> PhotonMap
   -> Radiance
