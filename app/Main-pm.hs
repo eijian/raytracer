@@ -1,8 +1,6 @@
 --
 -- Photon map generator (revision 2)
 --
--- compile: ghc -o pm PM.hs
--- usage  : ./pm [screen info file] > photonmapfile
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -17,11 +15,11 @@ import Ray.Light
 import Ray.Object
 import Ray.Optics
 import Scene
-import Screen
+import Camera
 import Tracer
 
 usage :: String
-usage = "Usage: pm <screen file> <scene file>  (output photon map to stdout)"
+usage = "Usage: pm <camera file> <scene file>  (output photon map to stdout)"
 
 main :: IO ()
 main = do
@@ -29,14 +27,12 @@ main = do
   (fn1, fn2) <- if length args == 2
     then return (args !! 0, args !! 1)
     else error usage
-  scr <- readScreen fn1
+  cam <- readCamera fn1
   (mate_air, lgts, objs) <- readScene fn2
   let
-    (ns, power) = calcNumPhotons lgts (nphoton scr)
-    --power = (V.sum $ V.map flux lgts) / (fromIntegral $ nphoton scr)
-    --ns = V.map (calcNumPhotons power) lgts
+    (ns, power) = calcNumPhotons lgts (nphoton cam)
     tracer = tracePhoton objs 0 mate_air mate_air
-  putStrLn $ show $ nphoton scr
+  putStrLn $ show $ nphoton cam
   putStrLn $ show power
   V.zipWithM_ (outputPhotons tracer) lgts ns
 

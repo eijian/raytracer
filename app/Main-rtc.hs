@@ -9,21 +9,21 @@ module Main where
 import Control.Monad
 import qualified Data.Vector as V
 
-import Scene
-import Screen
-import Tracer
 import Antialias
+import Camera
+import Scene
+import Tracer
 
 main :: IO ()
 main = do
   (lgts, objs) <- readScene ""
-  scr <- readScreen ""
-  mapM_ putStrLn $ pnmHeader scr
-  let tracer = traceRay' scr 0 lgts objs
-  rays <- V.mapM (generateRay scr) $ screenMap scr
+  cam <- readCamera ""
+  mapM_ putStrLn $ pnmHeader cam
+  let tracer = traceRay' cam 0 lgts objs
+  rays <- V.mapM (generateRay cam) $ screenMap cam
   image <- V.mapM tracer rays
-  let cells = V.map (radianceToRgb scr) image
+  let cells = V.map (radianceToRgb cam) image
   forM_ [0..(V.length cells - 1)] $ \i -> do
-    rgb <- smooth tracer scr cells i
+    rgb <- smooth tracer cam cells i
     putStrLn $ rgbToString rgb
 

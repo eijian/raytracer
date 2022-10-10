@@ -2,7 +2,7 @@
 -- Photon map generator and Ray Tracer (revision 2)
 --
 -- compile: cabal build
--- usage  : ./ppm [screen info file] > photonmapfile
+-- usage  : ./ppm [camera info file] > photonmapfile
 
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -17,13 +17,13 @@ import Ray.Material
 import Ray.Object
 import Ray.Optics
 import Ray.Physics
+import Camera
 import PhotonMap
 import Scene
-import Screen
 import Tracer
 
 usage :: String
-usage = "Usage: ppm <screen file> <scene file>  (output image data to stdout)"
+usage = "Usage: ppm <camera file> <scene file>  (output image data to stdout)"
 
 main :: IO ()
 main = do
@@ -31,26 +31,26 @@ main = do
   (fn1, fn2) <- if length args == 2
     then return (args !! 0, args !! 1)
     else error usage
-  scr <- readScreen fn1
+  cam <- readCamera fn1
   (mate_air, lgts, objs) <- readScene fn2
 
-  photonmap <- photonMap scr objs lgts mate_air
-  traceRays scr objs lgts photonmap mate_air
+  photonmap <- photonMap cam objs lgts mate_air
+  traceRays cam objs lgts photonmap mate_air
 
 -- Create Photon Map
 
-photonMap :: Screen -> V.Vector Object -> V.Vector LightObject -> Material 
+photonMap :: Camera -> V.Vector Object -> V.Vector LightObject -> Material 
   -> IO PhotonMap
-photonMap scr objs lgts mate_air = do
-  (power, photons) <- tracePhotons scr objs lgts mate_air
-  let (_, photonmap) = buildMap power (nSamplePhoton scr) (radius scr) (V.toList photons)
+photonMap cam objs lgts mate_air = do
+  (power, photons) <- tracePhotons cam objs lgts mate_air
+  let (_, photonmap) = buildMap power (nSamplePhoton cam) (radius cam) (V.toList photons)
   return photonmap
 
-tracePhotons :: Screen -> V.Vector Object -> V.Vector LightObject -> Material
+tracePhotons :: Camera -> V.Vector Object -> V.Vector LightObject -> Material
   -> IO (Double, V.Vector Photon)
-tracePhotons scr objs lgts mate_air = do
+tracePhotons cam objs lgts mate_air = do
   let
-    (ns, power) = calcNumPhotons lgts (nphoton scr)
+    (ns, power) = calcNumPhotons lgts (nphoton cam)
     tracer = tracePhoton objs 0 mate_air mate_air
   plists <- V.zipWithM (recordPhotons tracer) lgts ns
   let photons = V.foldl' (V.++) V.empty plists
@@ -69,16 +69,16 @@ recordPhoton tracer lgt _ = do
 
 -- rendering by Ray Tracing
 
-traceRays :: Screen -> V.Vector Object -> V.Vector LightObject -> PhotonMap -> Material -> IO ()
-traceRays scr objs lgts photonmap mate_air = do
+traceRays :: Camera -> V.Vector Object -> V.Vector LightObject -> PhotonMap -> Material -> IO ()
+traceRays cam objs lgts photonmap mate_air = do
   let
-    filter = pfilter scr
-    r = radius scr
+    filter = pfilter cam
+    r = radius cam
     tracer = traceRay filter objs lgts 0 photonmap r mate_air mate_air white
-  rays <- V.mapM (generateRay scr) $ screenMap scr
+  rays <- V.mapM (generateRay cam) $ screenMap cam
   image <- V.mapM tracer rays
 
-  mapM_ putStrLn $ pnmHeader scr
+  mapM_ putStrLn $ pnmHeader cam
   V.mapM_ (putStrLn.radianceToString) image
 
 

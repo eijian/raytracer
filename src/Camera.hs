@@ -1,15 +1,15 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 --
--- Screen module
+-- Camera module
 --
 
-module Screen (
+module Camera (
   Rgb
-, Screen(..)
+, Camera(..)
 , radianceToString
 , radianceToText
-, readScreen
+, readCamera
 , rgbToRadiance
 , rgbToString
 , rgbToText
@@ -35,7 +35,7 @@ import           Parser
 
 type Rgb = (Int, Int, Int)
 
-data Screen = Screen
+data Camera = Camera
   { nphoton             :: Int
   , progressive         :: Bool
   , xreso               :: Int
@@ -89,8 +89,8 @@ defconf = M.fromList [
 -- PUBLIC FUNCTIONS
 --
 
-readScreen :: String -> IO Screen
-readScreen file = do
+readCamera :: String -> IO Camera
+readCamera file = do
   lines <- readConfig file
   let
     -- input params
@@ -122,7 +122,7 @@ readScreen file = do
     eyedir = fromJust $ normalize (targetpos - eyepos)
     fgenray = makeGenerateRay antialias progressive eyepos targetpos xres yres upper focus focallen fnumber
     radius2 = radius * radius -- square of radius
-    scr = Screen
+    cam = Camera
       nphoton
       progressive
       xres
@@ -141,7 +141,7 @@ readScreen file = do
       fheader      -- func to generate header of PNM format
       fmaxrad      -- func to convert from radiance to rgb
       fgenray      -- func to generate rays
-  return scr
+  return cam
 
 rgbToString :: Rgb -> String
 rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b
@@ -155,13 +155,13 @@ radianceToString (Radiance r g b) = show r ++ " " ++ show g ++ " " ++ show b
 radianceToText :: Radiance -> T.Text
 radianceToText (Radiance r g b) = T.pack (show r ++ " " ++ show g ++ " " ++ show b)
 
-rgbToRadiance :: Screen -> Rgb -> Radiance
-rgbToRadiance scr (r, g, b) =
+rgbToRadiance :: Camera -> Rgb -> Radiance
+rgbToRadiance cam (r, g, b) =
   Radiance (fromIntegral r * mag)
            (fromIntegral g * mag)
            (fromIntegral b * mag)
   where
-    mag = maxradiance scr / rgbmax
+    mag = maxradiance cam / rgbmax
 --
 -- PRIVATE FUNCTIONS
 --
@@ -185,7 +185,7 @@ parseLines :: [String] -> [Param]
 parseLines []     = []
 parseLines (l:ls) = p:(parseLines ls)
   where
-    p = case (parse sline "rt screen file parse error" l) of
+    p = case (parse sline "rt camera file parse error" l) of
         Left  e  -> error $ (show e ++ "\nLINE: " ++ l)
         Right p' -> p'
 

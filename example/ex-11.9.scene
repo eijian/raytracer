@@ -2,7 +2,7 @@
 
 lightspec:
   ceiling_light:
-    temperature: 6500
+    temperature: 2700
     radiosity  : 1950
     directivity: 0.0       # 指向性: 0.0(なし) 〜 1.0(平行光源)
     rad_est    : formula   # 直接光輝度推定方法
@@ -404,7 +404,7 @@ object:
       - [ [ 7, 18, 0 ], [ 1, 18, 0 ], [ 0, 18, 0 ] ]
       - [ [ 3, 19, 0 ], [ 9, 19, 0 ], [ 8, 19, 0 ] ]
       - [ [ 4, 20, 0 ], [ 8, 20, 0 ], [ 0, 20, 0 ] ]
-    mapper  : clearglass
+    mapper  : cleardiamond
 
 scene:
   - floor
@@ -421,8 +421,8 @@ scene:
   #- sunlight
 
   #- ball_glass
-  #- ball_diamond
-  - icosahedron
+  - ball_diamond
+  #- icosahedron
   - ball_silver
   #- ball_stucco
   #- ball_plastic

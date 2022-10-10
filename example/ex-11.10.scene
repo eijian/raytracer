@@ -3,8 +3,8 @@
 lightspec:
   sun:
     # 12:00
-    temperature: 5500
-    radiosity  : 3500
+    #temperature: 5500
+    #radiosity  : 3500
     # 15:00
     #temperature: 5000
     #radiosity  : 3500
@@ -12,16 +12,16 @@ lightspec:
     #temperature: 3500
     #radiosity  : 3500
     # 17:30
-    #temperature: 2000
-    #radiosity  : 3000
+    temperature: 2000
+    radiosity  : 3000
     directivity: 0.5
     rad_est    : formula
     direction  : out
 
   sky:
     # 12:00
-    temperature: 25000
-    radiosity  : 40
+    #temperature: 25000
+    #radiosity  : 40
     # 15:00
     #temperature: 18000
     #radiosity  : 30
@@ -29,8 +29,8 @@ lightspec:
     #temperature: 3500
     #radiosity  : 15
     # 17:30
-    #temperature: 2500
-    #radiosity  : 5
+    temperature: 2500
+    radiosity  : 5
     # 曇天
     #temperature : 6500
     #radiosity   : 80
@@ -185,9 +185,9 @@ object:
     #pos2    : [  0.5,  0.5, 4.0 ]
     #pos3    : [ -0.5, -0.5, 4.0 ]
     # 9/23 12:00 (54.93, -3.27)
-    pos1    : [ -0.391,  3.561, 1.915 ]
-    pos2    : [  0.607,  3.561, 1.857 ]
-    pos3    : [ -0.345, 2.987, 2.732 ]
+    #pos1    : [ -0.391,  3.561, 1.915 ]
+    #pos2    : [  0.607,  3.561, 1.857 ]
+    #pos3    : [ -0.345, 2.987, 2.732 ]
     # 9/23 15:00 (34.01, -61.70)
     #pos1    : [ 2.436, 2.652, 1.880 ]
     #pos2    : [ 2.910, 2.652, 0.999 ]
@@ -197,9 +197,9 @@ object:
     #pos2    : [ 3.870, 1.235, 0.019 ]
     #pos3    : [ 3.920, 0.253, 1.035 ]
     # 9/23 17:30 (4.69, -86.68)
-    #pos1    : [ 3.910, 0.825, 0.728 ]
-    #pos2    : [ 3.968, 0.825, -0.271 ]
-    #pos3    : [ 3.992, -0.171, 0.732 ]
+    pos1    : [ 3.910, 0.825, 0.728 ]
+    pos2    : [ 3.968, 0.825, -0.271 ]
+    pos3    : [ 3.992, -0.171, 0.732 ]
     normal  : 
     mapper  : sunlight
 
@@ -225,7 +225,7 @@ object:
     type    : sphere
     center  : [ -0.4, 0.2, 0.3 ]
     radius  : 0.2
-    mapper  : glossycopper
+    mapper  : polishcopper
 
 scene:
   - floor
