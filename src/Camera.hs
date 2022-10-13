@@ -37,12 +37,12 @@ type Rgb = (Int, Int, Int)
 
 data Camera = Camera
   { nphoton             :: Int
-  , progressive         :: Bool
+  --, progressive         :: Bool
   , xreso               :: Int
   , yreso               :: Int
   , antialias           :: Bool
   , nSamplePhoton       :: Int
-  , mapDivision         :: Int
+  --, mapDivision         :: Int
   , radius              :: Double
   , pfilter             :: PhotonFilter
   , ambient             :: Radiance
@@ -69,12 +69,12 @@ rgbmax = 255.0
 defconf :: M.Map String String
 defconf = M.fromList [
     (rNPhoton       , "100000")
-  , (rProgressive   , "False")
+--  , (rProgressive   , "False")
   , (rXresolution   , "256")
   , (rYresolution   , "256")
   , (rAntialias     , "True")
   , (rSamplePhoton  , "100")
-  , (rMapDivision   , "1")
+--  , (rMapDivision   , "1")
   , (rEstimateRadius, "0.2")
   , (rAmbient       , "Radiance 0.001 0.001 0.001")
   , (rMaxRadiance   , "0.01")
@@ -97,12 +97,12 @@ readCamera file = do
     conf = parseConfig defconf lines
     --conf = defconf
     nphoton     = read (conf M.! rNPhoton       ) :: Int
-    progressive = read (conf M.! rProgressive   ) :: Bool
+    --progressive = read (conf M.! rProgressive   ) :: Bool
     xres        = read (conf M.! rXresolution   ) :: Int
     yres        = read (conf M.! rYresolution   ) :: Int
     antialias   = read (conf M.! rAntialias     ) :: Bool
     samphoton   = read (conf M.! rSamplePhoton  ) :: Int
-    mapdivision = read (conf M.! rMapDivision   ) :: Int
+    --mapdivision = read (conf M.! rMapDivision   ) :: Int
     radius      = read (conf M.! rEstimateRadius) :: Double
     amb         = read (conf M.! rAmbient       ) :: Radiance
     maxrad      = read (conf M.! rMaxRadiance   ) :: Double
@@ -120,16 +120,16 @@ readCamera file = do
     smap = V.fromList [(fromIntegral y, fromIntegral x) |
       y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
     eyedir = fromJust $ normalize (targetpos - eyepos)
-    fgenray = makeGenerateRay antialias progressive eyepos targetpos xres yres upper focus focallen fnumber
+    fgenray = makeGenerateRay antialias eyepos targetpos xres yres upper focus focallen fnumber
     radius2 = radius * radius -- square of radius
     cam = Camera
       nphoton
-      progressive
+      --progressive
       xres
       yres
       antialias    -- anti aliasing on/off
       samphoton    -- nSamplePhoton
-      mapdivision  -- photon map division number
+      --mapdivision  -- photon map division number
       radius2      -- radius for radiance estimate
       pfilt        -- filter for photon gathering
       amb          -- ambient radiance
@@ -189,12 +189,12 @@ parseLines (l:ls) = p:(parseLines ls)
         Left  e  -> error $ (show e ++ "\nLINE: " ++ l)
         Right p' -> p'
 
-makeGenerateRay :: Bool -> Bool
-                -> Position3 -> Direction3 -> Int -> Int -> Direction3
+makeGenerateRay :: Bool -> Position3 -> Direction3 -> Int -> Int -> Direction3
                 -> Double -> Double -> Double
                 -> ((Double, Double) -> IO Ray)
-makeGenerateRay aaflag prflag epos target xr yr udir fd fl = do
+makeGenerateRay aaflag epos target xr yr udir fd fl = do
   let
+    fnum = 1.8
     ez = fromJust $ normalize (target - epos)
     ex = fromJust $ normalize (udir <*> ez)
     ey = fromJust $ normalize (ex   <*> ez)
@@ -202,30 +202,25 @@ makeGenerateRay aaflag prflag epos target xr yr udir fd fl = do
     step = (fd * 0.035 / fl)/ fromIntegral xr
     esx  = step *> ex
     esy  = step *> ey
-    fnum = 4.0 :: Double
-    ea   = fl / fnum
-    eex  = ea *> ex
-    eey  = ea *> ey
+    ea   = fl / fnum / 2.0
+    lens_x  = ea *> ex
+    lens_y  = ea *> ey
     lx = fromIntegral (xr `div` 2) :: Double
     ly = fromIntegral (yr `div` 2) :: Double
     orig = fd *> ez - (lx - 0.5) *> esx - (ly - 0.5) *> esy
     --blurflag = fnum < 1000
-    blurflag = False
-  
-  return (generateRay0 aaflag prflag blurflag epos orig esx esy eex eey)
+    blurflag = if fnum >= 100 then False else True  -- F値が100以上ならピンホールカメラ
+    fgenray = generateRay0 aaflag blurflag epos orig esx esy lens_x lens_y
+  return fgenray
 
-generateRay0 :: Bool -> Bool -> Bool -> Position3 -> Position3
+generateRay0 :: Bool -> Bool -> Position3 -> Position3
              -> Direction3 -> Direction3 -> Direction3 -> Direction3
              -> (Double, Double) -> IO Ray
-generateRay0 aaflag prflag blurflag e o esx esy eex eey (y, x) = do
-  blur <- if blurflag == True
-    then do
-      r1 <- MT.randomIO :: IO Double
-      r2 <- MT.randomIO :: IO Double
-      return ((r1 - 0.5) *> eex + (r2 - 0.5) *> eey)
-    else
-      return o3
-  (r3, r4) <- if prflag == True && aaflag == True
+generateRay0 aaflag blurflag eyepos0 origin esx esy lens_x lens_y (y, x) = do
+  blur <- lensOffset blurflag lens_x lens_y
+  --putStrLn ("OR:" ++ show origin ++ ", BL:" ++ show blur)
+  --putStrLn ("BL:" ++ show blur)
+  (r3, r4) <- if aaflag == True
     then do
       r3' <- MT.randomIO :: IO Double
       r4' <- MT.randomIO :: IO Double
@@ -233,10 +228,23 @@ generateRay0 aaflag prflag blurflag e o esx esy eex eey (y, x) = do
     else
       return (0.0, 0.0)
   let
-    eyepos = e + blur
-    eyedir = o + (x + r3) *> esx + (y + r4) *> esy - blur
+    eyepos = eyepos0 + blur
+    eyedir = origin + (x + r3) *> esx + (y + r4) *> esy - blur
   return (initRay eyepos (fromJust $ normalize eyedir))
-  
+
+lensOffset :: Bool -> Direction3 -> Direction3 -> IO Direction3
+lensOffset blurflag lens_x lens_y = if blurflag == False
+    then return o3
+    else do
+      r1 <- MT.randomIO :: IO Double
+      r2 <- MT.randomIO :: IO Double
+      let
+        ofx = 2.0 * (r1 - 0.5)
+        ofy = 2.0 * (r2 - 0.5)
+      if ofx * ofx + ofy * ofy <= 1.0
+        then return (ofx *> lens_x + ofy *> lens_y)
+        else lensOffset blurflag lens_x lens_y
+
 pnmHeader0 :: Int -> Int -> Double -> [String]
 pnmHeader0 xr yr maxrad =
   ["P3"

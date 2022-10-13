@@ -15,8 +15,10 @@ maxradiance   : 0.01
 #targetposition: [ 0.0, 0.0, 0.0 ]
 eyeposition   : [ 0.2, 0.7, -1.5 ]
 targetposition: [ 0.1, 0.4, 0.0 ]
+#eyeposition   : [ 0.0, 0.2, -1.5 ]
+#targetposition: [ 0.0, 0.2, 0.0 ]
 upperdirection: [ 0.0, 1.0, 0.0 ]
-focus         : 7.0
+focus         : 1.8
 #photonfilter  : gauss               # none, cone, gauss
 photonfilter  : none               # none, cone, gauss
 #photonfilter  : cone               # none, cone, gauss
