@@ -43,7 +43,7 @@ photonMap :: Camera -> V.Vector Object -> V.Vector LightObject -> Material
   -> IO PhotonMap
 photonMap cam objs lgts mate_air = do
   (power, photons) <- tracePhotons cam objs lgts mate_air
-  let (_, photonmap) = buildMap power (nSamplePhoton cam) (radius cam) (V.toList photons)
+  let (_, photonmap) = buildMap power 100 (radius cam) (V.toList photons)
   return photonmap
 
 tracePhotons :: Camera -> V.Vector Object -> V.Vector LightObject -> Material

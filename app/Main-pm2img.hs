@@ -47,7 +47,7 @@ main = do
   pcs <- forM (lines dat) $ \i -> do
     return $ (read i :: PhotonCache)
   let
-    cp  = target (focus cam) (initRay (eyePos cam) (eyeDir cam))
+    cp  = target (focusDistance cam) (initRay (eyePos cam) (eyeDir cam))
     sc  = Plain (eyeDir cam) (negate (eyeDir cam) <.> cp)
     map = getMap cam cp sc pcs
   forM_ (map) $ \i -> do
@@ -58,7 +58,7 @@ getMap :: Camera -> Position3 -> Shape -> [PhotonCache]
    -> [(Wavelength, Int, Int)]
 getMap _ _ _ [] = []
 getMap cam cp sc (pc:pcs)
-  | t < (focus cam)         = next
+  | t < (focusDistance cam)         = next
   | px < 0 || px > (xr - 1) = next
   | py < 0 || py > (yr - 1) = next
   | dist == Nothing         = next

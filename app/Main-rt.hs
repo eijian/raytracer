@@ -33,7 +33,7 @@ main = do
 
   -- read photon map
   --t0 <- TM.getCurrentTime
-  (_msize, photonmap) <- readMap (nSamplePhoton cam) (radius cam)
+  (_msize, photonmap) <- readMap (radius cam)
   --hPutStr   stderr ("finished reading map:" ++ (show msize) ++ " photons, ")
   --t1 <- TM.getCurrentTime
   --hPutStrLn stderr (show (TM.diffUTCTime t1 t0))
@@ -43,6 +43,7 @@ main = do
     filter = pfilter cam
     r = radius cam
     tracer = traceRay filter objs lgts 0 photonmap r mate_air mate_air white
+    la = lightAmount cam
   rays <- V.mapM (generateRay cam) $ screenMap cam
   image <- V.mapM tracer rays
 
@@ -51,8 +52,9 @@ main = do
   -- progressive mode is default
   --if (progressive cam) == True
   --    then
-
-  V.mapM_ (putStrLn.radianceToString) image
+  let
+    image' = V.map (\x -> x) image
+  V.mapM_ (putStrLn.radianceToString) image'
   
   --  else do
   --    let pixels = V.map (radianceToRgb cam) image

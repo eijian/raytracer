@@ -37,15 +37,15 @@ data PhotonMap = PhotonMap
   , inradius :: Photon -> V.Vector Photon
   }
 
-readMap :: Int -> Double -> IO (Int, PhotonMap)
-readMap nsample radius = do
+readMap :: Double -> IO (Int, PhotonMap)
+readMap radius = do
   _   <- T.getLine           -- discard infomation about the number of photon 
   pw0 <- T.getLine
   ps  <- T.getContents
   let
     pw = read (T.unpack pw0) :: Double
     pcs = map readPhoton $ T.lines ps
-  return $ buildMap pw nsample radius pcs
+  return $ buildMap pw 100 radius pcs
 
 buildMap :: Double -> Int -> Double -> [Photon] -> (Int, PhotonMap)
 buildMap pw nsample radius pcs = (msize, pmap)

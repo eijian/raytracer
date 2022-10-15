@@ -5,12 +5,17 @@
 --
 
 module Parser (
-  rNPhoton
+  rFocalLength
+, rFnumber
+, rFocusDistance
+, rIsoSensitivity
+, rNPhoton
 , rProgressive
 , rXresolution
 , rYresolution
 , rAntialias
 , rSamplePhoton
+, rShutterSpeed
 , rMapDivision
 , rEstimateRadius
 , rAmbient
@@ -18,7 +23,6 @@ module Parser (
 , rEyePosition
 , rTargetPosition
 , rUpperDirection
-, rFocus
 , rPhotonFilter
 , Param
 , removeComment
@@ -86,11 +90,20 @@ rEstimateRadius = "estimateradius"
 rEyePosition :: String
 rEyePosition = "eyeposition"
 
-rFocus :: String
-rFocus = "focus"
+rFocalLength :: String
+rFocalLength = "focallength"
+
+rFnumber :: String
+rFnumber = "fnumber"
+
+rFocusDistance :: String
+rFocusDistance = "focusdistance"
 
 rIor :: String
 rIor = "ior"
+
+rIsoSensitivity :: String
+rIsoSensitivity = "isosensitivity"
 
 rLight :: String
 rLight = "light"
@@ -178,6 +191,9 @@ rScale = "scale"
 
 rScatterness :: String
 rScatterness = "scatterness"
+
+rShutterSpeed :: String
+rShutterSpeed = "shutterspeed"
 
 rSolid :: String
 rSolid = "solid"
@@ -273,7 +289,7 @@ sline = do
        (try eyepos)      <|>
        (try targetp)     <|>
        (try upperd)      <|>
-       (try focus)       <|>
+       (try focusdist)   <|>
        (try pfilt)       <|>
        (try blanc)
   return p
@@ -431,13 +447,13 @@ upperd = do
   return (rUpperDirection, show v)
 
 
-focus :: Parser Param
-focus = do
-  _ <- string rFocus
+focusdist :: Parser Param
+focusdist = do
+  _ <- string rFocusDistance
   _ <- separator
   f <- float
   _ <- blanc
-  return (rFocus, show f)
+  return (rFocusDistance, show f)
 
 ---------------------------------------------
 
