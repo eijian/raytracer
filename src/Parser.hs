@@ -5,26 +5,23 @@
 --
 
 module Parser (
-  rFocalLength
+  Param
+, rAmbient
+, rAntialias
+, rFocalLength
 , rFnumber
 , rFocusDistance
 , rIsoSensitivity
 , rNPhoton
 , rProgressive
-, rXresolution
-, rYresolution
-, rAntialias
-, rSamplePhoton
+, rResolution
 , rShutterSpeed
-, rMapDivision
 , rEstimateRadius
-, rAmbient
 , rMaxRadiance
 , rEyePosition
 , rTargetPosition
 , rUpperDirection
 , rPhotonFilter
-, Param
 , removeComment
 , sline
 , world
@@ -180,6 +177,9 @@ rRadiosity = "radiosity"
 rRadius :: String
 rRadius = "radius"
 
+rResolution :: String
+rResolution = "resolution"
+
 rRoughness :: String
 rRoughness = "roughness"
 
@@ -218,12 +218,6 @@ rType = "type"
 
 rUpperDirection :: String
 rUpperDirection = "upperdirection"
-
-rXresolution :: String
-rXresolution = "xresolution"
-
-rYresolution :: String
-rYresolution = "yresolution"
 
 --
 -- Parsers
@@ -276,23 +270,92 @@ expecting "nphoton", "progressive", "xresolution", "yresolution", "antialias", "
 
 sline :: Parser Param
 sline = do
-  p <- (try nphoton)     <|>
-       (try progressive) <|>
-       (try xreso)       <|>
-       (try yreso)       <|>
+  p <- (try focallen)    <|>
+       (try fnumber)     <|>
+       (try focusdist)   <|>
+       (try isosens)     <|>
+       (try shutterspd)  <|>
+       (try reso)        <|>
        (try antialias)   <|>
-       (try samphoton)   <|>
-       (try mapdivision) <|>
+       (try nphoton)     <|>
        (try estradius)   <|>
-       (try ambient)     <|>
-       (try maxrad)      <|>
+       (try pfilt)       <|>
        (try eyepos)      <|>
        (try targetp)     <|>
        (try upperd)      <|>
-       (try focusdist)   <|>
-       (try pfilt)       <|>
+       (try ambient)     <|>
        (try blanc)
   return p
+
+focallen :: Parser Param
+focallen = do
+  _ <- string rFocalLength
+  _ <- separator
+  f <- float
+  _ <- blanc
+  return (rFocalLength, show f)
+
+fnumber :: Parser Param
+fnumber = do
+  _ <- string rFnumber
+  _ <- separator
+  f <- float
+  _ <- blanc
+  return (rFnumber, show f)
+
+focusdist :: Parser Param
+focusdist = do
+  _ <- string rFocusDistance
+  _ <- separator
+  f <- float
+  _ <- blanc
+  return (rFocusDistance, show f)
+
+isosens :: Parser Param
+isosens = do
+  _ <- string rIsoSensitivity
+  _ <- separator
+  f <- float
+  _ <- blanc
+  return (rIsoSensitivity, show f)
+
+shutterspd :: Parser Param
+shutterspd = do
+  _ <- string rShutterSpeed
+  _ <- separator
+  f <- float
+  _ <- blanc
+  return (rShutterSpeed, show f)
+
+{- |
+>>> parse xreso pname "xresolution : 256"
+Right ("xresolution","256")
+>>> parse xreso pname "xresolution: 256"
+Right ("xresolution","256")
+>>> parse xreso pname "xresolution      : 256"
+Right ("xresolution","256")
+>>> parse xreso pname "xresolution      : 256  "
+Right ("xresolution","256")
+>>> parse xreso pname "xresolution :256"         -- YAML error
+Left "rt parser" (line 1, column 14):
+unexpected "2"
+-}
+
+reso :: Parser Param
+reso = do
+  _ <- string rResolution
+  _ <- separator
+  i2 <- integer2
+  _ <- blanc
+  return (rResolution, show i2)
+
+antialias :: Parser Param
+antialias = do
+  _ <- string rAntialias
+  _ <- separator
+  b <- yesno
+  _ <- blanc
+  return (rAntialias, show b)
 
 {- |
 >>> parse nphoton pname "nphoton : 256"
@@ -310,84 +373,6 @@ nphoton = do
   _ <- blanc
   return (rNPhoton, show i)
 
-progressive :: Parser Param
-progressive = do
-  _ <- string rProgressive
-  _ <- separator
-  b <- yesno
-  _ <- blanc
-  return (rProgressive, show b)
-
-{- |
->>> parse xreso pname "xresolution : 256"
-Right ("xresolution","256")
->>> parse xreso pname "xresolution: 256"
-Right ("xresolution","256")
->>> parse xreso pname "xresolution      : 256"
-Right ("xresolution","256")
->>> parse xreso pname "xresolution      : 256  "
-Right ("xresolution","256")
->>> parse xreso pname "xresolution :256"         -- YAML error
-Left "rt parser" (line 1, column 14):
-unexpected "2"
--}
-
-xreso :: Parser Param
-xreso = do
-  _ <- string rXresolution
-  _ <- separator
-  i <- integer
-  _ <- blanc
-  return (rXresolution, show i)
-
-{- |
->>> parse yreso pname "yresolution : 256"
-Right ("yresolution","256")
->>> parse yreso pname "yresolution: 256"
-Right ("yresolution","256")
->>> parse yreso pname "yresolution      : 256"
-Right ("yresolution","256")
->>> parse yreso pname "yresolution :256"         -- YAML error
-Left "rt parser" (line 1, column 14):
-unexpected "2"
->>> parse yreso pname "xresolution: 256"
-Left "rt parser" (line 1, column 1):
-unexpected "x"
-expecting "yresolution"
--}
-
-yreso :: Parser Param
-yreso = do
-  _ <- string rYresolution
-  _ <- separator
-  i <- integer
-  _ <- blanc
-  return (rYresolution, show i)
-
-antialias :: Parser Param
-antialias = do
-  _ <- string rAntialias
-  _ <- separator
-  b <- yesno
-  _ <- blanc
-  return (rAntialias, show b)
-
-samphoton :: Parser Param
-samphoton = do
-  _ <- string rSamplePhoton
-  _ <- separator
-  i <- integer
-  _ <- blanc
-  return (rSamplePhoton, show i)
-
-mapdivision :: Parser Param
-mapdivision = do
-  _ <- string rMapDivision
-  _ <- separator
-  i <- integer
-  _ <- blanc
-  return (rMapDivision, show i)
-
 estradius :: Parser Param
 estradius = do
   _ <- string rEstimateRadius
@@ -397,30 +382,22 @@ estradius = do
   return (rEstimateRadius, show f)
 
 {- |
->>> parse ambient pname "ambient       : [ 0.001, 0.001, 0.001 ]"
-Right ("ambient","Radiance 1.0e-3 1.0e-3 1.0e-3")
+
 -}
 
-ambient :: Parser Param
-ambient = do
-  _ <- string rAmbient
+pfilt :: Parser Param
+pfilt = do
+  _ <- string rPhotonFilter
   _ <- separator
-  r <- radiance
+  s <- string "none" <|> string "cone" <|> string "gauss"
   _ <- blanc
-  return (rAmbient, show r)
-
-{- |
->>> parse maxrad pname "maxradiance : 0.1"
-Right ("maxradiance","0.1")
--}
-
-maxrad :: Parser Param
-maxrad = do
-  _ <- string rMaxRadiance
-  _ <- separator
-  f <- float 
-  _ <- blanc
-  return (rMaxRadiance, show f)
+  let
+    f = case s of
+        "none"  -> Nonfilter
+        "cone"  -> Conefilter
+        "gauss" -> Gaussfilter
+        _       -> Nonfilter
+  return (rPhotonFilter, show f)
 
 eyepos :: Parser Param
 eyepos = do
@@ -446,14 +423,19 @@ upperd = do
   _ <- blanc
   return (rUpperDirection, show v)
 
+{- |
+>>> parse ambient pname "ambient       : [ 0.001, 0.001, 0.001 ]"
+Right ("ambient","Radiance 1.0e-3 1.0e-3 1.0e-3")
+-}
 
-focusdist :: Parser Param
-focusdist = do
-  _ <- string rFocusDistance
+ambient :: Parser Param
+ambient = do
+  _ <- string rAmbient
   _ <- separator
-  f <- float
+  r <- radiance
   _ <- blanc
-  return (rFocusDistance, show f)
+  return (rAmbient, show r)
+
 
 ---------------------------------------------
 
@@ -1692,24 +1674,6 @@ identifier = do
   return (s1 ++ [s2] ++ s3)
 
 {- |
-
--}
-
-pfilt :: Parser Param
-pfilt = do
-  _ <- string rPhotonFilter
-  _ <- separator
-  s <- string "none" <|> string "cone" <|> string "gauss"
-  _ <- blanc
-  let
-    f = case s of
-        "none"  -> Nonfilter
-        "cone"  -> Conefilter
-        "gauss" -> Gaussfilter
-        _       -> Nonfilter
-  return (rPhotonFilter, show f)
-
-{- |
 >>> parse blanc pname ""
 Right ("","")
 >>> parse blanc pname " "
@@ -1915,6 +1879,38 @@ float = do
           Left  i  -> fromIntegral (i::Int)
           Right f' -> f'
   return $ s f
+
+{- |
+>>> parse integer2 pname "[ 0.1, 0.2 ]"
+Right (0.1,0.2)
+>>> parse integer2 pname "[ 0.1, -0.2 ]"
+Right (0.1,-0.2)
+>>> parse integer2 pname "[0.1, 0.2 ]"
+Left "rt parser" (line 1, column 2):
+unexpected "0"
+expecting space
+>>> parse integer2 pname "[ 0.1,0.2 ]"
+Left "rt parser" (line 1, column 7):
+unexpected "0"
+expecting space
+>>> parse integer2 pname "[ 0.1, 0.2]"
+Left "rt parser" (line 1, column 11):
+unexpected "]"
+expecting digit, exponent or space
+-}
+
+integer2 :: Parser (Int, Int)
+integer2 = do
+  _ <- string "["
+  _ <- many1 space
+  d1 <- integer
+  _ <- string ","
+  _ <- many1 space
+  d2 <- integer
+  _ <- many1 space
+  _ <- string "]"
+  return (d1, d2)
+
 
 {- |
 >>> parse integer "rt parser" "1"

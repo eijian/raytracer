@@ -43,7 +43,6 @@ main = do
     filter = pfilter cam
     r = radius cam
     tracer = traceRay filter objs lgts 0 photonmap r mate_air mate_air white
-    la = lightAmount cam
   rays <- V.mapM (generateRay cam) $ screenMap cam
   image <- V.mapM tracer rays
 
@@ -53,7 +52,7 @@ main = do
   --if (progressive cam) == True
   --    then
   let
-    image' = V.map (\x -> x) image
+    image' = V.map (compensateExposure cam) image
   V.mapM_ (putStrLn.radianceToString) image'
   
   --  else do

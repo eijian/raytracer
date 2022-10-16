@@ -1,0 +1,22 @@
+#
+
+focallength   : 50
+fnumber       : 8.0
+focusdistance : 0.5
+isosensitivity: 400
+shutterspeed  : 32
+resolution    : [ 256, 256 ]
+antialias     : yes                # yes or no
+nphoton       : 100000
+estimateradius: 0.1
+#photonfilter  : gauss               # none, cone, gauss
+photonfilter  : none               # none, cone, gauss
+#photonfilter  : cone               # none, cone, gauss
+#eyeposition   : [ 0.3, 2.0, -1.0 ]
+#targetposition: [ 0.0, 0.0, 0.0 ]
+eyeposition   : [ 0.2, 0.7, -1.5 ]
+targetposition: [ 0.1, 0.4, 0.0 ]
+#eyeposition   : [ 0.0, 0.2, -1.5 ]
+#targetposition: [ 0.0, 0.2, 0.0 ]
+upperdirection: [ 0.0, 1.0, 0.0 ]
+ambient       : [ 0.001, 0.001, 0.001 ]

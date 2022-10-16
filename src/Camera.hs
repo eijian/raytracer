@@ -7,6 +7,7 @@
 module Camera (
   Rgb
 , Camera(..)
+, compensateExposure
 , generateRay
 , radianceToString
 , radianceToText
@@ -43,31 +44,25 @@ data Camera = Camera
   , focusDistance       :: Double   -- フォーカス距離(m)
   , isoSensitivity      :: Double   -- ISO感度
   , shutterSpeed        :: Double   -- シャッタースピード(/sec)
-  , lightAmount         :: Double   -- 光量
+  , exposure            :: Double   -- 光量
   , lens                :: (Direction3, Direction3)   -- レンズXYベクトル
   , blurFlag           :: Bool     -- ボケ表現ON/OFF
 
   -- screen quality
   , resolution          :: (Int, Int)  -- 画面解像度
   , antialias           :: Bool        -- アンチエリアスON/OFF
-  --, nSamplePhoton       :: Int
-  --, mapDivision         :: Int
   , nphoton             :: Int                         -- フォトン数
   , radius              :: Double                      -- フォトン収集半径
   , pfilter             :: PhotonFilter                -- 収集時フィルター
-  --, ambient             :: Radiance   
-  --, maxradiance         :: Double
   -- visual environment
   , eyePos              :: Position3                   -- 視点
   , eyeDir              :: Direction3                  -- 視線
-  --, focus               :: Double
   , screenOrigin        :: Position3                   -- スクリーン開始点
   , screenStep          :: (Direction3, Direction3)    -- スクリーン移動量
   , screenMap           :: V.Vector (Double, Double)   -- スクリーン位置集合
   -- for output
   , pnmHeader           :: [String]                    -- PNMファイルヘッダ
-  --, radianceToRgb       :: Radiance -> Rgb             -- 輝度-RGB変換関数
-  --, generateRay         :: (Double, Double) -> IO Ray
+  , ambient             :: Radiance   
   }
 
 --
@@ -80,6 +75,12 @@ gamma = 1.0 / 2.2
 rgbmax :: Double
 rgbmax = 255.0
 
+exposureK :: Double
+exposureK = 5.0
+
+exposureMag :: Double
+exposureMag = 100.0
+
 defconf :: M.Map String String
 defconf = M.fromList [
     (rFocalLength   , "50")
@@ -87,8 +88,7 @@ defconf = M.fromList [
   , (rFocusDistance , "2.0")
   , (rIsoSensitivity, "100")
   , (rShutterSpeed  , "50")
-  , (rXresolution   , "256")
-  , (rYresolution   , "256")
+  , (rResolution   , "(256, 256)")
   , (rAntialias     , "True")
   , (rNPhoton       , "100000")
   , (rEstimateRadius, "0.2")
@@ -99,7 +99,7 @@ defconf = M.fromList [
 --  , (rProgressive   , "False")
 --  , (rSamplePhoton  , "100")
 --  , (rMapDivision   , "1")
---  , (rAmbient       , "Radiance 0.001 0.001 0.001")
+  , (rAmbient       , "Radiance 0.001 0.001 0.001")
 --  , (rMaxRadiance   , "0.01")
   ]
 
@@ -113,14 +113,12 @@ readCamera file = do
   let
     -- input params
     conf = parseConfig defconf lines
-    --conf = defconf
     focallen0   = read (conf M.! rFocalLength   ) :: Double
     fnumber     = read (conf M.! rFnumber       ) :: Double
     focusdist   = read (conf M.! rFocusDistance ) :: Double
     isosens     = read (conf M.! rIsoSensitivity) :: Double
     shutterspd  = read (conf M.! rShutterSpeed  ) :: Double
-    xres        = read (conf M.! rXresolution   ) :: Int
-    yres        = read (conf M.! rYresolution   ) :: Int
+    reso        = read (conf M.! rResolution    ) :: (Int, Int)
     antialias   = read (conf M.! rAntialias     ) :: Bool
     nphoton     = read (conf M.! rNPhoton       ) :: Int
     radius      = read (conf M.! rEstimateRadius) :: Double
@@ -128,54 +126,44 @@ readCamera file = do
     eyepos      = read (conf M.! rEyePosition   ) :: Vector3
     targetpos   = read (conf M.! rTargetPosition) :: Vector3
     upper       = read (conf M.! rUpperDirection) :: Vector3
-    --progressive = read (conf M.! rProgressive   ) :: Bool
-    --samphoton   = read (conf M.! rSamplePhoton  ) :: Int
-    --mapdivision = read (conf M.! rMapDivision   ) :: Int
-    --amb         = read (conf M.! rAmbient       ) :: Radiance
-    --maxrad      = read (conf M.! rMaxRadiance   ) :: Double
-    --focus       = read (conf M.! rFocus         ) :: Double
+    amb         = read (conf M.! rAmbient       ) :: Radiance
 
     focallen = focallen0 / 1000.0 :: Double
-    --fnumber  = 5.0 :: Double          -- F/5.0
-    lightamount = (isosens / 100.0) / (shutterspd / 50.0) / (focallen0 / 50.0)
-
-    --fmaxrad = radianceToRgb0 maxrad
-    fheader = pnmHeader0 xres yres 1.0
-    smap = V.fromList [(fromIntegral y, fromIntegral x) |
-      y <- [0..(yres - 1)], x <- [0..(xres - 1)]]  
-    eyedir = fromJust $ normalize (targetpos - eyepos)
-    --fgenray = makeGenerateRay antialias eyepos targetpos xres yres upper focus focallen fnumber
-    radius2 = radius * radius -- square of radius
- 
-    ez = eyedir
+    ea   = focallen / fnumber / 2.0
+    -- 露出係数の決め方
+    -- 参考: https://www.ccs-inc.co.jp/guide/column/light_color/vol26.html
+    exposure0 = exposureK * exposureMag * isosens / shutterspd / (fnumber ** 2) 
+    ez = fromJust $ normalize (targetpos - eyepos)
     ex = fromJust $ normalize (upper <*> ez)
     ey = fromJust $ normalize (ex    <*> ez)
-    --step = 2.0 * (fd / fl) / fromIntegral xr
-    step = (focusdist * 0.035 / focallen)/ fromIntegral xres  -- 35mm換算
-    esx  = step *> ex
-    esy  = step *> ey
-    ea   = focallen / fnumber / 2.0
+    (xr, yr) = reso
+    step = (focusdist * 0.035 / focallen)/ fromIntegral xr  -- 35mm換算
+    hr_x = fromIntegral (xr `div` 2) :: Double -- half resolution
+    hr_y = fromIntegral (yr `div` 2) :: Double
+ 
+    exposure = if fnumber >= 100 then 100.0 else exposure0
     lens_x  = ea *> ex
     lens_y  = ea *> ey
-    lx = fromIntegral (xres `div` 2) :: Double
-    ly = fromIntegral (yres `div` 2) :: Double
-    orig = focusdist *> ez - (lx - 0.5) *> esx - (ly - 0.5) *> esy
-    --blurflag = fnum < 1000
-    blurflag = if fnumber >= 100 then False else True  -- F値が100以上ならピンホールカメラ
+    blurflag = if fnumber >= exposureMag then False else True  -- F値が100以上ならピンホールカメラ
+    radius2 = radius * radius -- square of radius
+    eyedir = ez
+    orig = focusdist *> ez - (hr_x - 0.5) *> step_x - (hr_y - 0.5) *> step_y
+    step_x  = step *> ex
+    step_y  = step *> ey
+    smap = V.fromList [(fromIntegral y, fromIntegral x) |
+      y <- [0..(yr - 1)], x <- [0..(xr - 1)]]  
+    fheader = pnmHeader0 reso 0.001
 
- 
- 
- 
     cam = Camera
       focallen
       fnumber
       focusdist
       isosens
       shutterspd
-      lightamount
+      exposure
       (lens_x, lens_y)
       blurflag
-      (xres, yres)
+      reso
       antialias    -- anti aliasing on/off
       nphoton
       radius2      -- radius for radiance estimate
@@ -183,25 +171,16 @@ readCamera file = do
       eyepos
       eyedir
       orig
-      (esx, esy)
+      (step_x, step_y)
       smap
       fheader
-    {-
-      --progressive
-      xres
-      yres
-      samphoton    -- nSamplePhoton
-      --mapdivision  -- photon map division number
-      amb          -- ambient radiance
-      maxrad
-      eyedir
-      focus
-      smap         -- screen map
-      fheader      -- func to generate header of PNM format
-      fmaxrad      -- func to convert from radiance to rgb
-      fgenray      -- func to generate rays
-    -}
+      amb
+
+  --putStrLn ("EXP:" ++ show lightamount)
   return cam
+
+compensateExposure :: Camera -> Radiance -> Radiance
+compensateExposure cam rad = (exposure cam) *> rad
 
 rgbToString :: Rgb -> String
 rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b
@@ -215,15 +194,6 @@ radianceToString (Radiance r g b) = show r ++ " " ++ show g ++ " " ++ show b
 radianceToText :: Radiance -> T.Text
 radianceToText (Radiance r g b) = T.pack (show r ++ " " ++ show g ++ " " ++ show b)
 
-{-
-rgbToRadiance :: Camera -> Rgb -> Radiance
-rgbToRadiance cam (r, g, b) =
-  Radiance (fromIntegral r * mag)
-           (fromIntegral g * mag)
-           (fromIntegral b * mag)
-  where
-    mag = maxradiance cam / rgbmax
--}
 --
 -- PRIVATE FUNCTIONS
 --
@@ -251,39 +221,8 @@ parseLines (l:ls) = p:(parseLines ls)
         Left  e  -> error $ (show e ++ "\nLINE: " ++ l)
         Right p' -> p'
 
-{-
-makeGenerateRay :: Bool -> Position3 -> Direction3 -> Int -> Int -> Direction3
-                -> Double -> Double -> Double
-                -> ((Double, Double) -> IO Ray)
-makeGenerateRay aaflag epos target xr yr udir fd fl = do
-  let
-    fnum = 1.8
-    ez = fromJust $ normalize (target - epos)
-    ex = fromJust $ normalize (udir <*> ez)
-    ey = fromJust $ normalize (ex   <*> ez)
-    --step = 2.0 * (fd / fl) / fromIntegral xr
-    step = (fd * 0.035 / fl)/ fromIntegral xr
-    esx  = step *> ex
-    esy  = step *> ey
-    ea   = fl / fnum / 2.0
-    lens_x  = ea *> ex
-    lens_y  = ea *> ey
-    lx = fromIntegral (xr `div` 2) :: Double
-    ly = fromIntegral (yr `div` 2) :: Double
-    orig = fd *> ez - (lx - 0.5) *> esx - (ly - 0.5) *> esy
-    --blurflag = fnum < 1000
-    blurflag = if fnum >= 100 then False else True  -- F値が100以上ならピンホールカメラ
-    fgenray = generateRay0 aaflag blurflag epos orig esx esy lens_x lens_y
-  return fgenray
--}
-
 generateRay :: Camera -> (Double, Double) -> IO Ray
-
---Bool -> Bool -> Position3 -> Position3
---             -> Direction3 -> Direction3 -> Direction3 -> Direction3
---             -> (Double, Double) -> IO Ray
 generateRay cam (y, x) = do
-  --aaflag blurflag eyepos0 origin esx esy lens_x lens_y (y, x) = do
   blur <- lensOffset (blurFlag cam) (lens cam)
   --putStrLn ("OR:" ++ show origin ++ ", BL:" ++ show blur)
   --putStrLn ("BL:" ++ show blur)
@@ -313,8 +252,8 @@ lensOffset blurflag (lens_x, lens_y) = if blurflag == False
         then return (ofx *> lens_x + ofy *> lens_y)
         else lensOffset blurflag (lens_x, lens_y)
 
-pnmHeader0 :: Int -> Int -> Double -> [String]
-pnmHeader0 xr yr maxrad =
+pnmHeader0 :: (Int, Int) -> Double -> [String]
+pnmHeader0 (xr, yr) maxrad =
   ["P3"
   ,"## max radiance = " ++ show maxrad
   ,show xr ++ " " ++ show yr

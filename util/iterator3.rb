@@ -21,12 +21,10 @@ def read_conf(scr)
   r = 1.0
   File.open(scr) do |fp|
     fp.each do |l|
-      #STDERR.puts "LINE: #{l}"
       case l
-      when /xresolution\s*: (\d+)/
+      when /resolution\s*:\s+\[ (\d+),\s*(\d+)\s*\]/
         x = $1.to_i
-      when /yresolution\s*: (\d+)/
-        y = $1.to_i
+        y = $2.to_i
       when /maxradiance\s*: (\S+)/
         r = $1.to_f
       end

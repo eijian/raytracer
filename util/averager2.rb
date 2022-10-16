@@ -208,6 +208,7 @@ def output_exr(fp, nite)
         bval << 0.0
       else
         c = @colors[pos]
+        #STDERR.puts "C:#{c}/M:#{cmag}/H2:#{@hd2}"
         rval << c[0] / cmag
         gval << c[1] / cmag
         bval << c[2] / cmag

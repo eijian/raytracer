@@ -77,8 +77,10 @@ traceRays cam objs lgts photonmap mate_air = do
     tracer = traceRay filter objs lgts 0 photonmap r mate_air mate_air white
   rays <- V.mapM (generateRay cam) $ screenMap cam
   image <- V.mapM tracer rays
+  let
+    image' = V.map (compensateExposure cam) image
 
   mapM_ putStrLn $ pnmHeader cam
-  V.mapM_ (putStrLn.radianceToString) image
+  V.mapM_ (putStrLn.radianceToString) image'
 
 
