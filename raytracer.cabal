@@ -7,7 +7,7 @@ cabal-version: 1.12
 -- hash: 7fc5699d20f7343eb495b37f1513fca6d04ac69c89b4d2a7a8fd8a224f70ad8a
 
 name:           raytracer
-version:        2.8.0.0
+version:        2.8.1.0
 synopsis:       Ray Tracing by Haskell
 description:    Ray tracing program supported 'photon mapping' (GitHub at <https://github.com/eijian/raytracer>)
 category:       Graphics
