@@ -18,7 +18,7 @@ NPARA  = 4            # 並列度
 def read_conf(scr)
   x = 0
   y = 0
-  r = 1.0
+  r = 0.01
   File.open(scr) do |fp|
     fp.each do |l|
       case l

@@ -79,7 +79,7 @@ exposureK :: Double
 exposureK = 5.0
 
 exposureMag :: Double
-exposureMag = 100.0
+exposureMag = 1.0
 
 defconf :: M.Map String String
 defconf = M.fromList [
@@ -152,7 +152,8 @@ readCamera file = do
     step_y  = step *> ey
     smap = V.fromList [(fromIntegral y, fromIntegral x) |
       y <- [0..(yr - 1)], x <- [0..(xr - 1)]]  
-    fheader = pnmHeader0 reso 0.001
+    --fheader = pnmHeader0 reso 0.001
+    fheader = pnmHeader0 reso 1.0
 
     cam = Camera
       focallen

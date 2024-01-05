@@ -171,10 +171,14 @@ def header_exr(xlen, ylen)
   pxaspect = s2b("pixelAspectRatio") + s2b("float")  + i2b(FLOATLEN)   + f2b(1.0)
   scenter  = s2b("screenWindowCenter") + s2b("v2f")  + i2b(FLOATLEN*2) + f2b(0.0) + f2b(0.0)
   swidth   = s2b("screenWindowWidth") + s2b("float") + i2b(FLOATLEN)   + f2b(1.0)
+  # option 
+  exptime  = s2b("expTime") + s2b("float")           + i2b(FLOATLEN)   + f2b(0.008)
+
   
   header   = magick + version + 
              chname + chlen + ch +
              compress + datawin + dispwin + lineord + pxaspect + scenter + swidth +
+             exptime +
              s2b("")
 end
 
