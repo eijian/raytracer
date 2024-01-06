@@ -8,6 +8,7 @@ module Parser (
   Param
 , rAmbient
 , rAntialias
+, rEvAdjustment
 , rFocalLength
 , rFnumber
 , rFocusDistance
@@ -22,6 +23,7 @@ module Parser (
 , rTargetPosition
 , rUpperDirection
 , rPhotonFilter
+, rWhiteBalance
 , removeComment
 , sline
 , world
@@ -83,6 +85,9 @@ rDirectivity = "directivity"
 
 rEstimateRadius :: String
 rEstimateRadius = "estimateradius"
+
+rEvAdjustment :: String
+rEvAdjustment = "evadjust"
 
 rEyePosition :: String
 rEyePosition = "eyeposition"
@@ -219,6 +224,9 @@ rType = "type"
 rUpperDirection :: String
 rUpperDirection = "upperdirection"
 
+rWhiteBalance :: String
+rWhiteBalance = "whitebalance"
+
 --
 -- Parsers
 --
@@ -250,7 +258,7 @@ removeComment (c:cs)
 
 
 --
--- SCREEN SETTINGS
+-- CAMERA SETTINGS
 --
 
 {- |
@@ -272,9 +280,11 @@ sline :: Parser Param
 sline = do
   p <- (try focallen)    <|>
        (try fnumber)     <|>
-       (try focusdist)   <|>
-       (try isosens)     <|>
        (try shutterspd)  <|>
+       (try isosens)     <|>
+       (try evadjust)    <|>
+       (try whitebalance)<|>
+       (try focusdist)   <|>
        (try reso)        <|>
        (try antialias)   <|>
        (try nphoton)     <|>
@@ -303,13 +313,13 @@ fnumber = do
   _ <- blanc
   return (rFnumber, show f)
 
-focusdist :: Parser Param
-focusdist = do
-  _ <- string rFocusDistance
+shutterspd :: Parser Param
+shutterspd = do
+  _ <- string rShutterSpeed
   _ <- separator
   f <- float
   _ <- blanc
-  return (rFocusDistance, show f)
+  return (rShutterSpeed, show f)
 
 isosens :: Parser Param
 isosens = do
@@ -319,13 +329,29 @@ isosens = do
   _ <- blanc
   return (rIsoSensitivity, show f)
 
-shutterspd :: Parser Param
-shutterspd = do
-  _ <- string rShutterSpeed
+evadjust :: Parser Param
+evadjust = do
+  _ <- string rEvAdjustment
   _ <- separator
   f <- float
   _ <- blanc
-  return (rShutterSpeed, show f)
+  return (rEvAdjustment, show f)
+
+whitebalance :: Parser Param
+whitebalance = do
+  _ <- string rWhiteBalance
+  _ <- separator
+  f <- float
+  _ <- blanc
+  return (rWhiteBalance, show f)
+
+focusdist :: Parser Param
+focusdist = do
+  _ <- string rFocusDistance
+  _ <- separator
+  f <- float
+  _ <- blanc
+  return (rFocusDistance, show f)
 
 {- |
 >>> parse xreso pname "xresolution : 256"
@@ -533,10 +559,10 @@ unexpected no such an object in the scene: silverplain
 expecting lf new-line or "\r\n"
 -}
 
-world :: Parser [Object]
-world = do
+world :: Double -> Parser [Object]
+world wb = do
   _  <- many (try linefeed)
-  ls <- lightspec_list
+  ls <- lightspec_list wb
   let lgtmap = M.fromList ls
   _  <- many (try linefeed)
   ms <- material_list
@@ -567,17 +593,17 @@ world = do
 --
 
 {- |
->>> parse lightspec_list pname "        \nlightspec:\n   \n  ceiling:\n    color: [ 1.0, 0.7, 0.4 ]\n    radiosity: 1950\n    directivity: 0.0\n    rad_est: formula\n    direction: out\n   \n  bulb:\n    temperature: 3500\n    radiosity: 48320\n    directivity: 0.0\n    rad_est: photon\n    direction: in\n"
+>>> parse (lightspec_list 100.0) pname "        \nlightspec:\n   \n  ceiling:\n    color: [ 1.0, 0.7, 0.4 ]\n    radiosity: 1950\n    directivity: 0.0\n    rad_est: formula\n    direction: out\n   \n  bulb:\n    temperature: 3500\n    radiosity: 48320\n    directivity: 0.0\n    rad_est: photon\n    direction: in\n"
 Right [("ceiling",LightSpec {lcolor = [0.47619047619047616,0.3333333333333333,0.19047619047619047], radiosity = 2.8550512445095166, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.21637881825921765 0.15146517278145236 8.655152730368706e-2}),("bulb",LightSpec {lcolor = [0.4334078665789044,0.32723782297452636,0.23935431044656913], radiosity = 70.74670571010249, directivity = 0.0, radest = PhotonMap, dirflag = In, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.880037320284739 3.6845957627160155 2.6950548382296726})]
 -}
 
-lightspec_list :: Parser [(String, LightSpec)]
-lightspec_list = do
+lightspec_list :: Double -> Parser [(String, LightSpec)]
+lightspec_list wb = do
   _ <- many (try space)
   _ <- string rLightSpec
   _ <- separator2
   _ <- linefeed
-  ls <- many1 (try lightspec_elem)
+  ls <- many1 (try (lightspec_elem wb))
   return ls
 
 {- |
@@ -587,11 +613,11 @@ Right ("ceiling",LightSpec {lcolor = [0.47619047619047616,0.3333333333333333,0.1
 Right ("bulb",LightSpec {lcolor = [0.4334078665789044,0.32723782297452636,0.23935431044656913], radiosity = 70.74670571010249, directivity = 0.0, radest = PhotonMap, dirflag = In, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.880037320284739 3.6845957627160155 2.6950548382296726})
 -}
 
-lightspec_elem :: Parser (String, LightSpec)
-lightspec_elem = do
+lightspec_elem :: Double -> Parser (String, LightSpec)
+lightspec_elem wb = do
   _ <- many (try linefeed)
   n <- elem_name
-  c <- try lcolorP <|> temperature
+  c <- try lcolorP <|> (temperature wb)
   r <- radiosityP
   dv <- directivityP
   re <- rad_est
@@ -667,12 +693,12 @@ lcolorP = do
   b' <- checkRatio b ("blue of color is out of range: " ++ show b)
   return $ initColor r' g' b'
 
-temperature :: Parser Color
-temperature = do
+temperature :: Double -> Parser Color
+temperature wb = do
   s <- floatparam rTemperature
-  if s < 1000.0 || s > 40000.0
-    then unexpected ("temperature (1,000 K - 40,000 K) is out of range: " ++ show s)
-    else return (initColorByKelvin s)
+  if s + wb < 1000.0 || s + wb > 40000.0
+    then unexpected ("temperature (1,000 K - 40,000 K) is out of range: " ++ show (s + wb))
+    else return (initColorByKelvin (s + wb))
 
 radiosityP :: Parser Double
 radiosityP = do

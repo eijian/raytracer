@@ -32,10 +32,10 @@ m_air = initMaterial white 0.0 0.0 white (Color 1.0 1.0 1.0) Nothing
 -- PUBLIC
 --
 
-readScene :: String -> IO (Material, V.Vector LightObject, V.Vector Object)
-readScene file = do
+readScene :: String -> Double -> IO (Material, V.Vector LightObject, V.Vector Object)
+readScene file wb = do
   lines <- readConfig file
-  (lgts, objs) <- parseConfig ((intercalate "\n" lines) ++ "\n")
+  (lgts, objs) <- parseConfig ((intercalate "\n" lines) ++ "\n") wb
   return (m_air, lgts, objs)
 
 --
@@ -47,12 +47,12 @@ readConfig file = do
   f <- readFile file
   return $ map removeComment $ lines f
 
-parseConfig :: String -> IO (V.Vector LightObject, V.Vector Object)
-parseConfig conf = do
+parseConfig :: String -> Double -> IO (V.Vector LightObject, V.Vector Object)
+parseConfig conf wb = do
   --putStrLn conf
   --error "STOP"
   let
-    objs = case (parse world "rt scene file parse error" conf) of
+    objs = case (parse (world wb) "rt scene file parse error" conf) of
       Left e -> error (show e)
       Right o' -> o'
 {-

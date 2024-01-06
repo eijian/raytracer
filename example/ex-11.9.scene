@@ -421,8 +421,8 @@ scene:
   #- sunlight
 
   #- ball_glass
-  - ball_diamond
-  #- icosahedron
+  #- ball_diamond
+  - icosahedron
   - ball_silver
   #- ball_stucco
   #- ball_plastic

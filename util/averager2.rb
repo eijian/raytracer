@@ -172,9 +172,18 @@ def header_exr(xlen, ylen)
   scenter  = s2b("screenWindowCenter") + s2b("v2f")  + i2b(FLOATLEN*2) + f2b(0.0) + f2b(0.0)
   swidth   = s2b("screenWindowWidth") + s2b("float") + i2b(FLOATLEN)   + f2b(1.0)
   
+  # option 
+  wb       = s2b("cameraCCTSetting") + s2b("float")  + i2b(FLOATLEN)   + f2b(5200)   # ホワイトバランス？
+  isosense = s2b("isoSpeed") + s2b("float")          + i2b(FLOATLEN)   + f2b(100)    # ISO値
+  exptime  = s2b("expTime") + s2b("float")           + i2b(FLOATLEN)   + f2b(0.008)  # 露光時間 [s] = シャッタースピード
+  focallen = s2b("nominalFocalLength") + s2b("float")+ i2b(FLOATLEN)   + f2b(50)     # レンズ焦点距離 [mm]
+  fnumber  = s2b("aperture") + s2b("float")          + i2b(FLOATLEN)   + f2b(8.0)    # F値
+  focus    = s2b("focus") + s2b("float")             + i2b(FLOATLEN)   + f2b(2.0)    # ピント距離 [m]
+
   header   = magick + version + 
              chname + chlen + ch +
              compress + datawin + dispwin + lineord + pxaspect + scenter + swidth +
+             wb + isosense + exptime + focallen + fnumber + focus +
              s2b("")
 end
 
