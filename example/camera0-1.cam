@@ -6,7 +6,8 @@ shutterspeed  : 1000
 isosensitivity: 1600
 evadjust      : 0.0
 whitebalance  : 4200
-focusdistance : 0.3
+#focusdistance : 0.3
+focusdistance : 3.0
 resolution    : [ 360, 240 ]
 antialias     : yes                # yes or no
 nphoton       : 100000
