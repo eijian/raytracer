@@ -41,10 +41,11 @@ data Camera = Camera
   -- camera spacs
   { focalLength         :: Double   -- 焦点距離(mm)
   , fnumber             :: Double   -- F値
-  , focusDistance       :: Double   -- フォーカス距離(m)
-  , isoSensitivity      :: Double   -- ISO感度
   , shutterSpeed        :: Double   -- シャッタースピード(/sec)
-  , exposure            :: Double   -- 光量
+  --, isoSensitivity      :: Double   -- ISO感度
+  , whiteBalance        :: Double   -- ホワイトバランス(K) ←標準をCANON太陽光(5200K)とした時の差分
+  , focusDistance       :: Double   -- フォーカス距離(m)
+  , exposure            :: Double   -- 光量（露出）
   , lens                :: (Direction3, Direction3)   -- レンズXYベクトル
   , blurFlag           :: Bool     -- ボケ表現ON/OFF
 
@@ -66,7 +67,7 @@ data Camera = Camera
   }
 
 --
--- CONSTANTS
+-- CONSTANTS & DEFAULTS
 --
 
 gamma :: Double
@@ -75,20 +76,35 @@ gamma = 1.0 / 2.2
 rgbmax :: Double
 rgbmax = 255.0
 
-exposureK :: Double
-exposureK = 5.0
+-- 標準EV値=14とする（晴天時の屋外相当）
+standardEV :: Double
+standardEV = 14.0
 
-exposureMag :: Double
-exposureMag = 1.0
+-- 標準ISO感度=100とする
+standardISO :: Double
+standardISO = 100.0
 
+-- 撮像素子サイズ 36mm x 24mmとして横幅基準とする
+sensorSize :: Double
+sensorSize = 36.0 / 1000.0   -- 36mm
+
+-- 標準ホワイトバランス=5200K
+-- CANON一眼の"太陽光"
+-- https://faq.canon.jp/app/answers/detail/a_id/61330/~/%E3%80%90%E3%83%87%E3%82%B8%E3%82%BF%E3%83%AB%E4%B8%80%E7%9C%BC%E3%83%AC%E3%83%95%E3%82%AB%E3%83%A1%E3%83%A9%E3%83%BB%E3%83%9F%E3%83%A9%E3%83%BC%E3%83%AC%E3%82%B9%E3%82%AB%E3%83%A1%E3%83%A9%E3%80%91%E3%83%9B%E3%83%AF%E3%82%A4%E3%83%88%E3%83%90%E3%83%A9%E3%83%B3%E3%82%B9%E3%81%A8%E3%81%AF%EF%BC%9F)
+standardWB :: Double
+standardWB = 5200.0
+
+-- カメラパタメータ（デフォルト値）
 defconf :: M.Map String String
 defconf = M.fromList [
     (rFocalLength   , "50")
-  , (rFnumber       , "100")        -- ボケ味なし
-  , (rFocusDistance , "2.0")
-  , (rIsoSensitivity, "100")
+  , (rFnumber       , "100")
   , (rShutterSpeed  , "50")
-  , (rResolution   , "(256, 256)")
+  , (rIsoSensitivity, "100")
+  , (rEvAdjustment  , "0.0")
+  , (rWhiteBalance  , "5200")
+  , (rFocusDistance , "2.0")
+  , (rResolution    , "(256, 256)")
   , (rAntialias     , "True")
   , (rNPhoton       , "100000")
   , (rEstimateRadius, "0.2")
@@ -96,11 +112,7 @@ defconf = M.fromList [
   , (rEyePosition   , "Vector3 0.0 2.0 (-4.5)")
   , (rTargetPosition, "Vector3 0.0 2.0 0.0")
   , (rUpperDirection, "Vector3 0.0 1.0 0.0")
---  , (rProgressive   , "False")
---  , (rSamplePhoton  , "100")
---  , (rMapDivision   , "1")
   , (rAmbient       , "Radiance 0.001 0.001 0.001")
---  , (rMaxRadiance   , "0.01")
   ]
 
 --
@@ -115,9 +127,11 @@ readCamera file = do
     conf = parseConfig defconf lines
     focallen0   = read (conf M.! rFocalLength   ) :: Double
     fnumber     = read (conf M.! rFnumber       ) :: Double
-    focusdist   = read (conf M.! rFocusDistance ) :: Double
-    isosens     = read (conf M.! rIsoSensitivity) :: Double
     shutterspd  = read (conf M.! rShutterSpeed  ) :: Double
+    isosens     = read (conf M.! rIsoSensitivity) :: Double
+    evadjust    = read (conf M.! rEvAdjustment  ) :: Double
+    wb0         = read (conf M.! rWhiteBalance  ) :: Double
+    focusdist   = read (conf M.! rFocusDistance ) :: Double
     reso        = read (conf M.! rResolution    ) :: (Int, Int)
     antialias   = read (conf M.! rAntialias     ) :: Bool
     nphoton     = read (conf M.! rNPhoton       ) :: Int
@@ -128,23 +142,28 @@ readCamera file = do
     upper       = read (conf M.! rUpperDirection) :: Vector3
     amb         = read (conf M.! rAmbient       ) :: Radiance
 
-    focallen = focallen0 / 1000.0 :: Double
-    ea   = focallen / fnumber / 2.0
-    -- 露出係数の決め方
-    -- 参考: https://www.ccs-inc.co.jp/guide/column/light_color/vol26.html
-    exposure0 = exposureK * exposureMag * isosens / shutterspd / (fnumber ** 2) 
+    focallen = focallen0 / 1000.0   -- 焦点距離を[m]単位に変換
+    ea = focallen / fnumber / 2.0   -- 開放口径（の半径）
+
     ez = fromJust $ normalize (targetpos - eyepos)
     ex = fromJust $ normalize (upper <*> ez)
     ey = fromJust $ normalize (ex    <*> ez)
     (xr, yr) = reso
-    step = (focusdist * 0.035 / focallen)/ fromIntegral xr  -- 35mm換算
+    step = (focusdist * sensorSize / focallen) / fromIntegral xr
     hr_x = fromIntegral (xr `div` 2) :: Double -- half resolution
     hr_y = fromIntegral (yr `div` 2) :: Double
  
-    exposure = if fnumber >= 100 then 100.0 else exposure0
+    -- 露出係数の決め方
+    -- 参考: https://www.ccs-inc.co.jp/guide/column/light_color/vol26.html
+    --ev = (logBase 2 (fnumber ** 2)) + (logBase 2 shutterspd) - evadjust
+    ev = (logBase (sqrt 2) fnumber) + (logBase 2 shutterspd) - evadjust
+    exposure = 2.0 ** (standardEV - ev) * (isosens / standardISO)
+    
+    wb = standardWB - wb0
+
     lens_x  = ea *> ex
     lens_y  = ea *> ey
-    blurflag = if fnumber >= exposureMag then False else True  -- F値が100以上ならピンホールカメラ
+    blurflag = if fnumber >= 100 then False else True  -- F値が100以上ならピンホールカメラ
     radius2 = radius * radius -- square of radius
     eyedir = ez
     orig = focusdist *> ez - (hr_x - 0.5) *> step_x - (hr_y - 0.5) *> step_y
@@ -158,9 +177,9 @@ readCamera file = do
     cam = Camera
       focallen
       fnumber
-      focusdist
-      isosens
       shutterspd
+      wb
+      focusdist
       exposure
       (lens_x, lens_y)
       blurflag
@@ -241,17 +260,29 @@ generateRay cam (y, x) = do
   return (initRay eyepos (fromJust $ normalize eyedir))
 
 lensOffset :: Bool -> (Direction3, Direction3) -> IO Direction3
-lensOffset blurflag (lens_x, lens_y) = if blurflag == False
+lensOffset blurflag (lens_x, lens_y) =
+  if blurflag == False
     then return o3
     else do
       r1 <- MT.randomIO :: IO Double
       r2 <- MT.randomIO :: IO Double
+      -- 方法1) 正方形にランダムな点を取り、半径1の円内ならOK、外ならやり直し
+      --let
+      --  ofx = 2.0 * (r1 - 0.5)
+      --  ofy = 2.0 * (r2 - 0.5)
+      --if ofx * ofx + ofy * ofy <= 1.0
+      --  then return (ofx *> lens_x + ofy *> lens_y)
+      --  else lensOffset blurflag (lens_x, lens_y)
+
+      -- 方法2) 二次元極座標を使う
+      -- r1=半径、r2=角度
+      -- https://techblog.kayac.com/how-to-distribute-points-randomly-using-high-school-math
       let
-        ofx = 2.0 * (r1 - 0.5)
-        ofy = 2.0 * (r2 - 0.5)
-      if ofx * ofx + ofy * ofy <= 1.0
-        then return (ofx *> lens_x + ofy *> lens_y)
-        else lensOffset blurflag (lens_x, lens_y)
+        r = sqrt r1
+        theta = r2 * pi2
+        ofx = r * cos theta
+        ofy = r * sin theta
+      return (ofx *> lens_x + ofy *> lens_y)
 
 pnmHeader0 :: (Int, Int) -> Double -> [String]
 pnmHeader0 (xr, yr) maxrad =

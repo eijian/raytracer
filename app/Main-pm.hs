@@ -28,7 +28,7 @@ main = do
     then return (args !! 0, args !! 1)
     else error usage
   cam <- readCamera fn1
-  (mate_air, lgts, objs) <- readScene fn2
+  (mate_air, lgts, objs) <- readScene fn2 (whiteBalance cam)
   let
     (ns, power) = calcNumPhotons lgts (nphoton cam)
     tracer = tracePhoton objs 0 mate_air mate_air

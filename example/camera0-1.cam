@@ -1,20 +1,21 @@
 #
 
-focallength   : 50
-fnumber       : 2.0
+focallength   : 24
+fnumber       : 1.8
 shutterspeed  : 1000
-isosensitivity: 3200
-evadjust      : -1.0
-whitebalance  : 5200
+isosensitivity: 1600
+evadjust      : 0.0
+whitebalance  : 4200
+#focusdistance : 0.3
 focusdistance : 3.0
-resolution    : [ 256, 256 ]
+resolution    : [ 360, 240 ]
 antialias     : yes                # yes or no
 nphoton       : 100000
 estimateradius: 0.1
 #photonfilter  : gauss               # none, cone, gauss
 #photonfilter  : none               # none, cone, gauss
 photonfilter  : cone               # none, cone, gauss
-eyeposition   : [ 0.0, 2.0, -4.5 ]
+eyeposition   : [ 0.0, 2.0, -2.5 ]
 targetposition: [ 0.0, 2.0, 0.0 ]
 upperdirection: [ 0.0, 1.0, 0.0 ]
 ambient       : [ 0.001, 0.001, 0.001 ]
