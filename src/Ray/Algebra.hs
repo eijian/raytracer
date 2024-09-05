@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE InstanceSigs #-}
 
 --
 -- Ray.Algebra
@@ -76,7 +76,7 @@ class (BasicMatrix a) => Vector a where
   (<.>) :: a -> a -> Double
   infixl 7 <.>
   normalize :: a -> Maybe a
-  normalize a = a /> (norm a)
+  normalize a = a /> norm a
   square :: a -> Double
   square v = v <.> v
 
@@ -84,13 +84,16 @@ data Vector3 = Vector3 !Double !Double !Double
   deriving (Read, Show, Generic)
 
 instance NFData Vector3 where
+  rnf :: Vector3 -> ()
   rnf = genericRnf
 
 instance Eq Vector3 where
+  (==) :: Vector3 -> Vector3 -> Bool
   (==) (Vector3 ax ay az) (Vector3 bx by bz)
     = ax == bx && ay == by && az == bz
 
 instance Arbitrary Vector3 where
+  arbitrary :: Gen Vector3
   arbitrary = do
     x <- arbitrary
     y <- arbitrary
@@ -98,23 +101,30 @@ instance Arbitrary Vector3 where
     return $ Vector3 x y z
 
 instance Additive.C Vector3 where
+  zero :: Vector3
   zero = Vector3 0 0 0
+  (+) :: Vector3 -> Vector3 -> Vector3
   (Vector3 ax ay az) + (Vector3 bx by bz)
     = Vector3 (ax + bx) (ay + by) (az + bz)
+  (-) :: Vector3 -> Vector3 -> Vector3
   (Vector3 ax ay az) - (Vector3 bx by bz)
     = Vector3 (ax - bx) (ay - by) (az - bz)
 
 instance Module.C Double Vector3 where
+  (*>) :: Double -> Vector3 -> Vector3
   s *> (Vector3 x y z) = Vector3 (s * x) (s * y) (s * z)
 
 --instance Euclidean.C Double Vector3 where
 --  norm v = sqrt $ normSqr v
 
 instance BasicMatrix Vector3 where
+  norm :: Vector3 -> Double
   norm v = sqrt $ square v
+  (.=.) :: Vector3 -> Vector3 -> Bool
   a .=. b = norm (a - b) < nearly0
 
 instance Vector Vector3 where
+  (<.>) :: Vector3 -> Vector3 -> Double
   (Vector3 ax ay az) <.> (Vector3 bx by bz) = ax * bx + ay * by + az * bz
 
 (<*>) :: Vector3 -> Vector3 -> Vector3
@@ -302,8 +312,8 @@ generateRandomDir4 = do
   let y = y' * 2.0 - 1.0
       p = p' * 2.0 * pi
       r = sqrt (1 - y * y)
-      x = r * (cos p)
-      z = r * (sin p)
+      x = r * cos p
+      z = r * sin p
       v = initPos x y z
   return $ fromJust $ normalize v
 
@@ -326,10 +336,10 @@ blurredVector nvec pow = do
   xi2 <- MT.randomIO :: IO Double    -- virtical
   let
     phi = 2.0 * pi * xi2
-    uvec0 = normalize $ nvec <*> (Vector3 0.00424 1.0 0.00764)
+    uvec0 = normalize $ nvec <*> Vector3 0.00424 1.0 0.00764
     uvec = case uvec0 of
       Just v  -> v
-      Nothing -> fromJust $ normalize $ nvec <*> (Vector3 1.0 0.00424 0.00764)
+      Nothing -> fromJust $ normalize $ nvec <*> Vector3 1.0 0.00424 0.00764
     vvec = uvec <*> nvec
     xi1' = xi1 ** pow
     rt = sqrt (1.0 - xi1' * xi1')
@@ -350,12 +360,10 @@ densityPower
 densityPower :: Double -> (Double, Double)
 densityPower r = (n, 1.0 / (n + 1.0))
   where
-    r' = if r > 1.0
-      then 1.0
-      else
-        if r < (-1.0)
-          then (-1.0)
-          else r
+    r'
+      | r > 1.0 = 1.0
+      | r < (-1.0) = -1.0
+      | otherwise  = r
     n = 10.0 ** (6.0 * r')
 
 

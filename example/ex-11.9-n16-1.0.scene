@@ -1,0 +1,435 @@
+#
+
+lightspec:
+  ceiling_light:
+    temperature: 5000
+    radiosity  : 1950
+    directivity: 1.0       # 指向性: 0.0(なし) 〜 1.0(平行光源)
+    rad_est    : photon   # 直接光輝度推定方法
+    direction  : out
+
+  pana_led_ldg11dg95w:
+    temperature: 6500      # 昼光 6500, 昼白 5000, 温白 3500, 電球 2700
+    radiosity  : 48320     # 1370 lm / 電球表面積(直径95mm)
+    directivity: 0.0
+    rad_est    : photon    # 直接光輝度推定方法
+    direction  : out       # 発光方向: out((通常方向)), in(ドーム光源など)
+
+  pana_led_ldg11lg95w:
+    temperature: 2700
+    radiosity  : 48320
+    directivity: 0.0
+    rad_est    : photon    # 直接光輝度推定方法
+    direction  : out       # 発光方向: out((通常方向)), in(ドーム光源など)
+  
+  sun:
+    temperature: 6500
+    radiosity  : 5000
+    directivity: 1.0
+    rad_est    : photon
+    direction  : out
+
+  sky:
+    temperature: 12000
+    radiosity  : 10000
+    directivity: 0.0
+    rad_est    : photon
+    direction  : in
+
+
+material:
+  wall:
+    albedo_diff  : [ 0.5, 0.5, 0.5 ]
+    scatterness  : 1.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 1.534, 1.534, 1.534 ]
+    albedo_spec  :
+
+  wallr:
+    albedo_diff  : [ 0.4, 0.1, 0.1 ]
+    scatterness  : 1.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 1.534, 1.534, 1.534 ]
+    albedo_spec  :
+
+  wallb:
+    albedo_diff  : [ 0.1, 0.1, 0.4 ]
+    scatterness  : 1.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 1.534, 1.534, 1.534 ]
+    albedo_spec  :
+
+  paralight:
+    albedo_diff  : [ 0.0, 0.0, 0.0 ]
+    scatterness  : 0.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 0.0, 0.0, 0.0 ]
+    albedo_spec  :
+
+  glass:
+    albedo_diff  : [ 1.0, 1.0, 1.0 ]
+    scatterness  : 0.0
+    metalness    : 0.0
+    transmittance: [ 1.0, 1.0, 1.0 ]
+    ior          : [ 1.467, 1.460, 1.455 ]
+    albedo_spec  :
+
+  glass2:
+    albedo_diff  : [ 1.0, 1.0, 1.0 ]
+    scatterness  : 0.0
+    metalness    : 0.0
+    transmittance: [ 1.0, 1.0, 1.0 ]
+    ior          : [ 2.0, 2.0, 2.0 ]
+    albedo_spec  :
+
+  quartz:
+    albedo_diff  : [ 1.0, 1.0, 1.0 ]
+    scatterness  : 0.0
+    metalness    : 0.0
+    transmittance: [ 1.0, 1.0, 1.0 ]
+    ior          : [ 1.541, 1.546, 1.554 ]
+    albedo_spec  :
+
+  diamond:
+    albedo_diff  : [ 1.0, 1.0, 1.0 ]
+    scatterness  : 0.0
+    metalness    : 0.0
+    transmittance: [ 1.0, 1.0, 1.0 ]
+    ior          : [ 2.404, 2.42364, 2.44984 ]
+    albedo_spec  :
+
+  prism_f2:
+    albedo_diff  : [ 1.0, 1.0, 1.0 ]
+    scatterness  : 0.0
+    metalness    : 0.0
+    transmittance: [ 1.0, 1.0, 1.0 ]
+    ior          : [ 1.61259, 1.623655, 1.643454 ]
+    albedo_spec  :
+
+  gold:
+    albedo_diff  : [ 0.0, 0.0, 0.0 ]
+    scatterness  : 0.0
+    metalness    : 1.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 0.161, 0.346, 1.562 ]
+    albedo_spec  : [ 0.964, 0.851, 0.392 ]
+
+  silver:
+    albedo_diff  : [ 0.0, 0.0, 0.0 ]
+    scatterness  : 0.0
+    metalness    : 1.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 0.144, 0.124, 0.159 ]
+    albedo_spec  : [ 0.974, 0.960, 0.906 ]
+
+  copper:
+    albedo_diff  : [ 0.0, 0.0, 0.0 ]
+    scatterness  : 0.0
+    metalness    : 1.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 0.216, 0.959, 1.173 ]
+    albedo_spec  : [ 0.980, 0.645, 0.543 ]
+
+  plastic:
+    albedo_diff  : [ 0.5, 0.3, 0.1 ]
+    scatterness  : 1.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 2.0, 2.0, 2.0 ]
+    albedo_spec  :
+
+  stucco:
+    albedo_diff  : [ 0.75, 0.75, 0.75 ]
+    scatterness  : 1.0
+    metalness    : 0.0
+    transmittance: [ 0.0, 0.0, 0.0 ]
+    ior          : [ 2.0, 2.0, 2.0 ]
+    albedo_spec  :
+
+  light:
+    albedo_diff  : [ 0.0, 0.0, 0.0 ]
+    scatterness  : 0.0
+    metalness    : 0.0
+    transmittance: [ 1.0, 1.0, 1.0 ]
+    ior          : [ 1.0, 1.0, 1.0 ]
+    albedo_spec  :
+
+surface:
+  paralight:
+    roughness: 0.0
+    light    : ceiling_light
+  bulb:
+    roughness: 0.0
+    light    : pana_led_ldg11lg95w
+  sun:
+    roughness: 0.0
+    light    : sun
+  rough:
+    roughness: 1.0
+    light    :
+  polish:
+    roughness: 0.0
+    light    :
+  glossy05:
+    roughness: 0.5
+    light    :
+
+mapper:
+  whwall:
+    type    : solid
+    map     : [ wall, rough ]
+
+  rdwall:
+    type    : solid
+    map     : [ wallr, rough ]
+
+  blwall:
+    type    : solid
+    map     : [ wallb, rough ]
+
+  goldcheck:
+    type    : checker
+    map1    : [ wall, rough ]
+    map2    : [ gold, polish ]
+    scale   : 1.0
+
+  graywhite:
+    type    : checker
+    map1    : [ wall, rough ]
+    map2    : [ wall, polish ]
+    scale   : 1.0
+
+  clearglass:
+    type    : solid
+    map     : [ glass, polish ]
+
+  clearglass2:
+    type    : solid
+    map     : [ glass2, polish ]
+
+  cleardiamond:
+    type    : solid
+    map     : [ diamond, polish ]
+
+  clearprism:
+    type    : solid
+    map     : [ prism_f2, polish ]
+
+  clearquartz:
+    type    : solid
+    map     : [ quartz, polish ]
+
+  polishgold:
+    type    : solid
+    map     : [ gold, polish ]
+
+  polishsilver:
+    type    : solid
+    map     : [ silver, polish ]
+
+  glossycopper:
+    type    : solid
+    map     : [ copper, glossy05 ]
+
+  polishplastic:
+    type    : solid
+    map     : [ plastic, polish ]
+
+  roughstucco:
+    type    : solid
+    map     : [ stucco, rough ]
+
+  paralight:
+    type    : solid
+    map     : [ light, paralight]
+
+  bulb:
+    type    : solid
+    map     : [ light, bulb ]
+ 
+object:
+  floor:
+    type    : plain
+    normal  : [ 0.0, 1.0, 0.0 ]
+    position: [ 0.0, 0.0, 0.0 ]
+    mapper  : whwall
+
+  ceil:
+    type    : plain
+    normal  : [ 0.0, -1.0, 0.0 ]
+    position: [ 0.0, 3.5, 0.0 ]
+    mapper  : whwall
+
+  rsidewall:
+    type    : plain
+    normal  : [ -1.0, 0.0, 0.0 ]
+    position: [ 2.0, 0.0, 0.0 ]
+    mapper  : blwall
+
+  lsidewall:
+    type    : plain
+    normal  : [ 1.0, 0.0, 0.0 ]
+    position: [ -2.0, 0.0, 0.0 ]
+    mapper  : rdwall
+
+  backwall:
+    type    : plain
+    normal  : [ 0.0, 0.0, 1.0 ]
+    position: [ 0.0, 0.0, -6.0 ]
+    mapper  : whwall
+
+  frontwall:
+    type    : plain
+    normal  : [ 0.0, 0.0, -1.0 ]
+    position: [ 0.0, 0.0, 5.0 ]
+    mapper  : whwall
+
+  ceiling_light:
+    type    : parallelogram
+    pos1    : [ -0.60, 3.49, 1.80 ]
+    pos2    : [  0.60, 3.49, 1.80 ]
+    pos3    : [ -0.60, 3.49, 3.00 ]
+    normal  :
+    mapper  : paralight
+
+  ceiling_bulb1:
+    type    : sphere
+    center  : [ 0.0, 3.75, 3.0 ]
+    radius  : 0.0475
+    mapper  : bulb
+
+  ceiling_bulb2:
+    type    : sphere
+    center  : [ -1.0, 3.75, 2.33 ]
+    radius  : 0.0475
+    mapper  : bulb
+
+  ceiling_bulb3:
+    type    : sphere
+    center  : [ 1.0, 3.75, 3.67 ]
+    radius  : 0.0475
+    mapper  : bulb
+
+  ball_glass:
+    type    : sphere
+    center  : [ 1.0, 0.7, 2.6 ]
+    radius  : 0.65
+    #mapper  : clearglass
+    #mapper  : clearglass3
+    mapper  : clearquartz
+    #mapper  : clearprism
+
+  ball_diamond:
+    type    : sphere
+    center  : [ 1.0, 0.7, 2.6 ]
+    radius  : 0.7
+    mapper  : cleardiamond
+
+  ball_silver:
+    type    : sphere
+    center  : [ -0.9, 0.7, 3.8 ]
+    radius  : 0.65
+    mapper  : polishsilver
+
+  ball_stucco:
+    type    : sphere
+    center  : [ -0.9, 0.7, 3.8 ]
+    radius  : 0.7
+    mapper  : roughstucco
+
+  ball_plastic:
+    type    : sphere
+    center  : [ -0.9, 0.7, 3.8 ]
+    radius  : 0.7
+    mapper  : polishplastic
+
+  icosahedron:
+    type    : mesh
+    vertex  :
+      # vertex of icosahedron
+      - [  0.21789934754047335,  1.756260369022299  ,  2.0172422684389995 ]
+      - [  1.1696347222230137 ,  2.2630668564800875 ,  2.6215690656931017 ]
+      - [  2.115940497150065  ,  1.4690220297578684 ,  2.5784309343068985 ]
+      - [  0.8303652777769864 , -0.06306685648008736,  2.5784309343068985 ]
+      - [ -0.11594049715006483,  0.7309779702421317 ,  2.6215690656931017 ]
+      - [  0.6294701494069217 ,  0.604125740826786  ,  3.5993908270190955 ]
+      - [  1.4239989816262781 ,  1.5510083310438865 ,  3.5993908270190955 ]
+      - [  1.3705298505930783 ,  1.5958742591732142 ,  1.6006091729809044 ]
+      - [  0.5760010183737218 ,  0.6489916689561138 ,  1.6006091729809044 ]
+      - [  1.7490549266245894 ,  0.47146828733778257,  1.9474432750339974 ]
+      - [  1.7821006524595266 ,  0.4437396309777012 ,  3.1827577315610007 ]
+      - [  0.2509450733754106 ,  1.7285317126622175 ,  3.252556724966003  ]
+    normal  :
+      # normal vectors of icosahedron
+      - [  0.0               ,   0.0                ,  0.0                ]
+      - [  0.6100138528453308,   0.7076128977698087 ,  0.3566049442262533 ]
+      - [  0.5909348739569683,   0.7236220619182729 , -0.3566049442262532 ]
+      - [ -0.5909348739569682,  -0.7236220619182729 ,  0.3566049442262532 ]
+      - [ -0.6100138528453307,  -0.7076128977698088 , -0.3566049442262532 ]
+      - [ -0.24820054603520508,  0.20826498663614007,  0.9460561211097757 ]
+      - [  0.2981499257913436 , -0.25017749276704976,  0.9211502829958905 ]
+      - [  0.9445425052120812 , -0.32676682232233495, -0.0326021422156446 ]
+      - [  0.48582058480923324, -0.8734503189641445 , -0.0326021422156446 ]
+      - [  0.24820054603520533, -0.2082649866361403 , -0.9460561211097755 ]
+      - [ -0.29814992579134364,  0.25017749276704987, -0.9211502829958903 ]
+      - [ -0.4858205848092331 ,  0.8734503189641445 ,  0.0326021422156447 ]
+      - [ -0.9445425052120812 ,  0.32676682232233495,  0.0326021422156446 ]
+      - [  0.8285553509596623 ,  0.05843676049787646,  0.5568493291893463 ]
+      - [ -0.05545773479574963,  0.8002118147111317 ,  0.5971477968208891 ]
+      - [  0.08632815199110302, -0.8261151703940416 ,  0.5568493291893463 ]
+      - [ -0.7976849337643089 , -0.08434011618078639,  0.5971477968208889 ]
+      - [  0.7976849337643089 ,  0.08434011618078618, -0.5971477968208889 ]
+      - [ -0.08632815199110302,  0.8261151703940416 , -0.5568493291893462 ]
+      - [  0.05545773479574966, -0.8002118147111317 , -0.597147796820889  ]
+      - [ -0.8285553509596624 , -0.05843676049787637, -0.5568493291893462 ]
+    uvmap:
+      - [ 0.0, 0.0 ]
+      - [ 1.0, 1.0 ]
+    polygon :
+      - [ [ 1, 1, 0 ], [ 2, 1, 0 ], [ 6, 1, 0 ] ]
+      - [ [ 1, 2, 0 ], [ 7, 2, 0 ], [ 2, 2, 0 ] ]
+      - [ [ 3, 3, 0 ], [ 4, 3, 0 ], [ 5, 3, 0 ] ]
+      - [ [ 4, 4, 0 ], [ 3, 4, 0 ], [ 8, 4, 0 ] ]
+      - [ [ 6, 5, 0 ], [ 5, 5, 0 ], [ 11, 5, 0 ] ]
+      - [ [ 5, 6, 0 ], [ 6, 6, 0 ], [ 10, 6, 0 ] ]
+      - [ [ 9, 7, 0 ], [ 10, 7, 0 ], [ 2, 7, 0 ] ]
+      - [ [ 10, 8, 0 ], [ 9, 8, 0 ], [ 3, 8, 0 ] ]
+      - [ [ 7, 9, 0 ], [ 8, 9, 0 ], [ 9, 9, 0 ] ]
+      - [ [ 8, 10, 0 ], [ 7, 10, 0 ], [ 0, 10, 0 ] ]
+      - [ [ 11, 11, 0 ], [ 0, 11, 0 ], [ 1, 11, 0 ] ]
+      - [ [ 0, 12, 0 ], [ 11, 12, 0 ], [ 4, 12, 0 ] ]
+      - [ [ 6, 13, 0 ], [ 2, 13, 0 ], [ 10, 13, 0 ] ]
+      - [ [ 1, 14, 0 ], [ 6, 14, 0 ], [ 11, 14, 0 ] ]
+      - [ [ 3, 15, 0 ], [ 5, 15, 0 ], [ 10, 15, 0 ] ]
+      - [ [ 5, 16, 0 ], [ 4, 16, 0 ], [ 11, 16, 0 ] ]
+      - [ [ 2, 17, 0 ], [ 7, 17, 0 ], [ 9, 17, 0 ] ]
+      - [ [ 7, 18, 0 ], [ 1, 18, 0 ], [ 0, 18, 0 ] ]
+      - [ [ 3, 19, 0 ], [ 9, 19, 0 ], [ 8, 19, 0 ] ]
+      - [ [ 4, 20, 0 ], [ 8, 20, 0 ], [ 0, 20, 0 ] ]
+    mapper  : cleardiamond
+
+scene:
+  - floor
+  - ceil
+  - rsidewall
+  - lsidewall
+  - backwall
+  - frontwall
+
+  - ceiling_light
+  #- ceiling_bulb1
+  #- ceiling_bulb2
+  #- ceiling_bulb3
+  #- sunlight
+
+  - ball_glass
+  #- ball_diamond
+  #- icosahedron
+  - ball_silver
+  #- ball_stucco
+  #- ball_plastic
+

@@ -24,9 +24,9 @@ import Parser
 -- CONSTANTS
 --
 
-m_air :: Material
+mAir :: Material
 --m_air = Material radiance0 white white black (Color 1.0 1.0 1.0) 0.0 0.0 0.0
-m_air = initMaterial white 0.0 0.0 white (Color 1.0 1.0 1.0) Nothing
+mAir = initMaterial white 0.0 0.0 white (Color 1.0 1.0 1.0) Nothing
 
 --
 -- PUBLIC
@@ -35,8 +35,8 @@ m_air = initMaterial white 0.0 0.0 white (Color 1.0 1.0 1.0) Nothing
 readScene :: String -> Double -> IO (Material, V.Vector LightObject, V.Vector Object)
 readScene file wb = do
   lines <- readConfig file
-  (lgts, objs) <- parseConfig ((intercalate "\n" lines) ++ "\n") wb
-  return (m_air, lgts, objs)
+  (lgts, objs) <- parseConfig (intercalate "\n" lines ++ "\n") wb
+  return (mAir, lgts, objs)
 
 --
 -- PRIVATE
@@ -52,7 +52,7 @@ parseConfig conf wb = do
   --putStrLn conf
   --error "STOP"
   let
-    objs = case (parse (world wb) "rt scene file parse error" conf) of
+    objs = case parse (world wb) "rt scene file parse error" conf of
       Left e -> error (show e)
       Right o' -> o'
 {-

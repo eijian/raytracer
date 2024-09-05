@@ -35,7 +35,7 @@ calcNumPhotons :: V.Vector LightObject -> Int -> (V.Vector Int, Double)
 calcNumPhotons lgts nphoton = (V.map (\x -> round (x / power)) fluxes, power)
   where
     fluxes = V.map flux lgts
-    power  = V.sum fluxes / (fromIntegral nphoton)
+    power  = V.sum fluxes / fromIntegral nphoton
 
 validLightSpec :: LightObject -> IO (LightSpec, SurfacePoint)
 validLightSpec lgt@(Object shp mp) = do

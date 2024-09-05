@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BangPatterns #-}
+--{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE InstanceSigs #-}
 
 --
 -- Geometry
@@ -14,6 +15,7 @@ module Ray.Geometry (
 , Vertex
 , distance
 , getDir
+, getDirection
 , getNormal
 , getPos
 , initParallelogram
@@ -24,12 +26,12 @@ module Ray.Geometry (
 , initRayFromElem
 , methodMoller
 , nSurface
-, one_pi
+, onePi
 , pi2
 , pi4
 , randomPoint
 , sqpi2
-, sr_half
+, srHalf
 , surfaceArea
 , target
 ) where
@@ -40,7 +42,7 @@ import Data.Array.Unboxed as UA
 import Data.Int
 import Data.Maybe
 import Data.Vector as V
-import Debug.Trace
+--import Debug.Trace
 import GHC.Generics
 import NumericPrelude
 import System.Random.Mersenne as MT
@@ -58,11 +60,11 @@ pi4 = 4 * pi           -- for decay by distance (1/ 4pi)
 sqpi2 :: Double
 sqpi2 = 2 * pi * pi    -- pi x steradian (2pi) for half sphere
 
-one_pi :: Double
-one_pi = 1.0 / pi      -- one of pi (integral of hemisphere)
+onePi :: Double
+onePi = 1.0 / pi      -- one over pi (integral of hemisphere)
 
-sr_half :: Double
-sr_half = 1.0 / (2.0 * pi)  -- half of steradian
+srHalf :: Double
+srHalf = 1.0 / (2.0 * pi)  -- half of steradian
 
 -- common
 
@@ -70,6 +72,7 @@ data InOut = In | Out
   deriving (Eq, Show, Generic)
 
 instance NFData InOut where
+  rnf :: InOut -> ()
   rnf = genericRnf
 
 -- Ray
@@ -82,8 +85,8 @@ initRay pos dir = (pos, dir)
 initRayFromElem :: Double -> Double -> Double -> Double -> Double -> Double
                 -> Maybe Ray
 initRayFromElem px py pz dx dy dz
-  | dir == Nothing = Nothing
-  | otherwise      = Just (pos, fromJust dir)
+  | isNothing dir = Nothing
+  | otherwise     = Just (pos, fromJust dir)
   where
     pos = initPos px py pz
     dir = initDir dx dy dz
@@ -147,6 +150,7 @@ data Shape =
   deriving (Eq, Show, Generic)
 
 instance NFData Shape where
+  rnf :: Shape -> ()
   rnf = genericRnf
 
 
@@ -190,7 +194,7 @@ getNormal _ (Polygon _ nvec _ _) = Just nvec
 -- Parallelogram
 getNormal _ (Parallelogram _ nvec _ _) = Just nvec
 -- Mesh
-getNormal _ (Mesh ps _ _ _) = Nothing
+getNormal _ (Mesh _ps _ _ _) = Nothing
 -- Point
 getNormal _ _ = Nothing
 
@@ -225,28 +229,27 @@ distance (pos, dir) shape@(Sphere center radius)
     t2 = sqrt t1
 -- Polygon
 distance (pos, dir) shape@(Polygon pos0 _ dir1 dir2)
-  | res == Nothing = Nothing
-  | t < nearly0    = Nothing
-  | otherwise      = Just (uv, t, shape)
+  | isNothing res = Nothing
+  | t < nearly0   = Nothing
+  | otherwise     = Just (uv, t, shape)
   where
     res = methodMoller 1.0 pos0 dir1 dir2 pos dir
     (uv, t) = fromJust res
 -- Parallelogram
 distance (pos, dir) shape@(Parallelogram pos0 _ dir1 dir2)
-  | res == Nothing = Nothing
-  | t < nearly0    = Nothing
-  | otherwise      = Just (uv, t, shape)
+  | isNothing res = Nothing
+  | t < nearly0   = Nothing
+  | otherwise     = Just (uv, t, shape)
   where
     res = methodMoller 2.0 pos0 dir1 dir2 pos dir
     (uv, t) = fromJust res
 -- Mesh
-distance ray (Mesh ps vs ns _) = if t >= infinity
-  then Nothing
-  else if t >= nearly0
-    then Just (uv, t, buildPoly p d1 d2)
-    else Nothing
+distance ray (Mesh ps vs ns _)
+  | t >= infinity = Nothing
+  | t >= nearly0  = Just (uv, t, buildPoly p d1 d2)
+  | otherwise     = Nothing
   where
-    dampat = ((0, 0, 0), (0, 0, 0), (0, 0, 0))
+    --dampat = ((0, 0, 0), (0, 0, 0), (0, 0, 0))
     (uv, t, p, d1, d2) = foldl' (compPolygon ray vs) (o2, infinity, dammypatch, o3, o3) ps
     buildPoly :: Patch -> Direction3 -> Direction3 -> Shape
     buildPoly ((p0, n0, _), _, _) d1' d2' = Polygon (vs UA.! p0) (ns UA.! n0) d1' d2'
@@ -262,8 +265,8 @@ nSurface :: Shape -> Int
 nSurface (Point _) = 0
 nSurface (Plain _ _) = 1
 nSurface (Sphere _ _) = 1
-nSurface (Polygon _ _ _ _) = 1
-nSurface (Parallelogram _ _ _ _) = 1
+nSurface (Polygon {}) = 1
+nSurface (Parallelogram {}) = 1
 nSurface (Mesh ps _ _ _) = V.length ps
 
 {- |
@@ -276,7 +279,7 @@ surfaceArea (Plain _ _) = 0.0
 surfaceArea (Sphere _ radius) = 4 * pi * radius * radius
 surfaceArea (Polygon _ _ dir1 dir2) = norm (dir1 <*> dir2) / 2.0
 surfaceArea (Parallelogram _ _ dir1 dir2) = norm (dir1 <*> dir2)
-surfaceArea (Mesh ps vtxs _ _) = foldl' (sumPatchArea) 0.0 ps
+surfaceArea (Mesh ps vtxs _ _) = foldl' sumPatchArea 0.0 ps
   where
     sumPatchArea :: Double -> Patch -> Double
     sumPatchArea s ((p0, _, _), (p1, _, _), (p2, _, _)) = s + (norm (d1 <*> d2) / 2.0)
@@ -303,8 +306,8 @@ randomPoint (Polygon pos nvec dir1 dir2) = do
   let
     (m', n') = if m + n > 1.0
       then if m > n
-        then ((1.0 - m), n)
-        else (m, (1.0 - n))
+        then (1.0 - m, n)
+        else (m, 1.0 - n)
       else (m, n)
   return (pos + m' *> dir1 + n' *> dir2, nvec)
 randomPoint (Parallelogram pos nvec dir1 dir2) = do
@@ -325,20 +328,20 @@ randomPoint (Mesh ps vtxs norms _) = do
   let
     (m', n') = if m + n > 1.0
       then if m > n
-        then ((1.0 - m), n)
-        else (m, (1.0 - n))
+        then (1.0 - m, n)
+        else (m, 1.0 - n)
       else (m, n)
   return (vtxs UA.! p0 + m' *> d1 + n' *> d2, norms UA.! nvec)
 
 getDirection :: Shape -> Position3 -> Position3 -> Maybe Direction3
 getDirection shp destpos srcpos
-  | nvec == Nothing = Nothing
-  | cos > 0.0       = Nothing
-  | otherwise       = Just dir
+  | isNothing nvec = Nothing
+  | cos > 0.0      = Nothing
+  | otherwise      = Just dir
   where
     nvec = getNormal destpos shp
     dir = destpos - srcpos
-    cos = (fromJust nvec) <.> dir
+    cos = fromJust nvec <.> dir
 
 
 --

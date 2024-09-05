@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BangPatterns #-}
+--{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE InstanceSigs #-}
 
 --
 -- Light
@@ -19,10 +20,10 @@ module Ray.Light (
 ) where
 
 --import System.Random
-import Control.DeepSeq
+import Control.DeepSeq (NFData(..))
 import Control.DeepSeq.Generics (genericRnf)
-import Data.Maybe
-import           Debug.Trace
+--import Data.Maybe
+--import Debug.Trace
 import GHC.Generics
 import NumericPrelude
 import System.Random.Mersenne as MT
@@ -71,6 +72,7 @@ data RadEstimation =
   deriving (Eq, Show, Generic)
 
 instance NFData RadEstimation where
+  rnf :: RadEstimation -> ()
   rnf = genericRnf
 
 data LightSpec = LightSpec
@@ -87,6 +89,7 @@ data LightSpec = LightSpec
   deriving (Eq, Show, Generic)
 
 instance NFData LightSpec where
+  rnf :: LightSpec -> ()
   rnf = genericRnf
 
 {-}
@@ -108,7 +111,7 @@ initLightSpec col lux direct radest dirf =
   where
     radiosity = lux / 683.0   -- flux [W] = lumen / 683.0, lux = lumen / S [lumen/m^2]
     (cpow, pow)  = densityPower (direct ** 3)
-    em0 = sr_half * radiosity
+    em0 = srHalf * radiosity
     em  = em0 *> col <**> radiance1
 
 {-
@@ -172,7 +175,7 @@ getRadiance (LightSpec (Color r g b) radiosity _ _ _ cpow _ _) lnvec lvec
   = Radiance (r * decay) (g * decay) (b * decay)
   where
     cos = lnvec <.> lvec
-    decay = sr_half * radiosity * (cos ** cpow) * (cpow + 1.0)
+    decay = srHalf * radiosity * (cos ** cpow) * (cpow + 1.0)
 
 decayEmittance :: LightSpec -> Double -> Radiance
 decayEmittance (LightSpec _ _ _ _ _ cpow _ em) cos = decay *> em

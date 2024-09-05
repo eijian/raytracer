@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE InstanceSigs #-}
+--{-# LANGUAGE BangPatterns #-}
 
 --
 -- Material
@@ -47,6 +48,7 @@ data Material = Material
   } deriving (Eq, Show, Generic)
 
 instance NFData Material where
+  rnf :: Material -> ()
   rnf = genericRnf
 
 initMaterial :: Color -> Double -> Double -> Color -> Color -> Maybe Color
@@ -69,9 +71,7 @@ averageIor :: Material -> Double
 averageIor (Material _ _ _ _ (Color r g b) _) = (r + g + b) / 3.0
 
 reflect :: Material -> Double -> Bool
-reflect (Material _ _ metal _ _ alspec) _ = if metal == 1.0
-  then True
-  else alspec /= black
+reflect (Material _ _ metal _ _ alspec) _ = (metal == 1.0) || (alspec /= black)
 
 refract :: Material -> Bool
 refract (Material aldiff scat metal _ _ _) = if metal /= 1.0
@@ -98,7 +98,7 @@ photonBehavior (Material aldiff scat _ _ _ alspec) cos wl = do
     f = fresnelReflectance (selectWavelength wl alspec) cos
   r1 <- russianRouletteBinary f
   --putStrLn ("r1=" ++ show r1 ++ ", f=" ++ show f)
-  if r1 == True
+  if r1
     then return SpecularReflection
     else do
       {-
@@ -113,12 +113,12 @@ photonBehavior (Material aldiff scat _ _ _ alspec) cos wl = do
       -}
       r2 <- russianRouletteBinary (selectWavelength wl aldiff)
       --putStrLn ("r2=" ++ show r2 ++ ", diff=" ++ show aldiff)
-      if r2 == False
+      if not r2
         then return Absorption
         else do
           r3 <- russianRouletteBinary scat
           --putStrLn ("r3=" ++ show r3 ++ ", scat=" ++ show scat)
-          if r3 == False
+          if not r3
             then return SpecularTransmission
             else return DiffuseReflection
 

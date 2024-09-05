@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BangPatterns #-}
+--{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE InstanceSigs #-}
 
 
 --
@@ -52,6 +53,7 @@ data Wavelength = Red | Green | Blue
   deriving (Show, Read, Enum, Eq, Generic)
 
 instance NFData Wavelength where
+  rnf :: Wavelength -> ()
   rnf = genericRnf
 
 --
@@ -61,16 +63,20 @@ data Color = Color !Double !Double !Double
   deriving (Read, Generic)
 
 instance NFData Color where
+  rnf :: Color -> ()
   rnf = genericRnf
 
 instance Eq Color where
+  (==) :: Color -> Color -> Bool
   (Color r1 g1 b1) == (Color r2 g2 b2)
     = r1 == r2 && g1 == g2 && b1 == b2
 
 instance Show Color where
+  show :: Color -> String
   show (Color r g b) = "[" ++ show r ++ "," ++ show g ++ "," ++ show b ++ "]"
 
 instance Arbitrary Color where
+  arbitrary :: Gen Color
   arbitrary = do
     r <- arbitrary
     g <- arbitrary
@@ -78,19 +84,26 @@ instance Arbitrary Color where
     return $ Color r g b
 
 instance Additive.C Color where
+  zero :: Color
   zero = Color 0 0 0
+  (+) :: Color -> Color -> Color
   (Color r1 g1 b1) + (Color r2 g2 b2)
     = Color (r1 + r2) (g1 + g2) (b1 + b2)
+  (-) :: Color -> Color -> Color
   (Color r1 g1 b1) - (Color r2 g2 b2)
     = Color (r1 - r2) (g1 - g2) (b1 - b2)
+  negate :: Color -> Color
   negate (Color r g b) = Color (1.0 - r) (1.0 - g) (1.0 - b)
 
 instance Module.C Double Color where
+  (*>) :: Double -> Color -> Color
   s *> (Color r g b) = Color (s * r) (s * g) (s * b)
 
 instance Ring.C Color where
+  (*) :: Color -> Color -> Color
   (Color r1 g1 b1) * (Color r2 g2 b2)
     = Color (r1*r2) (g1*g2) (b1*b2)
+  one :: Color
   one = Color 1.0 1.0 1.0
 
 black :: Color
@@ -122,11 +135,11 @@ initColorByKelvin t = normalizeColor (Color (clip r) (clip g) (clip b))
       else
         329.698727446 * ((t' - 60) ** (-0.1332047592))
     g = if t' <= 66.0
-      then 99.4708025861 * (logBase (exp 1) t') - 161.1195681661
+      then 99.4708025861 * logBase (exp 1) t' - 161.1195681661
       else 288.1221695283 * (t' - 60) ** (-0.0755148492)
     b = if t' >= 66.0
       then 255.0
-      else 138.5177312231 * (logBase (exp 1) (t' - 10)) - 305.0447927307
+      else 138.5177312231 * logBase (exp 1) (t' - 10) - 305.0447927307
     clip :: Double -> Double
     clip c = if c > 255.0
       then 1.0
@@ -135,11 +148,10 @@ initColorByKelvin t = normalizeColor (Color (clip r) (clip g) (clip b))
 initColorByKelvin2 :: Double -> Color
 initColorByKelvin2 t = normalizeColor $ kelvinTable !! t1
   where
-    t' = if t < 0.0
-      then 0.0
-      else if t > 12000.0
-        then 12000.0
-        else t
+    t'
+      | t < 0.0     = 0.0
+      | t > 12000.0 = 12000.0
+      | otherwise   = t
     t1 = ceiling (t' / 100.0)
 
 normalizeColor :: Color -> Color

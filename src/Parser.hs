@@ -35,7 +35,7 @@ import qualified Data.Map.Strict                      as M
 import           Data.Maybe
 import qualified Data.Vector                          as V
 import           Text.ParserCombinators.Parsec
-import           Text.ParserCombinators.Parsec.Char   as PC
+--import           Text.ParserCombinators.Parsec.Char   as PC
 import qualified Text.ParserCombinators.Parsec.Number as PN
 --import           Text.Parsec
 --import qualified Text.Parsec.Char   as PC
@@ -46,11 +46,11 @@ import Ray.Algebra
 import Ray.Geometry
 import Ray.Light
 import Ray.Mapper
-import Ray.Material
+import Ray.Material ( Material, initMaterial )
 import Ray.Object
 import Ray.Optics
 import Ray.Physics
-import Ray.Surface
+import Ray.Surface ( Surface, initSurface )
 
 --
 -- RESERVED WORD
@@ -122,8 +122,8 @@ rMap1 = "map1"
 rMap2 :: String
 rMap2 = "map2"
 
-rMapDivision :: String
-rMapDivision = "mapdivision"
+--rMapDivision :: String
+--rMapDivision = "mapdivision"
 
 rMapper :: String
 rMapper = "mapper"
@@ -188,8 +188,8 @@ rResolution = "resolution"
 rRoughness :: String
 rRoughness = "roughness"
 
-rSamplePhoton :: String
-rSamplePhoton = "samplephoton"
+--rSamplePhoton :: String
+--rSamplePhoton = "samplephoton"
 
 rScale :: String
 rScale = "scale"
@@ -233,8 +233,8 @@ rWhiteBalance = "whitebalance"
 
 type Param = (String, String)
 
-pname :: String
-pname = "rt parser"
+--pname :: String
+--pname = "rt parser"
 
 charComment :: Char
 charComment = '#'
@@ -254,7 +254,7 @@ removeComment :: String -> String
 removeComment []     = []
 removeComment (c:cs)
   | c == charComment = []
-  | otherwise        = c:(removeComment cs)
+  | otherwise        = c:removeComment cs
 
 
 --
@@ -486,8 +486,8 @@ lightspec:
     direction  : out       
 -}
 
-sampleworld :: String
-sampleworld = concat $ map (\x -> x ++ "\n") [
+_sampleworld :: String
+_sampleworld = unlines [
     "   "
   , "lightspec:"
   , "  ceiling_light:"
@@ -562,19 +562,19 @@ expecting lf new-line or "\r\n"
 world :: Double -> Parser [Object]
 world wb = do
   _  <- many (try linefeed)
-  ls <- lightspec_list wb
+  ls <- lightspecList wb
   let lgtmap = M.fromList ls
   _  <- many (try linefeed)
-  ms <- material_list
+  ms <- materialList
   let matemap = M.fromList ms
   _  <- many (try linefeed)
-  ss <- surface_list lgtmap
+  ss <- surfaceList lgtmap
   let sfmap = M.fromList ss
   _  <- many (try linefeed)
-  mps <- mapper_list matemap sfmap
+  mps <- mapperList matemap sfmap
   let mapmap = M.fromList mps
   _  <- many (try linefeed)
-  os <- object_list mapmap
+  os <- objectList mapmap
   let objmap = M.fromList os
   _  <- many (try linefeed)
   sn <- scene
@@ -593,18 +593,19 @@ world wb = do
 --
 
 {- |
->>> parse (lightspec_list 100.0) pname "        \nlightspec:\n   \n  ceiling:\n    color: [ 1.0, 0.7, 0.4 ]\n    radiosity: 1950\n    directivity: 0.0\n    rad_est: formula\n    direction: out\n   \n  bulb:\n    temperature: 3500\n    radiosity: 48320\n    directivity: 0.0\n    rad_est: photon\n    direction: in\n"
+>>> parse (lightspecList 100.0) pname "        \nlightspec:\n   \n  ceiling:\n    color: [ 1.0, 0.7, 0.4 ]\n    radiosity: 1950\n    directivity: 0.0\n    rad_est: formula\n    direction: out\n   \n  bulb:\n    temperature: 3500\n    radiosity: 48320\n    directivity: 0.0\n    rad_est: photon\n    direction: in\n"
 Right [("ceiling",LightSpec {lcolor = [0.47619047619047616,0.3333333333333333,0.19047619047619047], radiosity = 2.8550512445095166, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.21637881825921765 0.15146517278145236 8.655152730368706e-2}),("bulb",LightSpec {lcolor = [0.4334078665789044,0.32723782297452636,0.23935431044656913], radiosity = 70.74670571010249, directivity = 0.0, radest = PhotonMap, dirflag = In, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.880037320284739 3.6845957627160155 2.6950548382296726})]
 -}
 
-lightspec_list :: Double -> Parser [(String, LightSpec)]
-lightspec_list wb = do
+lightspecList :: Double -> Parser [(String, LightSpec)]
+lightspecList wb = do
   _ <- many (try space)
   _ <- string rLightSpec
   _ <- separator2
   _ <- linefeed
-  ls <- many1 (try (lightspec_elem wb))
-  return ls
+  many1 (try (lightspecElem wb))
+--  ls <- many1 (try (lightspecElem wb))
+--  return ls
 
 {- |
 >>> parse lightspec_elem pname "   \n  ceiling:\n    color: [ 1.0, 0.7, 0.4 ]\n    radiosity: 1950\n    directivity: 0.0\n    rad_est: formula\n    direction: out\n"
@@ -613,15 +614,15 @@ Right ("ceiling",LightSpec {lcolor = [0.47619047619047616,0.3333333333333333,0.1
 Right ("bulb",LightSpec {lcolor = [0.4334078665789044,0.32723782297452636,0.23935431044656913], radiosity = 70.74670571010249, directivity = 0.0, radest = PhotonMap, dirflag = In, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.880037320284739 3.6845957627160155 2.6950548382296726})
 -}
 
-lightspec_elem :: Double -> Parser (String, LightSpec)
-lightspec_elem wb = do
+lightspecElem :: Double -> Parser (String, LightSpec)
+lightspecElem wb = do
   _ <- many (try linefeed)
-  n <- elem_name
-  c <- try lcolorP <|> (temperature wb)
+  n <- elemName
+  c <- try lcolorP <|> temperature wb
   r <- radiosityP
   dv <- directivityP
-  re <- rad_est
-  df <- dir_flag
+  re <- radEst
+  df <- dirFlag
   return (n, initLightSpec c r dv re df)
 
 {- |
@@ -714,8 +715,8 @@ directivityP = do
     then unexpected ("directivity (-1.0 - 1.0) is out of range: " ++ show s)
     else return s
 
-rad_est :: Parser RadEstimation
-rad_est = do
+radEst :: Parser RadEstimation
+radEst = do
   re <- nameparam rRadEst
   if re == "photon"
     then return PhotonMap
@@ -723,8 +724,8 @@ rad_est = do
       then return Formula
       else unexpected "rad_est is 'photon' or 'formula'"
 
-dir_flag :: Parser InOut
-dir_flag = do
+dirFlag :: Parser InOut
+dirFlag = do
   _ <- many (try linefeed)
   _ <- indent2
   _ <- string rDirection
@@ -738,18 +739,17 @@ dir_flag = do
 --
 
 {- |
->>> parse material_list pname "      \nmaterial:\n     \n  glass:\n    albedo_diff: [ 1.0, 1.0, 1.0 ]\n    scatterness: 0.0\n    metalness: 0.0\n    transmittance: [ 1.0, 1.0, 1.0 ]\n    ior: [ 1.467, 1.460, 1.455 ]\n    albedo_spec:\n     \n  gold:\n    albedo_diff: [ 0.0, 0.0, 0.0 ]\n    scatterness: 0.0\n    metalness: 1.0\n    transmittance: [ 0.0, 0.0, 0.0 ]\n    ior: [ 0.161, 0.346, 1.562 ]\n    albedo_spec: [ 0.964, 0.851, 0.392 ]\n"
+>>> parse materialList pname "      \nmaterial:\n     \n  glass:\n    albedo_diff: [ 1.0, 1.0, 1.0 ]\n    scatterness: 0.0\n    metalness: 0.0\n    transmittance: [ 1.0, 1.0, 1.0 ]\n    ior: [ 1.467, 1.460, 1.455 ]\n    albedo_spec:\n     \n  gold:\n    albedo_diff: [ 0.0, 0.0, 0.0 ]\n    scatterness: 0.0\n    metalness: 1.0\n    transmittance: [ 0.0, 0.0, 0.0 ]\n    ior: [ 0.161, 0.346, 1.562 ]\n    albedo_spec: [ 0.964, 0.851, 0.392 ]\n"
 Right [("glass",Material {albedoDiff = [1.0,1.0,1.0], scatterness = 0.0, metalness = 0.0, transmittance = [1.0,1.0,1.0], ior = [1.467,1.46,1.455], albedoSpec = [3.5834014257760616e-2,3.4965959415691715e-2,3.434945101438937e-2]}),("gold",Material {albedoDiff = [0.0,0.0,0.0], scatterness = 0.0, metalness = 1.0, transmittance = [0.0,0.0,0.0], ior = [0.161,0.346,1.562], albedoSpec = [0.964,0.851,0.392]})]
 -}
 
-material_list :: Parser [(String, Material)]
-material_list = do
+materialList :: Parser [(String, Material)]
+materialList = do
   _ <- many (try space)
   _ <- string rMaterial
   _ <- separator2
   _ <- linefeed
-  ms <- many1 (try material_elem)
-  return ms
+  many1 (try materialElem)
 
 {- |
 >>> parse material_elem pname "     \n  glass:\n    albedo_diff: [ 1.0, 1.0, 1.0 ]\n    scatterness: 0.0\n    metalness: 0.0\n    transmittance: [ 1.0, 1.0, 1.0 ]\n    ior: [ 1.467, 1.460, 1.455 ]\n    albedo_spec:\n"
@@ -759,15 +759,15 @@ Right ("gold",Material {albedoDiff = [0.0,0.0,0.0], scatterness = 0.0, metalness
 
 -}
 
-material_elem :: Parser (String, Material)
-material_elem = do
-  n <- elem_name
-  ad <- albedo_diff
+materialElem :: Parser (String, Material)
+materialElem = do
+  n <- elemName
+  ad <- albedoDiff
   s <- scatternessP
   m <- metalnessP
   t <- transmittanceP
   i <- iorP
-  as <- try albedo_spec <|> noparam rAlbedoSpec Nothing
+  as <- try albedoSpec <|> noparam rAlbedoSpec Nothing
   return (n, initMaterial ad s m t i as)
 
 {- |
@@ -820,22 +820,22 @@ Right [0.1,-0.9,0.8]
 >>> parse iorP pname "   \n    ior: [ 0.1, 0.9, 2.8 ]\n"
 Right [0.1,0.9,2.8]
 
->>> parse albedo_spec pname "   \n    albedo_spec: [ 0.1, 0.9, 0.8 ]\n"
+>>> parse albedoSpec pname "   \n    albedo_spec: [ 0.1, 0.9, 0.8 ]\n"
 Right (Just [0.1,0.9,0.8])
->>> parse albedo_spec pname "   \n    albedo_spec: [ 1.1, 0.9, 0.8 ]\n"
+>>> parse albedoSpec pname "   \n    albedo_spec: [ 1.1, 0.9, 0.8 ]\n"
 Left "rt parser" (line 3, column 1):
 unexpected red of albedo_spec is out of range: 1.1
->>> parse albedo_spec pname "   \n    albedo_spec: [ 0.1, -0.9, 0.8 ]\n"
+>>> parse albedoSpec pname "   \n    albedo_spec: [ 0.1, -0.9, 0.8 ]\n"
 Left "rt parser" (line 3, column 1):
 unexpected green of albedo_spec is out of range: -0.9
->>> parse albedo_spec pname "   \n    albedo_spec: [ 0.1, 0.9, 2.8 ]\n"
+>>> parse albedoSpec pname "   \n    albedo_spec: [ 0.1, 0.9, 2.8 ]\n"
 Left "rt parser" (line 3, column 1):
 unexpected blue of albedo_spec is out of range: 2.8
 
 -}
 
-albedo_diff :: Parser Color
-albedo_diff = do
+albedoDiff :: Parser Color
+albedoDiff = do
   (Color r g b) <- colorparam rAlbedoDiff
   r' <- checkRatio r ("red of albedo_diff is out of range: " ++ show r)
   g' <- checkRatio g ("green of albedo_diff is out of range: " ++ show g)
@@ -864,11 +864,10 @@ transmittanceP = do
 
 iorP :: Parser Color
 iorP = do
-  c <- colorparam rIor
-  return c
+  colorparam rIor
 
-albedo_spec :: Parser (Maybe Color)
-albedo_spec = do
+albedoSpec :: Parser (Maybe Color)
+albedoSpec = do
   (Color r g b) <- colorparam rAlbedoSpec
   r' <- checkRatio r ("red of albedo_spec is out of range: " ++ show r)
   g' <- checkRatio g ("green of albedo_spec is out of range: " ++ show g)
@@ -887,14 +886,13 @@ albedo_spec = do
 Right [("ceiling",Surface {elight = Just (LightSpec {lcolor = [0.3359011141561401,0.33472886389070683,0.329370021953153], radiosity = 2.8550512445095166, directivity = 0.0, radest = PhotonMap, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.15263196087942635 0.1520992956124355 0.14966426185249523}), roughness = 0.0, densityPow = 9.99999000001e-7, alpha = 0.0}),("floor",Surface {elight = Nothing, roughness = 1.0, densityPow = 0.5, alpha = 1.0}),("bulb",Surface {elight = Just (LightSpec {lcolor = [0.3701322600524373,0.3309599290794973,0.29890781086806545], radiosity = 70.74670571010249, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.167573737770148 3.7265055158676947 3.365608667592586}), roughness = 1.0, densityPow = 0.5, alpha = 1.0})]
 -}
 
-surface_list :: M.Map String LightSpec -> Parser [(String, Surface)]
-surface_list lm = do
+surfaceList :: M.Map String LightSpec -> Parser [(String, Surface)]
+surfaceList lm = do
   _ <- many (try space)
   _ <- string rSurface
   _ <- separator2
   _ <- linefeed
-  ss <- many1 (try (surface_elem lm))
-  return ss
+  many1 (try (surfaceElem lm))
 
 {- |
 >>> let l1 = initLightSpec (initColorByKelvin 6500) 1950 0.0 PhotonMap Out
@@ -908,9 +906,9 @@ Right ("bulb",Surface {elight = Just (LightSpec {lcolor = [0.3701322600524373,0.
 Right ("floor",Surface {elight = Nothing, roughness = 1.0, densityPow = 0.5, alpha = 1.0})
 -}
 
-surface_elem :: M.Map String LightSpec -> Parser (String, Surface)
-surface_elem lm = do
-  n <- elem_name
+surfaceElem :: M.Map String LightSpec -> Parser (String, Surface)
+surfaceElem lm = do
+  n <- elemName
   r <- roughnessP
   l <- try lightparam <|> noparam rLight ""
   lt <- case M.lookup l lm of
@@ -952,8 +950,7 @@ expecting "_", uppercase letter, lowercase letter or digit
 
 lightparam :: Parser String
 lightparam = do
-  s <- nameparam rLight
-  return s
+  nameparam rLight
 
 --
 -- MAPPER LIST
@@ -970,15 +967,13 @@ lightparam = do
 Right [("polsilver",Solid (Material {albedoDiff = [0.0,0.0,0.0], scatterness = 0.0, metalness = 1.0, transmittance = [0.0,0.0,0.0], ior = [0.142,0.128,0.159], albedoSpec = [0.974,0.96,0.906]},Surface {elight = Nothing, roughness = 0.0, densityPow = 9.99999000001e-7, alpha = 0.0})),("chkfloor",Checker (Material {albedoDiff = [0.0,0.0,0.0], scatterness = 0.0, metalness = 1.0, transmittance = [0.0,0.0,0.0], ior = [0.142,0.128,0.159], albedoSpec = [0.974,0.96,0.906]},Surface {elight = Nothing, roughness = 0.0, densityPow = 9.99999000001e-7, alpha = 0.0}), (Material {albedoDiff = [0.5,0.5,0.5], scatterness = 1.0, metalness = 0.0, transmittance = [0.0,0.0,0.0], ior = [1.534,1.534,1.534], albedoSpec = [4.440882607430812e-2,4.440882607430812e-2,4.440882607430812e-2]},Surface {elight = Nothing, roughness = 1.0, densityPow = 0.5, alpha = 1.0}), 1.5)]
 -}
 
-mapper_list :: M.Map String Material -> M.Map String Surface
-  -> Parser [(String, Mapper)]
-mapper_list mm sm = do
+mapperList :: M.Map String Material -> M.Map String Surface -> Parser [(String, Mapper)]
+mapperList mm sm = do
   _ <- many (try space)
   _ <- string rMapper
   _ <- separator2
   _ <- linefeed
-  ms <- many1 (try (mapper_elem mm sm))
-  return ms
+  many1 (try (mapperElem mm sm))
 
 {- |
 >>> let smat = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.974 0.960 0.906))
@@ -993,10 +988,10 @@ Right ("polsilver",Solid (Material {albedoDiff = [0.0,0.0,0.0], scatterness = 0.
 Right ("chkfloor",Checker (Material {albedoDiff = [0.0,0.0,0.0], scatterness = 0.0, metalness = 1.0, transmittance = [0.0,0.0,0.0], ior = [0.142,0.128,0.159], albedoSpec = [0.974,0.96,0.906]},Surface {elight = Nothing, roughness = 0.0, densityPow = 9.99999000001e-7, alpha = 0.0}), (Material {albedoDiff = [0.5,0.5,0.5], scatterness = 1.0, metalness = 0.0, transmittance = [0.0,0.0,0.0], ior = [1.534,1.534,1.534], albedoSpec = [4.440882607430812e-2,4.440882607430812e-2,4.440882607430812e-2]},Surface {elight = Nothing, roughness = 1.0, densityPow = 0.5, alpha = 1.0}), 2.0)
 -}
 
-mapper_elem :: M.Map String Material -> M.Map String Surface
+mapperElem :: M.Map String Material -> M.Map String Surface
   -> Parser (String, Mapper)
-mapper_elem mm sm = do
-  n <- elem_name
+mapperElem mm sm = do
+  n <- elemName
   m <- mappertype mm sm
   return (n, m)
 
@@ -1016,8 +1011,7 @@ Right Checker (Material {albedoDiff = [0.0,0.0,0.0], scatterness = 0.0, metalnes
 mappertype :: M.Map String Material -> M.Map String Surface
   -> Parser Mapper
 mappertype mm sm = do
-  s <- try (solid mm sm) <|> try (checker mm sm)
-  return s
+  try (solid mm sm) <|> try (checker mm sm)
 
 {- |
 >>> let smat = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.974 0.960 0.906))
@@ -1141,14 +1135,13 @@ Right [("ball1",Object {shape = Sphere {center = Vector3 0.0 5.0 3.0, radius = 0
 
 -}
 
-object_list :: M.Map String Mapper -> Parser [(String, Object)]
-object_list mm = do
+objectList :: M.Map String Mapper -> Parser [(String, Object)]
+objectList mm = do
   _ <- many (try linefeed)
   _ <- string "object"
   _ <- separator2
   _ <- linefeed
-  o <- many1 (try (object_elem mm))
-  return o
+  many1 (try (objectElem mm))
 
 {- |
 >>> let smat = initMaterial black 0.0 1.0 black (Color 0.142 0.128 0.159) (Just (Color 0.974 0.960 0.906))
@@ -1160,9 +1153,9 @@ object_list mm = do
 Right ("ball1",Object {shape = Sphere {center = Vector3 0.0 5.0 3.0, radius = 0.8}, mapper = Solid (Material {albedoDiff = [0.0,0.0,0.0], scatterness = 0.0, metalness = 1.0, transmittance = [0.0,0.0,0.0], ior = [0.142,0.128,0.159], albedoSpec = [0.974,0.96,0.906]},Surface {elight = Nothing, roughness = 1.0, densityPow = 0.5, alpha = 1.0})})
 -}
 
-object_elem :: M.Map String Mapper -> Parser (String, Object)
-object_elem mm = do
-  n <- elem_name
+objectElem :: M.Map String Mapper -> Parser (String, Object)
+objectElem mm = do
+  n <- elemName
   s <- oshape
   m <- omapper
   mp <- case M.lookup m mm of
@@ -1286,7 +1279,7 @@ mesh = do
   _ <- string "polygon"
   _ <- separator2
   _ <- linefeed
-  ps <- many1 (try polygon_elem)
+  ps <- many1 (try polygonElem)
   return (Mesh (V.fromList ps) vs' ns' uvs')
 
 {- |
@@ -1319,23 +1312,23 @@ vector2_elem = do
 Right ((0,1,1),(2,3,1),(1,1,0))
 -}
 
-polygon_elem :: Parser (Vertex, Vertex, Vertex)
-polygon_elem = do
+polygonElem :: Parser (Vertex, Vertex, Vertex)
+polygonElem = do
   _ <- indent
   _ <- indent2
   _ <- char '-'
   _ <- many space
   _ <- char '['
   _ <- many space
-  v1 <- vertex_info
+  v1 <- vertexInfo
   _ <- many space
   _ <- char ','
   _ <- many space
-  v2 <- vertex_info
+  v2 <- vertexInfo
   _ <- many space
   _ <- char ','
   _ <- many space
-  v3 <- vertex_info
+  v3 <- vertexInfo
   _ <- many space
   _ <- char ']'
   _ <- linefeed
@@ -1360,8 +1353,8 @@ unexpected "."
 expecting digit, space or ","
 -}
 
-vertex_info :: Parser Vertex
-vertex_info = do
+vertexInfo :: Parser Vertex
+vertexInfo = do
   _ <- char '['
   _ <- many space
   i1 <- PN.nat
@@ -1403,8 +1396,7 @@ unexpected "p"
 
 omapper :: Parser String
 omapper = do
-  s <- nameparam rMapper
-  return s
+  nameparam rMapper
 
 --
 -- SCENE INFO
@@ -1428,8 +1420,7 @@ scene = do
   _ <- string "scene"
   _ <- separator2
   _ <- linefeed
-  objs <- many1 (try scene_elem)
-  return objs
+  many1 (try sceneElem)
 
 {- |
 >>> parse scene_elem pname "  - ball1\n"
@@ -1464,8 +1455,8 @@ unexpected "b"
 expecting "- "
 -}
 
-scene_elem :: Parser String
-scene_elem = do
+sceneElem :: Parser String
+sceneElem = do
   _ <- many (try linefeed)
   _ <- indent
   _ <- string "- "
@@ -1618,8 +1609,6 @@ floatparam pn = do
   _ <- linefeed
   return f
 
-
-
 {- |
 >>> parse elem_name pname "  dragon:\n"
 Right "dragon"
@@ -1661,8 +1650,8 @@ unexpected "g"
 expecting lf new-line or "\r\n"
 -}
 
-elem_name :: Parser String
-elem_name = do
+elemName :: Parser String
+elemName = do
   _ <- many (try linefeed)
   _ <- indent
   s <- identifier
@@ -1971,7 +1960,7 @@ expecting "yes" or "no"
 yesno :: Parser Bool
 yesno = do
   s <- string "yes" <|> string "no"
-  return $ if s == "yes" then True else False
+  return (s == "yes")
 
 {- |
 >>> parse inout pname "in"
@@ -2002,8 +1991,8 @@ unexpected "t"
 expecting "cone"
 -}
 
-pfilter :: Parser PhotonFilter
-pfilter = do
+_pfilter :: Parser PhotonFilter
+_pfilter = do
   s <- string "none" <|> string "cone" <|> string "gauss"
   case s of
     "none"  -> return Nonfilter
@@ -2032,12 +2021,10 @@ Right "a_0"
 Right "_abc"
 -}
 
-name :: Parser String
-name = do
+_name :: Parser String
+_name = do
   --s <- many1 (noneOf " \t\v\f\r\n")
-  s <- many1 (alphaNum <|> oneOf "_")
-  return s
-
+  many1 (alphaNum <|> oneOf "_")
 
 {- |
 >>> parse idletter pname "a"
@@ -2060,8 +2047,7 @@ expecting uppercase letter or lowercase letter
 
 idletter :: Parser Char
 idletter = do
-  s <- upper <|> lower
-  return s
+  upper <|> lower
 
 {- |
 >>> parse linefeed pname "   \n"

@@ -1,8 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE InstanceSigs #-}
+--{-# LANGUAGE DeriveGeneric #-}
+--{-# LANGUAGE BangPatterns #-}
 
 ---
 --- Mapper
@@ -43,8 +44,9 @@ data Mapper =
   deriving (Eq)
 
 instance Show Mapper where
-  show (Solid sfchar) = "Solid " ++ (show sfchar)
-  show (Checker sfchar1 sfchar2 mag) = "Checker " ++ (show sfchar1) ++ ", " ++ (show sfchar2) ++ ", " ++ show mag
+  show :: Mapper -> String
+  show (Solid sfchar) = "Solid " ++ show sfchar
+  show (Checker sfchar1 sfchar2 mag) = "Checker " ++ show sfchar1 ++ ", " ++ show sfchar2 ++ ", " ++ show mag
 
 -- mapping functions
 initSolid :: SurfaceChar -> Mapper
@@ -56,7 +58,7 @@ initChecker sc1 sc2 scale = Checker sc1 sc2 scale
 
 surfaceCharOnPoint :: Mapper -> SurfacePoint -> Vector2 -> SurfaceChar
 surfaceCharOnPoint (Solid sc) _ _ = sc
-surfaceCharOnPoint (Checker sc1 sc2 mag) ((Vector3 x _ z), _) _ =
+surfaceCharOnPoint (Checker sc1 sc2 mag) (Vector3 x _ z, _) _ =
   if sc >= 0 then sc1 else sc2
   where
     x' = x * pi * mag

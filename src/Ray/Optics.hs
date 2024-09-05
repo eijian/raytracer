@@ -2,9 +2,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE InstanceSigs #-}
+--{-# LANGUAGE BangPatterns #-}
+--{-# LANGUAGE OverloadedStrings #-}
+--{-# LANGUAGE DeriveAnyClass #-}
 
 --
 -- Optics
@@ -69,7 +70,7 @@ import qualified Algebra.Additive as Additive
 import qualified Algebra.Module as Module
 import           Control.DeepSeq
 import           Control.DeepSeq.Generics (genericRnf)
-import           Debug.Trace
+--import           Debug.Trace
 import           Data.Maybe
 import           GHC.Generics 
 import           NumericPrelude
@@ -90,6 +91,7 @@ data PhotonFilter =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance NFData PhotonFilter where
+  rnf :: PhotonFilter -> ()
   rnf = genericRnf                  
 
 --
@@ -99,13 +101,16 @@ data Radiance = Radiance !Double !Double !Double
   deriving (Read, Show, Generic)
 
 instance NFData Radiance where
+  rnf :: Radiance -> ()
   rnf = genericRnf
                 
 instance Eq Radiance where
+  (==) :: Radiance -> Radiance -> Bool
   (Radiance r1 g1 b1) == (Radiance r2 g2 b2)
     = r1 == r2 && g1 == g2 && b1 == b2
 
 instance Arbitrary Radiance where
+  arbitrary :: Gen Radiance
   arbitrary = do
     r <- arbitrary
     g <- arbitrary
@@ -120,17 +125,23 @@ instance Arbitrary Radiance where
 1.1e-2
 -}
 instance Additive.C Radiance where
+  zero :: Radiance
   zero = Radiance 0 0 0
+  (+) :: Radiance -> Radiance -> Radiance
   (Radiance r1 g1 b1) + (Radiance r2 g2 b2)
     = Radiance (r1 + r2) (g1 + g2) (b1 + b2)
+  (-) :: Radiance -> Radiance -> Radiance
   (Radiance r1 g1 b1) - (Radiance r2 g2 b2)
     = Radiance (r1 - r2) (g1 - g2) (b1 - b2)
 
 instance Module.C Double Radiance where
+  (*>) :: Double -> Radiance -> Radiance
   s *> (Radiance r g b) = Radiance (s * r) (s * g) (s * b)
 
 instance BasicMatrix Radiance where
+  norm :: Radiance -> Double
   norm (Radiance r g b) = rabs r + rabs g + rabs b
+  (.=.) :: Radiance -> Radiance -> Bool
   a .=. b = norm (a - b) < nearly0
 
 rabs :: Double -> Double
@@ -193,7 +204,7 @@ photonPos :: Photon -> Position3
 photonPos (_, (p, _)) = p
 
 convertToInfo :: Photon -> Photon
-convertToInfo (wl, (rp, rd)) = (wl, (rp, (negate rd)))
+convertToInfo (wl, (rp, rd)) = (wl, (rp, negate rd))
 
 squaredDistance :: Photon -> Photon -> Double
 squaredDistance (_, (v1, _)) (_, (v2, _)) = d <.> d
@@ -230,9 +241,9 @@ specular reflection
 -}
 specularReflection :: Direction3 -> Direction3 -> (Direction3, Double)
 specularReflection nvec vvec
-  | cos < 0.0       = (nvec, -cos)
-  | rvec == Nothing = (nvec, 0.0)
-  | otherwise       = (fromJust rvec,  cos)
+  | cos < 0.0      = (nvec, -cos)
+  | isNothing rvec = (nvec, 0.0)
+  | otherwise      = (fromJust rvec,  cos)
   where
     cos = -vvec <.> nvec
     rvec = normalize (vvec + (2.0 * cos) *> nvec)
@@ -260,11 +271,11 @@ specularReflection nvec vvec
 specularRefraction :: Direction3 -> Direction3 -> Double -> Double
                    -> (Maybe Direction3, Double)
 specularRefraction nvec vvec eta cos
-  | cos < 0.0       = (Nothing, (-1.0))  -- 入力値範囲エラー
-  | eta <= 0.0      = (Nothing, (-1.0))  -- 入力値範囲エラー
-  | g0 <  0.0       = (Nothing, 0.0)     -- 全反射
-  | tvec == Nothing = (Nothing, (-1.0))
-  | otherwise       = (tvec, g / eta)
+  | cos < 0.0      = (Nothing, -1.0)  -- 入力値範囲エラー
+  | eta <= 0.0     = (Nothing, -1.0)  -- 入力値範囲エラー
+  | g0 <  0.0      = (Nothing, 0.0)     -- 全反射
+  | isNothing tvec = (Nothing, -1.0)
+  | otherwise      = (tvec, g / eta)
   where
     g0 = eta * eta + cos * cos - 1.0
     g  = sqrt g0

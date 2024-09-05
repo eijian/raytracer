@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BangPatterns #-}
+--{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE InstanceSigs #-}
 
 --
 -- Surface
@@ -51,6 +52,7 @@ data Surface = Surface
   } deriving (Eq, Show, Generic)
 
 instance NFData Surface where
+  rnf :: Surface -> ()
   rnf = genericRnf
 
 -- PUBLIC FUNCTIONS
@@ -98,15 +100,14 @@ microfacetNormal nvec vvec surf retry
     nvec' <- blurredVector nvec (densityPow surf)
     if nvec' <.> vvec < 0.0 && nvec' <.> nvec > 0.0  -- 有効な法線ベクトルが得られた
       then return $ Just nvec'
-      else return Nothing
-      {- 
+      --else return Nothing
       else do
         --金属なら再度N'を求める
         r <- russianRouletteBinary retry
-        if r == True
+        if r
           then microfacetNormal nvec vvec surf retry
           else return Nothing
-      -}
+
 {- |
 emittance
 

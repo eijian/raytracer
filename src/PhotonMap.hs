@@ -1,10 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BangPatterns #-}
+--{-# LANGUAGE DeriveGeneric #-}
+--{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveAnyClass #-}
+--{-# LANGUAGE DeriveAnyClass #-}
 
 --
 -- Optics
@@ -72,4 +72,4 @@ readPhoton photon = (wl, (Vector3 px py pz, Vector3 dx dy dz))
     dz = read dz0 :: Double
 
 photonToPointList :: Photon -> [Double]
-photonToPointList (_, ((Vector3 x y z), _)) = [x, y, z]
+photonToPointList (_, (Vector3 x y z, _)) = [x, y, z]

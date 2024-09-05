@@ -18,3 +18,5 @@ rt
 .DS_Store
 stack.yaml.lock
 .ghc*
+._*
+

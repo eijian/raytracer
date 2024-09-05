@@ -70,11 +70,11 @@ data Camera = Camera
 -- CONSTANTS & DEFAULTS
 --
 
-gamma :: Double
-gamma = 1.0 / 2.2
+--gamma :: Double
+--gamma = 1.0 / 2.2
 
-rgbmax :: Double
-rgbmax = 255.0
+--rgbmax :: Double
+--rgbmax = 255.0
 
 -- 標準EV値=14とする（晴天時の屋外相当）
 standardEV :: Double
@@ -156,14 +156,14 @@ readCamera file = do
     -- 露出係数の決め方
     -- 参考: https://www.ccs-inc.co.jp/guide/column/light_color/vol26.html
     --ev = (logBase 2 (fnumber ** 2)) + (logBase 2 shutterspd) - evadjust
-    ev = (logBase (sqrt 2) fnumber) + (logBase 2 shutterspd) - evadjust
+    ev = logBase (sqrt 2) fnumber + logBase 2 shutterspd - evadjust
     exposure = 2.0 ** (standardEV - ev) * (isosens / standardISO)
     
     wb = standardWB - wb0
 
     lens_x  = ea *> ex
     lens_y  = ea *> ey
-    blurflag = if fnumber >= 100 then False else True  -- F値が100以上ならピンホールカメラ
+    blurflag = fnumber < 100  -- F値が100未満なら通常、100以上ならピンホールカメラとする
     radius2 = radius * radius -- square of radius
     eyedir = ez
     orig = focusdist *> ez - (hr_x - 0.5) *> step_x - (hr_y - 0.5) *> step_y
@@ -200,7 +200,7 @@ readCamera file = do
   return cam
 
 compensateExposure :: Camera -> Radiance -> Radiance
-compensateExposure cam rad = (exposure cam) *> rad
+compensateExposure cam rad = exposure cam *> rad
 
 rgbToString :: Rgb -> String
 rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b
@@ -235,10 +235,10 @@ parseConfig c ls = updateConfig c ps
 
 parseLines :: [String] -> [Param]
 parseLines []     = []
-parseLines (l:ls) = p:(parseLines ls)
+parseLines (l:ls) = p:parseLines ls
   where
-    p = case (parse sline "rt camera file parse error" l) of
-        Left  e  -> error $ (show e ++ "\nLINE: " ++ l)
+    p = case parse sline "rt camera file parse error" l of
+        Left  e  -> error (show e ++ "\nLINE: " ++ l)
         Right p' -> p'
 
 generateRay :: Camera -> (Double, Double) -> IO Ray
@@ -246,7 +246,7 @@ generateRay cam (y, x) = do
   blur <- lensOffset (blurFlag cam) (lens cam)
   --putStrLn ("OR:" ++ show origin ++ ", BL:" ++ show blur)
   --putStrLn ("BL:" ++ show blur)
-  (r3, r4) <- if (antialias cam) == True
+  (r3, r4) <- if antialias cam
     then do
       r3' <- MT.randomIO :: IO Double
       r4' <- MT.randomIO :: IO Double
@@ -254,16 +254,15 @@ generateRay cam (y, x) = do
     else
       return (0.0, 0.0)
   let
-    eyepos = (eyePos cam) + blur
+    eyepos = eyePos cam + blur
     (esx, esy) = screenStep cam
-    eyedir = (screenOrigin cam) + (x + r3) *> esx + (y + r4) *> esy - blur
+    eyedir = screenOrigin cam + (x + r3) *> esx + (y + r4) *> esy - blur
   return (initRay eyepos (fromJust $ normalize eyedir))
 
 lensOffset :: Bool -> (Direction3, Direction3) -> IO Direction3
 lensOffset blurflag (lens_x, lens_y) =
-  if blurflag == False
-    then return o3
-    else do
+  if blurflag
+    then do
       r1 <- MT.randomIO :: IO Double
       r2 <- MT.randomIO :: IO Double
       -- 方法1) 正方形にランダムな点を取り、半径1の円内ならOK、外ならやり直し
@@ -283,6 +282,7 @@ lensOffset blurflag (lens_x, lens_y) =
         ofx = r * cos theta
         ofy = r * sin theta
       return (ofx *> lens_x + ofy *> lens_y)
+    else return o3
 
 pnmHeader0 :: (Int, Int) -> Double -> [String]
 pnmHeader0 (xr, yr) maxrad =
@@ -292,6 +292,7 @@ pnmHeader0 (xr, yr) maxrad =
   ,"255"
   ]
 
+{--
 radianceToRgb0 :: Double -> Radiance -> Rgb
 radianceToRgb0 maxrad (Radiance r g b) =
   ( clip maxrad r
@@ -303,4 +304,5 @@ radianceToRgb0 maxrad (Radiance r g b) =
     clip c d = floor (r' * rgbmax)
       where
         d' = d / c
-        r'  = (if d' > 1.0 then 1.0 else d') ** gamma
+        r'  = min d' 1.0 ** gamma
+--}

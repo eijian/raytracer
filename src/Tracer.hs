@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE DeriveGeneric #-}
+--{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
 
 --
@@ -18,7 +18,7 @@ import           Control.Monad
 import           Data.Maybe hiding (catMaybes)
 import           Data.List hiding (sum)
 import           Data.Ord
-import           Debug.Trace
+--import           Debug.Trace
 import qualified Data.Vector as V
 import           NumericPrelude
 
@@ -38,11 +38,11 @@ import PhotonMap
 -- CONSTANTS
 --
 
-max_trace :: Int
-max_trace = 500
+maxTrace :: Int
+maxTrace = 500
 
-min_color :: Color
-min_color = Color 1.0e-4 1.0e-4 1.0e-4
+--minColor :: Color
+--minColor = Color 1.0e-4 1.0e-4 1.0e-4
 
 --
 
@@ -59,10 +59,10 @@ min_color = Color 1.0e-4 1.0e-4 1.0e-4
 
 tracePhoton :: V.Vector Object -> Int -> Material -> Material
    -> (Photon, RadEstimation) -> IO (V.Vector Photon)
-tracePhoton !objs !l !mate_air !mate0 (!photon@(wl, ray@(_, vvec)), !radest)
-  | l >= max_trace = return V.empty
+tracePhoton !objs !l !mate_air !mate0 (photon@(wl, ray@(_, vvec)), !radest)
+  | l >= maxTrace = return V.empty
   | otherwise = do
-    case (calcIntersection ray objs) of
+    case calcIntersection ray objs of
       Just is -> do
         let
           (t, (pos, nvec), (mate, surf), io, _) = is
@@ -71,9 +71,9 @@ tracePhoton !objs !l !mate_air !mate0 (!photon@(wl, ray@(_, vvec)), !radest)
             -- フォトンが物体に到達するまでに透過率が低く吸収される場合あり
             -- transmission ** t の確率で到達する
             let
-              tr = (selectWavelength wl (transmittance mate0)) ** t
+              tr = selectWavelength wl (transmittance mate0) ** t
             i <- russianRouletteBinary tr
-            if i == False
+            if not i
               then return V.empty
               else do
                 let
@@ -82,11 +82,11 @@ tracePhoton !objs !l !mate_air !mate0 (!photon@(wl, ray@(_, vvec)), !radest)
                 nextdir <- nextDirection mate surf eta nvec photon io
                 case nextdir of
                   Just (dir, mf) -> do
-                    let mate'' = if mf == True then mate0 else mate'
+                    let mate'' = if mf then mate0 else mate'
                     tracer mate'' ((wl, initRay pos dir), PhotonMap)
                   Nothing -> return V.empty
         --if (uc == False || l > 0) && storePhoton mate == True
-        if (radest == PhotonMap || l > 0) && storePhoton mate == True
+        if (radest == PhotonMap || l > 0) && storePhoton mate
           then return $ V.cons (wl, (pos, vvec)) ref
           else return ref
       Nothing -> return V.empty
@@ -135,11 +135,11 @@ nextDirection mate surf eta nvec (wl, (_, vvec)) io = do
 traceRay :: PhotonFilter -> V.Vector Object -> V.Vector LightObject -> Int
   -> PhotonMap -> Double -> Material -> Material -> Color -> Ray
   -> IO Radiance
-traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !fr0 !ray@(_, vvec)
-  | l >= max_trace          = return radiance0
-  | lowerThan fr0 min_color = return radiance0
+traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !fr0 ray@(_, vvec)
+  | l >= maxTrace          = return radiance0
+  | lowerThan fr0 minColor = return radiance0
   | otherwise               = do
-    case (calcIntersection ray objs) of
+    case calcIntersection ray objs of
       Nothing            -> return radiance0
       Just is@(t, sfpt@(pos, nvec), (mate, surf), io, _obj) -> do
         let metal = metalness mate
@@ -160,9 +160,7 @@ traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !fr0 !ray@(_, vve
           tracer = traceRay filter objs lgts (l+1) pmap radius mate_air
           mate' = if io == In then mate else mate_air
           eta = relativeIorAverage (ior mate0) (ior mate')
-          nvec' = case nvec2 of
-            Just nvec2 -> nvec2
-            Nothing    -> nvec
+          nvec' = fromMaybe nvec nvec2
           (rvec, cos1) = specularReflection nvec' vvec
           (tvec, cos2) = specularRefraction nvec' vvec eta cos1
           cos = if io == In then cos1 else cos2
@@ -197,7 +195,7 @@ estimateRadiance :: Double -> PhotonFilter -> PhotonMap -> Intersection
   -> Radiance
 estimateRadiance rmax filter pmap (_, (pos, nvec), _, _, _) = mag *> rad
   where
-    mag = one_pi / rmax * (power pmap)
+    mag = onePi / rmax * power pmap
     rad = estimateRadianceByMap rmax filter pos nvec pmap
 
 estimateRadianceByMap :: Double -> PhotonFilter -> Position3 -> Direction3 -> PhotonMap
@@ -208,9 +206,9 @@ estimateRadianceByMap rmax filter pos nvec pmap
   where
     ps = inradius pmap $ photonDummy pos
     f_wait = case filter of
-      Nonfilter   -> filter_none rmax
-      Conefilter  -> filter_cone rmax
-      Gaussfilter -> filter_gauss rmax
+      Nonfilter   -> filterNone rmax
+      Conefilter  -> filterCone rmax
+      Gaussfilter -> filterGauss rmax
     waits = ps `deepseq` V.map (\x -> f_wait (square (photonPos x - pos))) ps
     rads = V.zipWith (photonToRadiance nvec) waits ps
 
@@ -220,20 +218,20 @@ estimateRadianceByMap rmax filter pos nvec pmap
 --   sumRadiance3  gauss filter
 
 -- Normal (none filter)
-filter_none :: Double -> Double -> Double
-filter_none _ _ = 1.0
+filterNone :: Double -> Double -> Double
+filterNone _ _ = 1.0
 
 -- Cone filter
-k_cone :: Double
-k_cone = 1.1
+coneK :: Double
+coneK = 1.1
 
-fac_k :: Double
-fac_k = 1.0 - 2.0 / (3.0 * k_cone)
+facK :: Double
+facK = 1.0 - 2.0 / (3.0 * coneK)
 
-filter_cone :: Double -> Double-> Double
-filter_cone rmax d = if d' > 1.0 then 0.0 else (1.0 - d') / fac_k
+filterCone :: Double -> Double-> Double
+filterCone rmax d = if d' > 1.0 then 0.0 else (1.0 - d') / facK
   where
-    d' = sqrt (d / rmax) / k_cone
+    d' = sqrt (d / rmax) / coneK
 
 -- Gauss filter
 alpha :: Double
@@ -242,16 +240,16 @@ alpha = 0.918
 beta :: Double
 beta  = 1.953
 
-e_beta :: Double
-e_beta = 1.0 - exp (-beta)
+eBeta :: Double
+eBeta = 1.0 - exp (-beta)
 
 corr :: Double
 corr = 0.5
 
-filter_gauss :: Double -> Double -> Double
-filter_gauss rmax d = if e_r > e_beta then 0.0 else alpha * (1.0 - e_r / e_beta) + corr
+filterGauss :: Double -> Double -> Double
+filterGauss rmax d = if eR > eBeta then 0.0 else alpha * (1.0 - eR / eBeta) + corr
   where
-    e_r = 1.0 - exp (-beta * d / (rmax * 2.0))
+    eR = 1.0 - exp (-beta * d / (rmax * 2.0))
 
 getRadianceFromLight2 :: V.Vector Object -> SurfacePoint -> LightObject
   -> IO (Maybe Radiance)
@@ -259,7 +257,7 @@ getRadianceFromLight2 objs sfpt (Object shp mp) =
   case lightSpecOnPoint mp sfpt (0.0, 0.0) of
     Nothing   -> return Nothing
     Just spec ->
-      if (radest spec) == PhotonMap
+      if radest spec == PhotonMap
         then return Nothing
         else do
           (lpos, lnvec) <- randomPoint shp
@@ -273,9 +271,9 @@ calcRadiance :: LightSpec -> V.Vector Object -> SurfacePoint -> SurfacePoint
 calcRadiance lgtspec objs (pos, nvec) (lpos, lnvec) area
   | ldir  == o3           = Nothing  -- 光源上の点
   | ldir <.> lnvec > 0.0  = Nothing  -- 光源が見えていない
-  | lvec0 == Nothing      = Nothing  -- 光源方向のベクトルが異常
+  | isNothing lvec0       = Nothing  -- 光源方向のベクトルが異常
   | cos   <= 0.0          = Nothing  -- 光源が見えていない
-  | is    == Nothing      = Nothing  -- 光源オブジェクトが無い
+  | isNothing is          = Nothing  -- 光源オブジェクトが無い
   | dist2 - t * t > 0.002 = Nothing  -- 光源の手前に物体がある
   | otherwise             = Just ((area * cos / dist2) *> rad)
   where
@@ -286,7 +284,7 @@ calcRadiance lgtspec objs (pos, nvec) (lpos, lnvec) area
     is = calcIntersection (initRay pos lvec) objs
     dist2 = square ldir
     (t, _, _, _, _) = fromJust is
-    rad = decayEmittance lgtspec (lnvec <.> (negate lvec))
+    rad = decayEmittance lgtspec (lnvec <.> negate lvec)
 
   
 
@@ -298,9 +296,9 @@ type Intersection = (Double, SurfacePoint, SurfaceChar, InOut, Object)
 
 calcIntersection :: Ray -> V.Vector Object -> Maybe Intersection
 calcIntersection ray@(_, vvec) objs
-  | length iss == 0  = Nothing
-  | nvec0 == Nothing = Nothing
-  | otherwise        = Just (t, sfpt, surfaceCharOnPoint mapper sfpt uv, io, obj)
+  | null iss        = Nothing
+  | isNothing nvec0 = Nothing
+  | otherwise       = Just (t, sfpt, surfaceCharOnPoint mapper sfpt uv, io, obj)
   where
     iss = V.mapMaybe (calcDistance ray) objs
     (t, uv, obj@(Object shape mapper)) = V.foldl' nearer (V.head iss) (V.tail iss)
@@ -324,7 +322,7 @@ calcDistance ray obj@(Object shape _) =
     Nothing   -> Nothing
   where
     toDistance :: (Vector2, Double, Shape) -> Object -> (Double, Vector2, Object)
-    toDistance (uv, t, shape) (Object _ mapper) = (t, uv, (Object shape mapper))
+    toDistance (uv, t, shape) (Object _ mapper) = (t, uv, Object shape mapper)
 
 {-
 bsdf: BSDF (双方向散乱分布関数) = BRDF + BTDF
@@ -338,11 +336,11 @@ bsdf (Material aldiff scat metal _ _ _) (Surface _ rough _ _) fr nfr eta ed ls l
       {-
       else (1.0 - rough) *> fr <**> ls +
            ((1.0 - metal) *> nfr) <**>
-           ((((scat * one_pi) *> aldiff) <**> ld) + (1.0 - scat) *> lt)
+           ((((scat * onePi) *> aldiff) <**> ld) + (1.0 - scat) *> lt)
       -}
       else (1.0 - rough) *> fr <**> ls +
            ((1.0 - metal) *> (aldiff * nfr)) <**>
-           ((scat * one_pi) *> ed + ((1.0 - scat) * ft) *> lt)
+           ((scat * onePi) *> ed + ((1.0 - scat) * ft) *> lt)
   where
     ft = 1.0 / (eta * eta)
 
