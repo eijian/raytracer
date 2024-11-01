@@ -1,6 +1,10 @@
 --
 -- Ray tracer w/Photon map
 --
+
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
+
 -- compile: ghc -o rt RT.hs
 -- usage  : ./rt [camera info file] < [photonmapfile] > [imagefile.ppm]
 
@@ -29,31 +33,31 @@ main = do
     then return (args !! 0, args !! 1)
     else error usage
   cam <- readCamera fn1
-  (mate_air, lgts, objs) <- readScene fn2 (whiteBalance cam)
+  (mate_air, lgts, objs) <- readScene fn2 cam.whiteBalance
 
   -- read photon map
   --t0 <- TM.getCurrentTime
-  (_msize, photonmap) <- readMap (radius cam)
+  (_msize, photonmap) <- readMap cam.radius
   --hPutStr   stderr ("finished reading map:" ++ (show msize) ++ " photons, ")
   --t1 <- TM.getCurrentTime
   --hPutStrLn stderr (show (TM.diffUTCTime t1 t0))
 
   -- tracing image
   let
-    filter = pfilter cam
-    r = radius cam
+    filter = cam.pfilter
+    r = cam.radius
     tracer = traceRay filter objs lgts 0 photonmap r mate_air mate_air white
-  rays <- V.mapM (generateRay cam) $ screenMap cam
+  rays <- V.mapM (generateRay cam) cam.screenMap
   image <- V.mapM tracer rays
 
   -- output image data with/without anti-aliasing
-  mapM_ putStrLn $ pnmHeader cam
+  mapM_ putStrLn cam.pnmHeader
   -- progressive mode is default
   --if (progressive cam) == True
   --    then
   let
     image' = V.map (compensateExposure cam) image
-  V.mapM_ (putStrLn.radianceToString) image'
+  V.mapM_ (putStrLn . radianceToString) image'
   
   --  else do
   --    let pixels = V.map (radianceToRgb cam) image

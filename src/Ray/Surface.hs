@@ -2,6 +2,8 @@
 --{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 --
 -- Surface
@@ -95,9 +97,9 @@ microfacetNormal: 微小平面での法線ベクトルを求める
 microfacetNormal :: Direction3 -> Direction3 -> Surface -> Double
   -> IO (Maybe Direction3)
 microfacetNormal nvec vvec surf retry
-  | roughness surf == 0.0 = return $ Just nvec    -- 完全平滑面ならマクロ法線を返す
+  | surf.roughness == 0.0 = return $ Just nvec    -- 完全平滑面ならマクロ法線を返す
   | otherwise             = do
-    nvec' <- blurredVector nvec (densityPow surf)
+    nvec' <- blurredVector nvec surf.densityPow
     if nvec' <.> vvec < 0.0 && nvec' <.> nvec > 0.0  -- 有効な法線ベクトルが得られた
       then return $ Just nvec'
       --else return Nothing

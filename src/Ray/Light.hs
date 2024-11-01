@@ -2,6 +2,8 @@
 --{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 --
 -- Light
@@ -68,7 +70,7 @@ Light: 光源型、物体形状と分離して光源の仕様のみとした。
 -}
 data RadEstimation =
     Formula   -- 古典レイトレーシング=計算で求める
-  | PhotonMap -- フォトンマップから輝度推定する
+  | Photon    -- フォトンマップから輝度推定する
   deriving (Eq, Show, Generic)
 
 instance NFData RadEstimation where

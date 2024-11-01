@@ -1,4 +1,6 @@
 {-# LANGUAGE DeriveGeneric, CPP, FlexibleContexts #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 module Ray.KdMap
        ( -- * Usage
@@ -176,7 +178,7 @@ emptyWithDist p2l d2 = KdMap p2l d2 Empty 0
 
 -- | Returns 'True' if the given 'KdMap' is empty.
 null :: KdMap -> Bool
-null kdm = _size kdm == 0
+null kdm = kdm._size == 0
 
 -- | Builds a 'KdMap' with a single point-value pair and a
 -- user-specified squared distance function.

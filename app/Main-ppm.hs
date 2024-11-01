@@ -5,6 +5,8 @@
 -- usage  : ./ppm [camera info file] > photonmapfile
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 module Main where
 
@@ -32,7 +34,7 @@ main = do
     then return (args !! 0, args !! 1)
     else error usage
   cam <- readCamera fn1
-  (mate_air, lgts, objs) <- readScene fn2 (whiteBalance cam)
+  (mate_air, lgts, objs) <- readScene fn2 cam.whiteBalance
 
   photonmap <- photonMap cam objs lgts mate_air
   traceRays cam objs lgts photonmap mate_air
@@ -43,14 +45,14 @@ photonMap :: Camera -> V.Vector Object -> V.Vector LightObject -> Material
   -> IO PhotonMap
 photonMap cam objs lgts mate_air = do
   (power, photons) <- tracePhotons cam objs lgts mate_air
-  let (_, photonmap) = buildMap power 100 (radius cam) (V.toList photons)
+  let (_, photonmap) = buildMap power 100 cam.radius (V.toList photons)
   return photonmap
 
 tracePhotons :: Camera -> V.Vector Object -> V.Vector LightObject -> Material
   -> IO (Double, V.Vector Photon)
 tracePhotons cam objs lgts mate_air = do
   let
-    (ns, power) = calcNumPhotons lgts (nphoton cam)
+    (ns, power) = calcNumPhotons lgts cam.nphoton
     tracer = tracePhoton objs 0 mate_air mate_air
   plists <- V.zipWithM (recordPhotons tracer) lgts ns
   let photons = V.foldl' (V.++) V.empty plists
@@ -72,15 +74,15 @@ recordPhoton tracer lgt _ = do
 traceRays :: Camera -> V.Vector Object -> V.Vector LightObject -> PhotonMap -> Material -> IO ()
 traceRays cam objs lgts photonmap mate_air = do
   let
-    filter = pfilter cam
-    r = radius cam
+    filter = cam.pfilter
+    r = cam.radius
     tracer = traceRay filter objs lgts 0 photonmap r mate_air mate_air white
-  rays <- V.mapM (generateRay cam) $ screenMap cam
+  rays <- V.mapM (generateRay cam) cam.screenMap
   image <- V.mapM tracer rays
   let
     image' = V.map (compensateExposure cam) image
 
-  mapM_ putStrLn $ pnmHeader cam
-  V.mapM_ (putStrLn.radianceToString) image'
+  mapM_ putStrLn cam.pnmHeader
+  V.mapM_ (putStrLn . radianceToString) image'
 
 

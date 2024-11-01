@@ -1,4 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
+
 
 --
 -- Parser
@@ -594,7 +597,7 @@ world wb = do
 
 {- |
 >>> parse (lightspecList 100.0) pname "        \nlightspec:\n   \n  ceiling:\n    color: [ 1.0, 0.7, 0.4 ]\n    radiosity: 1950\n    directivity: 0.0\n    rad_est: formula\n    direction: out\n   \n  bulb:\n    temperature: 3500\n    radiosity: 48320\n    directivity: 0.0\n    rad_est: photon\n    direction: in\n"
-Right [("ceiling",LightSpec {lcolor = [0.47619047619047616,0.3333333333333333,0.19047619047619047], radiosity = 2.8550512445095166, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.21637881825921765 0.15146517278145236 8.655152730368706e-2}),("bulb",LightSpec {lcolor = [0.4334078665789044,0.32723782297452636,0.23935431044656913], radiosity = 70.74670571010249, directivity = 0.0, radest = PhotonMap, dirflag = In, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.880037320284739 3.6845957627160155 2.6950548382296726})]
+Right [("ceiling",LightSpec {lcolor = [0.47619047619047616,0.3333333333333333,0.19047619047619047], radiosity = 2.8550512445095166, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.21637881825921765 0.15146517278145236 8.655152730368706e-2}),("bulb",LightSpec {lcolor = [0.4334078665789044,0.32723782297452636,0.23935431044656913], radiosity = 70.74670571010249, directivity = 0.0, radest = Photon, dirflag = In, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.880037320284739 3.6845957627160155 2.6950548382296726})]
 -}
 
 lightspecList :: Double -> Parser [(String, LightSpec)]
@@ -611,7 +614,7 @@ lightspecList wb = do
 >>> parse lightspec_elem pname "   \n  ceiling:\n    color: [ 1.0, 0.7, 0.4 ]\n    radiosity: 1950\n    directivity: 0.0\n    rad_est: formula\n    direction: out\n"
 Right ("ceiling",LightSpec {lcolor = [0.47619047619047616,0.3333333333333333,0.19047619047619047], radiosity = 2.8550512445095166, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.21637881825921765 0.15146517278145236 8.655152730368706e-2})
 >>> parse lightspec_elem pname "   \n  bulb:\n    temperature: 3500\n    radiosity: 48320\n    directivity: 0.0\n    rad_est: photon\n    direction: in\n"
-Right ("bulb",LightSpec {lcolor = [0.4334078665789044,0.32723782297452636,0.23935431044656913], radiosity = 70.74670571010249, directivity = 0.0, radest = PhotonMap, dirflag = In, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.880037320284739 3.6845957627160155 2.6950548382296726})
+Right ("bulb",LightSpec {lcolor = [0.4334078665789044,0.32723782297452636,0.23935431044656913], radiosity = 70.74670571010249, directivity = 0.0, radest = Photon, dirflag = In, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.880037320284739 3.6845957627160155 2.6950548382296726})
 -}
 
 lightspecElem :: Double -> Parser (String, LightSpec)
@@ -639,7 +642,7 @@ Left "rt parser" (line 3, column 1):
 unexpected blue of color is out of range: 2.8
 
 >>> parse rad_est pname "   \n    rad_est: photon\n"
-Right PhotonMap
+Right Photon
 >>> parse rad_est pname "   \n    rad_est: formula\n"
 Right Formula
 >>> parse rad_est pname "   \n    rad_est: abc\n"
@@ -719,7 +722,7 @@ radEst :: Parser RadEstimation
 radEst = do
   re <- nameparam rRadEst
   if re == "photon"
-    then return PhotonMap
+    then return Photon
     else if re == "formula"
       then return Formula
       else unexpected "rad_est is 'photon' or 'formula'"
@@ -879,11 +882,11 @@ albedoSpec = do
 --
 
 {- |
->>> let l1 = initLightSpec (initColorByKelvin 6500) 1950 0.0 PhotonMap Out
+>>> let l1 = initLightSpec (initColorByKelvin 6500) 1950 0.0 Photon Out
 >>> let l2 = initLightSpec (initColorByKelvin 5000) 48320 0.0 Formula Out
 >>> let lm = M.fromList [("ceiling", l1), ("bulb", l2)]
 >>> parse (surface_list lm) pname "   \nsurface:\n  ceiling:\n    roughness: 0.0\n    light: ceiling\n  floor:\n    roughness: 1.0\n    light:\n  bulb:\n    roughness: 1.0\n    light: bulb\n"
-Right [("ceiling",Surface {elight = Just (LightSpec {lcolor = [0.3359011141561401,0.33472886389070683,0.329370021953153], radiosity = 2.8550512445095166, directivity = 0.0, radest = PhotonMap, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.15263196087942635 0.1520992956124355 0.14966426185249523}), roughness = 0.0, densityPow = 9.99999000001e-7, alpha = 0.0}),("floor",Surface {elight = Nothing, roughness = 1.0, densityPow = 0.5, alpha = 1.0}),("bulb",Surface {elight = Just (LightSpec {lcolor = [0.3701322600524373,0.3309599290794973,0.29890781086806545], radiosity = 70.74670571010249, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.167573737770148 3.7265055158676947 3.365608667592586}), roughness = 1.0, densityPow = 0.5, alpha = 1.0})]
+Right [("ceiling",Surface {elight = Just (LightSpec {lcolor = [0.3359011141561401,0.33472886389070683,0.329370021953153], radiosity = 2.8550512445095166, directivity = 0.0, radest = Photon, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.15263196087942635 0.1520992956124355 0.14966426185249523}), roughness = 0.0, densityPow = 9.99999000001e-7, alpha = 0.0}),("floor",Surface {elight = Nothing, roughness = 1.0, densityPow = 0.5, alpha = 1.0}),("bulb",Surface {elight = Just (LightSpec {lcolor = [0.3701322600524373,0.3309599290794973,0.29890781086806545], radiosity = 70.74670571010249, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.167573737770148 3.7265055158676947 3.365608667592586}), roughness = 1.0, densityPow = 0.5, alpha = 1.0})]
 -}
 
 surfaceList :: M.Map String LightSpec -> Parser [(String, Surface)]
@@ -895,11 +898,11 @@ surfaceList lm = do
   many1 (try (surfaceElem lm))
 
 {- |
->>> let l1 = initLightSpec (initColorByKelvin 6500) 1950 0.0 PhotonMap Out
+>>> let l1 = initLightSpec (initColorByKelvin 6500) 1950 0.0 Photon Out
 >>> let l2 = initLightSpec (initColorByKelvin 5000) 48320 0.0 Formula Out
 >>> let lm = M.fromList [("ceiling", l1), ("bulb", l2)]
 >>> parse (surface_elem lm) pname "      \n  ceiling:\n    roughness: 0.0\n    light: ceiling\n"
-Right ("ceiling",Surface {elight = Just (LightSpec {lcolor = [0.3359011141561401,0.33472886389070683,0.329370021953153], radiosity = 2.8550512445095166, directivity = 0.0, radest = PhotonMap, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.15263196087942635 0.1520992956124355 0.14966426185249523}), roughness = 0.0, densityPow = 9.99999000001e-7, alpha = 0.0})
+Right ("ceiling",Surface {elight = Just (LightSpec {lcolor = [0.3359011141561401,0.33472886389070683,0.329370021953153], radiosity = 2.8550512445095166, directivity = 0.0, radest = Photon, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 0.15263196087942635 0.1520992956124355 0.14966426185249523}), roughness = 0.0, densityPow = 9.99999000001e-7, alpha = 0.0})
 >>> parse (surface_elem lm) pname "      \n  bulb:\n    roughness: 1.0\n    light: bulb\n"
 Right ("bulb",Surface {elight = Just (LightSpec {lcolor = [0.3701322600524373,0.3309599290794973,0.29890781086806545], radiosity = 70.74670571010249, directivity = 0.0, radest = Formula, dirflag = Out, cospower = 1.0, power = 0.5, emittance0 = Radiance 4.167573737770148 3.7265055158676947 3.365608667592586}), roughness = 1.0, densityPow = 0.5, alpha = 1.0})
 >>> parse (surface_elem lm) pname "      \n  floor:\n    roughness: 1.0\n    light:\n"

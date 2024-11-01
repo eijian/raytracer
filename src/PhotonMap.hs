@@ -5,17 +5,19 @@
 --{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 --{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 --
 -- Optics
 --
 
 module PhotonMap (
-  PhotonMap
+  PhotonMap (..)
 , buildMap
-, inradius
-, nearest
-, power
+--, inradius
+--, nearest
+--, power
 , readMap
 ) where
 

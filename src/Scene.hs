@@ -1,4 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 --
 -- Scene
@@ -186,7 +188,7 @@ parseConfig conf wb = do
       ]
 
     -- flux of ceiling light : 3500 lumen (1950 = 3500 / 1.34^2)
-    --lg_ceiling_light = initLightSpec (initColorByKelvin 6500) 1950 0.0 PhotonMap Out
+    --lg_ceiling_light = initLightSpec (initColorByKelvin 6500) 1950 0.0 Photon Out
     lg_ceiling_light = initLightSpec (initColorByKelvin 6500) 1950 0.0 Formula Out
     -- flux of bulb light : 1370 lumen (4845 = 1370 / (4π x 0.15^2))
     --lg_ceiling_bulb1 = initLightSpec (initColorByKelvin 2700) 48320 0.0 Formula Out
@@ -195,8 +197,8 @@ parseConfig conf wb = do
     --lg_ceiling_bulb1 = initLight (initColorByKelvin 2700) 1370 0.0 sh_icosahedron True
 
     
-    lg_sunlight = initLightSpec (initColorByKelvin 6500) 5000 1.0 PhotonMap Out
-    lg_skylight = initLightSpec (initColorByKelvin 12000) 10000 0.0 PhotonMap In
+    lg_sunlight = initLightSpec (initColorByKelvin 6500) 5000 1.0 Photon Out
+    lg_skylight = initLightSpec (initColorByKelvin 12000) 10000 0.0 Photon In
 
     {-
     ls = [
@@ -401,7 +403,7 @@ parseConfig conf wb = do
          ]
     -}
 
-    ls0 = filter (\(x, _) -> x > 0) $ zip (map (length.lightSpecs.mapper) objs) objs
+    ls0 = filter (\(x, _) -> x > 0) $ zip (map (\x -> length $ lightSpecs x.mapper) objs) objs
     (_, ls) = unzip ls0
       --ParallelogramLight (initColor 1.0 1.0 1.0) 5.0 (Vector3 (-0.67) 3.99 2.33)
       --  (Vector3 0.0 (-1.0) 0.0) (Vector3 1.33 0.0 0.0) (Vector3 0.0 0.0 1.33)

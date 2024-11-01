@@ -1,5 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
+
 --{-# LANGUAGE BangPatterns #-}
 
 --
@@ -7,21 +10,21 @@
 --
 
 module Ray.Material (
-  Material (Material)
+  Material (..)
 , PhotonBehavior (..)
-, albedoDiff
-, albedoSpec
+--, albedoDiff
+--, albedoSpec
 , averageIor
 , initMaterial
-, ior
-, metalness
+--, ior
+--, metalness
 , photonBehavior
 , reflect
 , refract
 , scatter
-, scatterness
+--, scatterness
 , storePhoton
-, transmittance
+--, transmittance
 ) where
 
 import Control.DeepSeq

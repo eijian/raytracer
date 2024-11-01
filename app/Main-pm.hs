@@ -3,6 +3,9 @@
 --
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
+
 
 module Main where
 
@@ -28,11 +31,11 @@ main = do
     then return (args !! 0, args !! 1)
     else error usage
   cam <- readCamera fn1
-  (mate_air, lgts, objs) <- readScene fn2 (whiteBalance cam)
+  (mate_air, lgts, objs) <- readScene fn2 cam.whiteBalance
   let
-    (ns, power) = calcNumPhotons lgts (nphoton cam)
+    (ns, power) = calcNumPhotons lgts cam.nphoton
     tracer = tracePhoton objs 0 mate_air mate_air
-  putStrLn $ show $ nphoton cam
+  putStrLn $ show cam.nphoton
   putStrLn $ show power
   V.zipWithM_ (outputPhotons tracer) lgts ns
 
@@ -44,7 +47,7 @@ outputPhoton tracer lgt _ = do
   (lgtspec, sfpt) <- validLightSpec lgt
   photon <- generatePhoton lgtspec sfpt
   pmap <- tracer photon
-  V.mapM_ (putStrLn.showPhoton) pmap
+  V.mapM_ (putStrLn . showPhoton) pmap
 
 showPhoton :: Photon -> String
 showPhoton (wl, (Vector3 px py pz, Vector3 dx dy dz)) = show wl ++ " " 

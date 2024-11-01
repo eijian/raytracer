@@ -1,4 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 --
 -- Camera module
@@ -6,7 +8,7 @@
 
 module Camera (
   Rgb
-, Camera(..)
+, Camera (..)
 , compensateExposure
 , generateRay
 , radianceToString
@@ -200,7 +202,7 @@ readCamera file = do
   return cam
 
 compensateExposure :: Camera -> Radiance -> Radiance
-compensateExposure cam rad = exposure cam *> rad
+compensateExposure cam rad = cam.exposure *> rad
 
 rgbToString :: Rgb -> String
 rgbToString (r, g, b) = show r ++ " " ++ show g ++ " " ++ show b
@@ -243,10 +245,10 @@ parseLines (l:ls) = p:parseLines ls
 
 generateRay :: Camera -> (Double, Double) -> IO Ray
 generateRay cam (y, x) = do
-  blur <- lensOffset (blurFlag cam) (lens cam)
+  blur <- lensOffset cam.blurFlag cam.lens
   --putStrLn ("OR:" ++ show origin ++ ", BL:" ++ show blur)
   --putStrLn ("BL:" ++ show blur)
-  (r3, r4) <- if antialias cam
+  (r3, r4) <- if cam.antialias
     then do
       r3' <- MT.randomIO :: IO Double
       r4' <- MT.randomIO :: IO Double
@@ -254,9 +256,9 @@ generateRay cam (y, x) = do
     else
       return (0.0, 0.0)
   let
-    eyepos = eyePos cam + blur
-    (esx, esy) = screenStep cam
-    eyedir = screenOrigin cam + (x + r3) *> esx + (y + r4) *> esy - blur
+    eyepos = cam.eyePos + blur
+    (esx, esy) = cam.screenStep
+    eyedir = cam.screenOrigin + (x + r3) *> esx + (y + r4) *> esy - blur
   return (initRay eyepos (fromJust $ normalize eyedir))
 
 lensOffset :: Bool -> (Direction3, Direction3) -> IO Direction3

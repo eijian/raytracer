@@ -5,7 +5,7 @@
 
 require 'logger'
 
-USAGE = 'iterator3.rb <#photon> <#iteration> <radius(m)> <screen(.scr)> <scene(.scene)>'
+USAGE = 'iterator3.rb <#photon> <#iteration> <radius(m)> <camera(.scr)> <scene(.scene)>'
 
 CMD = "cabal new-exec "
 PPM = "#{CMD}ppm"
@@ -46,12 +46,18 @@ def init
   @scene    = ARGV[4]
   @nimage   = @niterate / NPARA   # 1スレッドで生成する画像数
   @nimage  += 1 if @niterate % NPARA != 0
-  @radius   = Array.new
+  @radius   = Array.new(@niterate, 0.0)
   r = @radius0
+  # 初期半径を与える場合
   @niterate.times do |i|
     @radius[i] = r
     r = Math.sqrt(((i+1) + ALPHA) / ((i+1) + 1.0)) * r
   end
+  # 最終半径を与える場合 → 画質の制御が難しいため保留
+  #@niterate.downto(1) do |i|
+  #  @radius[i-1] = r
+  #  r = r / Math.sqrt(((i) + ALPHA) / ((i) + 1.0))
+  #end
   @mut = Mutex.new
   @xreso, @yreso, @radiance = read_conf(@screen)
   @pixels = Array.new(NPARA) do |i|

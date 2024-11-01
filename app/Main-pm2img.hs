@@ -1,4 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
+
 
 --
 -- convert from photon map to image
@@ -47,8 +50,8 @@ main = do
   pcs <- forM (lines dat) $ \i -> do
     return $ (read i :: PhotonCache)
   let
-    cp  = target (focusDistance cam) (initRay (eyePos cam) (eyeDir cam))
-    sc  = Plain (eyeDir cam) (negate (eyeDir cam) <.> cp)
+    cp  = target cam.focusDistance (initRay cam.eyePos cam.eyeDir)
+    sc  = Plain cam.eyeDir (negate cam.eyeDir <.> cp)
     map = getMap cam cp sc pcs
   forM_ (map) $ \i -> do
     putStrLn $ show i
@@ -58,15 +61,15 @@ getMap :: Camera -> Position3 -> Shape -> [PhotonCache]
    -> [(Wavelength, Int, Int)]
 getMap _ _ _ [] = []
 getMap cam cp sc (pc:pcs)
-  | t < (focusDistance cam)         = next
+  | t < cam.focusDistance   = next
   | px < 0 || px > (xr - 1) = next
   | py < 0 || py > (yr - 1) = next
   | dist == Nothing         = next
   | otherwise = (getWl pc, px, py) : next
   where
-    d = (getPt pc) - (eyePos cam)
+    d = (getPt pc) - cam.eyePos
     d' = fromJust $ normalize d
-    r = initRay (eyePos cam) d'
+    r = initRay cam.eyePos d'
     dist = distance r sc
     (_, t, _) = fromJust dist
     p = (target t r) - cp

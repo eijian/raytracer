@@ -3,6 +3,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
+
 --{-# LANGUAGE BangPatterns #-}
 --{-# LANGUAGE OverloadedStrings #-}
 --{-# LANGUAGE DeriveAnyClass #-}

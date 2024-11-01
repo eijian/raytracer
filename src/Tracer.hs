@@ -1,6 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 --{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 --
 -- Tracer
@@ -24,13 +26,13 @@ import           NumericPrelude
 
 import Ray.Algebra
 import Ray.Geometry
-import Ray.Light hiding (power)
+import Ray.Light
 import Ray.Mapper
 import Ray.Material
 import Ray.Object
 import Ray.Optics
 import Ray.Physics
-import Ray.Surface hiding (alpha)
+import Ray.Surface
 
 import PhotonMap
 
@@ -71,22 +73,22 @@ tracePhoton !objs !l !mate_air !mate0 (photon@(wl, ray@(_, vvec)), !radest)
             -- フォトンが物体に到達するまでに透過率が低く吸収される場合あり
             -- transmission ** t の確率で到達する
             let
-              tr = selectWavelength wl (transmittance mate0) ** t
+              tr = selectWavelength wl mate0.transmittance ** t
             i <- russianRouletteBinary tr
             if not i
               then return V.empty
               else do
                 let
                   mate' = if io == In then mate else mate_air
-                  eta = relativeIorWavelength (ior mate0) (ior mate') wl
+                  eta = relativeIorWavelength mate0.ior mate'.ior wl
                 nextdir <- nextDirection mate surf eta nvec photon io
                 case nextdir of
                   Just (dir, mf) -> do
                     let mate'' = if mf then mate0 else mate'
-                    tracer mate'' ((wl, initRay pos dir), PhotonMap)
+                    tracer mate'' ((wl, initRay pos dir), Photon)
                   Nothing -> return V.empty
         --if (uc == False || l > 0) && storePhoton mate == True
-        if (radest == PhotonMap || l > 0) && storePhoton mate
+        if (radest == Photon || l > 0) && storePhoton mate
           then return $ V.cons (wl, (pos, vvec)) ref
           else return ref
       Nothing -> return V.empty
@@ -102,7 +104,7 @@ nextDirection
 nextDirection :: Material -> Surface -> Double -> Direction3 -> Photon -> InOut
   -> IO (Maybe (Direction3, Bool))
 nextDirection mate surf eta nvec (wl, (_, vvec)) io = do
-  nvec' <- microfacetNormal nvec vvec surf (metalness mate)
+  nvec' <- microfacetNormal nvec vvec surf mate.metalness
   case nvec' of
     Nothing    -> return Nothing
     Just nvec' -> do
@@ -142,7 +144,7 @@ traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !fr0 ray@(_, vvec
     case calcIntersection ray objs of
       Nothing            -> return radiance0
       Just is@(t, sfpt@(pos, nvec), (mate, surf), io, _obj) -> do
-        let metal = metalness mate
+        let metal = mate.metalness
 
         -- E_diffuse
         ed <- if metal /= 1.0 && scatter mate
@@ -155,22 +157,23 @@ traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !fr0 ray@(_, vvec
           else return radiance0
 
         -- preparation for L_spec and L_trans
-        nvec2 <- microfacetNormal nvec vvec surf (metalness mate)
+        nvec2 <- microfacetNormal nvec vvec surf mate.metalness
         let
           tracer = traceRay filter objs lgts (l+1) pmap radius mate_air
           mate' = if io == In then mate else mate_air
-          eta = relativeIorAverage (ior mate0) (ior mate')
+          eta = relativeIorAverage mate0.ior mate'.ior
           nvec' = fromMaybe nvec nvec2
           (rvec, cos1) = specularReflection nvec' vvec
           (tvec, cos2) = specularRefraction nvec' vvec eta cos1
           cos = if io == In then cos1 else cos2
-          fr = fresnelReflectanceColor (albedoSpec mate) cos  -- Fr
-          nfr = negate fr                                     -- (1 - Fr)
+          fr  = fresnelReflectanceColor mate.albedoSpec cos  -- Fr
+          nfr = negate fr                                    -- (1 - Fr)
 
 
         -- L_spec
         ls <- if rvec <.> nvec > 0.0 &&
-                 (metal == 1.0 || (metal /= 1.0 && roughness surf /= 1.0))
+                 --(metal == 1.0 || (metal /= 1.0 && roughness surf /= 1.0))
+                 (metal == 1.0 || (metal /= 1.0 && surf.roughness /= 1.0))
           then tracer mate0 (fr0 * fr) (pos, rvec)
           else return radiance0
 
@@ -186,7 +189,7 @@ traceRay !filter !objs !lgts !l !pmap !radius !mate_air !mate0 !fr0 ray@(_, vvec
           else return radiance0
 
         let
-          tc = expColor (transmittance mate0) t
+          tc = expColor mate0.transmittance t
           li = bsdf mate surf fr nfr eta ed ls lt
           le = emittance surf sfpt vvec
         return (tc <**> (le + li))
@@ -195,7 +198,7 @@ estimateRadiance :: Double -> PhotonFilter -> PhotonMap -> Intersection
   -> Radiance
 estimateRadiance rmax filter pmap (_, (pos, nvec), _, _, _) = mag *> rad
   where
-    mag = onePi / rmax * power pmap
+    mag = onePi / rmax * pmap.power
     rad = estimateRadianceByMap rmax filter pos nvec pmap
 
 estimateRadianceByMap :: Double -> PhotonFilter -> Position3 -> Direction3 -> PhotonMap
@@ -204,7 +207,7 @@ estimateRadianceByMap rmax filter pos nvec pmap
   | V.null ps = radiance0
   | otherwise = V.foldl (+) radiance0 rads -- 半径は指定したものを使う
   where
-    ps = inradius pmap $ photonDummy pos
+    ps = pmap.inradius $ photonDummy pos
     f_wait = case filter of
       Nonfilter   -> filterNone rmax
       Conefilter  -> filterCone rmax
@@ -257,12 +260,12 @@ getRadianceFromLight2 objs sfpt (Object shp mp) =
   case lightSpecOnPoint mp sfpt (0.0, 0.0) of
     Nothing   -> return Nothing
     Just spec ->
-      if radest spec == PhotonMap
+      if spec.radest == Photon
         then return Nothing
         else do
           (lpos, lnvec) <- randomPoint shp
           let
-            lnvec' = if dirflag spec == Out then lnvec else negate lnvec
+            lnvec' = if spec.dirflag == Out then lnvec else negate lnvec
             area = surfaceArea shp
           return $ calcRadiance spec objs sfpt (lpos, lnvec') area
 

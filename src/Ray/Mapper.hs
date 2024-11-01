@@ -2,6 +2,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
 --{-# LANGUAGE DeriveGeneric #-}
 --{-# LANGUAGE BangPatterns #-}
 
@@ -66,17 +68,17 @@ surfaceCharOnPoint (Checker sc1 sc2 mag) (Vector3 x _ z, _) _ =
     sc = sin x' * sin z'
 
 lightSpecOnPoint :: Mapper -> SurfacePoint -> Vector2 -> Maybe LightSpec
-lightSpecOnPoint mp sp uv = elight sf
+lightSpecOnPoint mp sp uv = sf.elight
   where
     (_, sf) = surfaceCharOnPoint mp sp uv
 
 lightSpecs :: Mapper -> [(Double, LightSpec)]
-lightSpecs (Solid (_, sf)) = case elight sf of
+lightSpecs (Solid (_, sf)) = case sf.elight of
   Nothing      -> []
   Just lgtspec -> [(1.0, lgtspec)]
 lightSpecs (Checker (_, sf1) (_, sf2) _) = zip (repeat 0.5) lss
   where
-    lss = catMaybes [elight sf1, elight sf2]
+    lss = catMaybes [sf1.elight, sf2.elight]
 
 
 ---

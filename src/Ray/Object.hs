@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE NoFieldSelectors #-}
+
 --
 -- Object
 --
@@ -54,6 +57,6 @@ flux :: LightObject -> Double
 flux (Object shp mp) = area * sum radios
   where
     area  = surfaceArea shp
-    radios = map (\(m, lgtspec) -> radiosity lgtspec * m) $ lightSpecs mp
+    radios = map (\(m, lgtspec) -> lgtspec.radiosity * m) $ lightSpecs mp
 
 
